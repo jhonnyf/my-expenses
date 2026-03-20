@@ -6,6 +6,6 @@ class LoginController extends Controller
 {
     public function index()
     {
-        return "Login::index()";
+        return view('login.index');
     }
 }
