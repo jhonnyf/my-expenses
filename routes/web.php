@@ -10,6 +10,8 @@ Route::get('/', function () {
 
 Route::group(['prefix' => 'login', 'as' => 'login.'], function () {
     Route::get('/', [LoginController::class, 'index'])->name('index');
+    Route::post('execute', [LoginController::class, 'execute'])->name('execute');
+    Route::get('logout', [LoginController::class, 'logout'])->name('logout');
 });
 
 Route::group(['middleware' => 'auth'], function () {
