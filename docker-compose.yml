@@ -9,6 +9,7 @@ services:
         working_dir: /var/www
         volumes:
             - ./:/var/www
+            - ./docker-config/php/up-config.ini:/usr/local/etc/php/conf.d/up-config.ini
         networks:
             - app-network
     nginx:
