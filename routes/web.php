@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\LoginController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +19,11 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.'], function () {
         Route::get('/', [DashboardController::class, 'index'])->name('index');
+    });
+
+    Route::group(['prefix' => 'issuers', 'as' => 'issuers.'], function () {
+        Route::get('/', [IssuerController::class, 'index'])->name('index');
+        Route::get('detail/{id?}', [IssuerController::class, 'detail'])->name('detail');
     });
 
 });
