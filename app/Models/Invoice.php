@@ -15,14 +15,7 @@ class Invoice extends Model
         'series',
         'issued_at',
         'environment',
-        'issuer_cnpj',
-        'issuer_name',
-        'issuer_street',
-        'issuer_street_number',
-        'issuer_neighborhood',
-        'issuer_city',
-        'issuer_state',
-        'issuer_zip_code',
+        'issuer_id',
         'total_icms_base',
         'total_icms',
         'total_products',
@@ -42,6 +35,11 @@ class Invoice extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function issuer(): BelongsTo
+    {
+        return $this->belongsTo(Issuer::class);
     }
 
     public function items(): HasMany
