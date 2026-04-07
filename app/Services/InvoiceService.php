@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Invoice;
+use App\Models\Issuer;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,19 @@ class InvoiceService
         return DB::transaction(function () use ($data) {
             $user = $this->findOrCreateUser($data['destinatario']);
 
+            $issuer = Issuer::firstOrCreate(
+                ['cnpj' => $data['emitente']['cnpj']],
+                [
+                    'name'          => $data['emitente']['nome'],
+                    'street'        => $data['emitente']['logradouro'],
+                    'street_number' => $data['emitente']['numero'],
+                    'neighborhood'  => $data['emitente']['bairro'],
+                    'city'          => $data['emitente']['municipio'],
+                    'state'         => $data['emitente']['uf'],
+                    'zip_code'      => $data['emitente']['cep'],
+                ]
+            );
+
             $invoice = Invoice::firstOrCreate(
                 ['access_key' => $data['chave']],
                 [
@@ -23,14 +37,7 @@ class InvoiceService
                     'issued_at'            => $data['emitido_em'],
                     'environment'          => $data['ambiente'] === 'producao' ? 'production' : 'staging',
 
-                    'issuer_cnpj'          => $data['emitente']['cnpj'],
-                    'issuer_name'          => $data['emitente']['nome'],
-                    'issuer_street'        => $data['emitente']['logradouro'],
-                    'issuer_street_number' => $data['emitente']['numero'],
-                    'issuer_neighborhood'  => $data['emitente']['bairro'],
-                    'issuer_city'          => $data['emitente']['municipio'],
-                    'issuer_state'         => $data['emitente']['uf'],
-                    'issuer_zip_code'      => $data['emitente']['cep'],
+                    'issuer_id'            => $issuer->id,
 
                     'total_icms_base'      => $data['total']['base_calculo_icms'],
                     'total_icms'           => $data['total']['valor_icms'],
@@ -41,8 +48,12 @@ class InvoiceService
             );
 
             if ($invoice->wasRecentlyCreated) {
+                $now = now();
+                
+                $itemsData = [];
                 foreach ($data['itens'] as $item) {
-                    $invoice->items()->create([
+                    $itemsData[] = [
+                        'invoice_id'  => $invoice->id,
                         'item_number' => $item['numero_item'],
                         'code'        => $item['codigo'],
                         'description' => $item['descricao'],
@@ -52,17 +63,30 @@ class InvoiceService
                         'quantity'    => $item['quantidade'],
                         'unit_price'  => $item['valor_unitario'],
                         'total_price' => $item['valor_total'],
-                    ]);
+                        'created_at'  => $now,
+                        'updated_at'  => $now,
+                    ];
+                }
+                if (!empty($itemsData)) {
+                    $invoice->items()->insert($itemsData);
                 }
 
+                $paymentsData = [];
                 foreach ($data['pagamento'] as $payment) {
-                    $invoice->payments()->create([
-                        'method' => $payment['forma'],
-                        'amount' => $payment['valor'],
-                    ]);
+                    $paymentsData[] = [
+                        'invoice_id' => $invoice->id,
+                        'method'     => $payment['forma'],
+                        'amount'     => $payment['valor'],
+                        'created_at'  => $now,
+                        'updated_at'  => $now,
+                    ];
+                }
+                if (!empty($paymentsData)) {
+                    $invoice->payments()->insert($paymentsData);
                 }
             }
 
+            $invoice->setRelation('issuer', $issuer);
             return $invoice->load('user', 'items', 'payments');
         });
     }

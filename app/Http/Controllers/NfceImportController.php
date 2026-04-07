@@ -18,7 +18,7 @@ class NfceImportController extends Controller
         $path = public_path('/import/nfc-e.xml');
 
         try {
-            $dados = $this->importer->fromString(file_get_contents($path));
+            $dados = $this->importer->fromFile($path);
             $invoice = $this->invoiceService->createFromParsed($dados);
 
             return response()->json($invoice, 201);
@@ -27,4 +27,3 @@ class NfceImportController extends Controller
         }
     }
 }
-

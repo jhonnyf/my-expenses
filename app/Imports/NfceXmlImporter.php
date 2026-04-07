@@ -29,7 +29,10 @@ class NfceXmlImporter
             throw new \InvalidArgumentException("Arquivo não encontrado: {$path}");
         }
 
-        return $this->fromString(file_get_contents($path));
+        libxml_use_internal_errors(true);
+        $root = simplexml_load_file($path);
+
+        return $this->parseRoot($root);
     }
 
     public function fromString(string $xml): array
@@ -37,6 +40,11 @@ class NfceXmlImporter
         libxml_use_internal_errors(true);
         $root = simplexml_load_string($xml);
 
+        return $this->parseRoot($root);
+    }
+
+    private function parseRoot(SimpleXMLElement|false $root): array
+    {
         if ($root === false) {
             $errors = array_map(fn($e) => $e->message, libxml_get_errors());
             libxml_clear_errors();
