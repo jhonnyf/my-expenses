@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\MyPurchaseController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -24,6 +25,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::group(['prefix' => 'issuers', 'as' => 'issuers.'], function () {
         Route::get('/', [IssuerController::class, 'index'])->name('index');
         Route::get('detail/{id?}', [IssuerController::class, 'detail'])->name('detail');
+    });
+
+    Route::group(['prefix' => 'my-purchases', 'as' => 'my-purchases.'], function () {
+        Route::get('/', [MyPurchaseController::class, 'index'])->name('index');
     });
 
 });
