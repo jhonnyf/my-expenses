@@ -20,51 +20,51 @@ class NfceImportTest extends TestCase
         // Mocking the importer to prevent file system dependency
         $this->mock(NfceXmlImporter::class, function ($mock) {
             $mock->shouldReceive('fromFile')->andReturn([
-                'chave'      => '12345678901234567890123456789012345678901234',
-                'numero'     => '12345',
-                'serie'      => '1',
+                'chave' => '12345678901234567890123456789012345678901234',
+                'numero' => '12345',
+                'serie' => '1',
                 'emitido_em' => '2026-03-15T12:00:00-03:00',
-                'ambiente'   => 'producao',
-                'emitente'   => [
-                    'cnpj'       => '00000000000191',
-                    'nome'       => 'SUPERMERCADO TESTE',
+                'ambiente' => 'producao',
+                'emitente' => [
+                    'cnpj' => '00000000000191',
+                    'nome' => 'SUPERMERCADO TESTE',
                     'logradouro' => 'RUA TESTE',
-                    'numero'     => '123',
-                    'bairro'     => 'BAIRRO TESTE',
-                    'municipio'  => 'CIDADE TESTE',
-                    'uf'         => 'SP',
-                    'cep'        => '00000000',
+                    'numero' => '123',
+                    'bairro' => 'BAIRRO TESTE',
+                    'municipio' => 'CIDADE TESTE',
+                    'uf' => 'SP',
+                    'cep' => '00000000',
                 ],
                 'destinatario' => [
-                    'cpf'  => '11122233344',
+                    'cpf' => '11122233344',
                     'cnpj' => '',
                     'nome' => 'CLIENTE TESTE',
                 ],
-                'itens'      => [
+                'itens' => [
                     [
-                        'numero_item'    => 1,
-                        'codigo'         => '1001',
-                        'descricao'      => 'PRODUTO TESTE',
-                        'ncm'            => '00000000',
-                        'cfop'           => '5102',
-                        'unidade'        => 'UN',
-                        'quantidade'     => 2,
+                        'numero_item' => 1,
+                        'codigo' => '1001',
+                        'descricao' => 'PRODUTO TESTE',
+                        'ncm' => '00000000',
+                        'cfop' => '5102',
+                        'unidade' => 'UN',
+                        'quantidade' => 2,
                         'valor_unitario' => 10.50,
-                        'valor_total'    => 21.00,
-                    ]
+                        'valor_total' => 21.00,
+                    ],
                 ],
-                'total'      => [
+                'total' => [
                     'base_calculo_icms' => 0,
-                    'valor_icms'        => 0,
-                    'valor_produtos'    => 21.00,
-                    'valor_nota'        => 21.00,
-                    'valor_tributos'    => 0,
+                    'valor_icms' => 0,
+                    'valor_produtos' => 21.00,
+                    'valor_nota' => 21.00,
+                    'valor_tributos' => 0,
                 ],
-                'pagamento'  => [
+                'pagamento' => [
                     [
                         'forma' => 'dinheiro',
                         'valor' => 21.00,
-                    ]
+                    ],
                 ],
             ]);
         });
@@ -83,10 +83,10 @@ class NfceImportTest extends TestCase
                 'name',
             ],
             'items' => [
-                '*' => ['id', 'description', 'total_price']
+                '*' => ['id', 'description', 'total_price'],
             ],
             'payments' => [
-                '*' => ['id', 'method', 'amount']
+                '*' => ['id', 'method', 'amount'],
             ],
         ]);
 
@@ -98,7 +98,7 @@ class NfceImportTest extends TestCase
 
         $this->assertDatabaseCount(Invoice::class, 1);
         $this->assertDatabaseHas(Invoice::class, [
-            'access_key'   => '12345678901234567890123456789012345678901234',
+            'access_key' => '12345678901234567890123456789012345678901234',
             'total_amount' => 21.00,
         ]);
 

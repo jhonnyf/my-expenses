@@ -7,12 +7,11 @@ use Illuminate\Support\Facades\Auth;
 
 class IssuerController extends Controller
 {
-
     public function index()
     {
         $favoriteIds = Auth::user()->favoriteIssuers()->pluck('issuers.id');
 
-        $issuers = Issuer::orderByRaw("FIELD(id, " . ($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0') . ") DESC")
+        $issuers = Issuer::orderByRaw('FIELD(id, '.($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0').') DESC')
             ->orderBy('name')
             ->paginate(15);
 
@@ -39,7 +38,7 @@ class IssuerController extends Controller
         $user = Auth::user();
 
         $result = $user->favoriteIssuers()->toggle($issuer->id);
-        $isFavorite = !empty($result['attached']);
+        $isFavorite = ! empty($result['attached']);
 
         return response()->json(['is_favorite' => $isFavorite]);
     }

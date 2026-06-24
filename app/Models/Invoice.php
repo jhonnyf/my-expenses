@@ -25,12 +25,12 @@ class Invoice extends Model
     ];
 
     protected $casts = [
-        'issued_at'       => 'datetime',
+        'issued_at' => 'datetime',
         'total_icms_base' => 'decimal:2',
-        'total_icms'      => 'decimal:2',
-        'total_products'  => 'decimal:2',
-        'total_amount'    => 'decimal:2',
-        'total_taxes'     => 'decimal:2',
+        'total_icms' => 'decimal:2',
+        'total_products' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+        'total_taxes' => 'decimal:2',
     ];
 
     public function user(): BelongsTo

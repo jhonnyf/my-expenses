@@ -101,13 +101,13 @@ class MyPurchaseController extends Controller
         return Issuer::firstOrCreate(
             ['cnpj' => $cnpj],
             [
-                'name'          => Arr::get($emitente, 'nome', ''),
-                'street'        => Arr::get($emitente, 'logradouro', ''),
+                'name' => Arr::get($emitente, 'nome', ''),
+                'street' => Arr::get($emitente, 'logradouro', ''),
                 'street_number' => Arr::get($emitente, 'numero', ''),
-                'neighborhood'  => Arr::get($emitente, 'bairro', ''),
-                'city'          => Arr::get($emitente, 'municipio', ''),
-                'state'         => Arr::get($emitente, 'uf', ''),
-                'zip_code'      => Arr::get($emitente, 'cep', ''),
+                'neighborhood' => Arr::get($emitente, 'bairro', ''),
+                'city' => Arr::get($emitente, 'municipio', ''),
+                'state' => Arr::get($emitente, 'uf', ''),
+                'zip_code' => Arr::get($emitente, 'cep', ''),
             ]
         );
     }
@@ -115,18 +115,18 @@ class MyPurchaseController extends Controller
     private function invoiceAttributes(array $dados, ?Issuer $issuer, string $xmlContent, int $userId): array
     {
         return [
-            'user_id'         => $userId,
-            'number'          => Arr::get($dados, 'numero', ''),
-            'series'          => Arr::get($dados, 'serie', ''),
-            'issued_at'       => Arr::get($dados, 'emitido_em', now()),
-            'environment'     => Arr::get($dados, 'ambiente', 'producao') === 'producao' ? 'production' : 'staging',
-            'issuer_id'       => $issuer?->id,
+            'user_id' => $userId,
+            'number' => Arr::get($dados, 'numero', ''),
+            'series' => Arr::get($dados, 'serie', ''),
+            'issued_at' => Arr::get($dados, 'emitido_em', now()),
+            'environment' => Arr::get($dados, 'ambiente', 'producao') === 'producao' ? 'production' : 'staging',
+            'issuer_id' => $issuer?->id,
             'total_icms_base' => (float) Arr::get($dados, 'total.base_calculo_icms', 0),
-            'total_icms'      => (float) Arr::get($dados, 'total.valor_icms', 0),
-            'total_products'  => (float) Arr::get($dados, 'total.valor_produtos', 0),
-            'total_amount'    => (float) Arr::get($dados, 'total.valor_nota', 0),
-            'total_taxes'     => (float) Arr::get($dados, 'total.valor_tributos', 0),
-            'raw_xml'         => $xmlContent,
+            'total_icms' => (float) Arr::get($dados, 'total.valor_icms', 0),
+            'total_products' => (float) Arr::get($dados, 'total.valor_produtos', 0),
+            'total_amount' => (float) Arr::get($dados, 'total.valor_nota', 0),
+            'total_taxes' => (float) Arr::get($dados, 'total.valor_tributos', 0),
+            'raw_xml' => $xmlContent,
         ];
     }
 
@@ -135,17 +135,17 @@ class MyPurchaseController extends Controller
         foreach ($items as $item) {
             InvoiceItem::updateOrCreate(
                 [
-                    'invoice_id'  => $invoice->id,
+                    'invoice_id' => $invoice->id,
                     'item_number' => (int) Arr::get($item, 'numero_item', 0),
                 ],
                 [
-                    'code'        => Arr::get($item, 'codigo', ''),
+                    'code' => Arr::get($item, 'codigo', ''),
                     'description' => Arr::get($item, 'descricao', ''),
-                    'ncm'         => Arr::get($item, 'ncm', ''),
-                    'cfop'        => Arr::get($item, 'cfop', ''),
-                    'unit'        => Arr::get($item, 'unidade', ''),
-                    'quantity'    => (float) Arr::get($item, 'quantidade', 0),
-                    'unit_price'  => (float) Arr::get($item, 'valor_unitario', 0),
+                    'ncm' => Arr::get($item, 'ncm', ''),
+                    'cfop' => Arr::get($item, 'cfop', ''),
+                    'unit' => Arr::get($item, 'unidade', ''),
+                    'quantity' => (float) Arr::get($item, 'quantidade', 0),
+                    'unit_price' => (float) Arr::get($item, 'valor_unitario', 0),
                     'total_price' => (float) Arr::get($item, 'valor_total', 0),
                 ]
             );

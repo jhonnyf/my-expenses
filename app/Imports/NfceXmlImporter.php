@@ -25,7 +25,7 @@ class NfceXmlImporter
 
     public function fromFile(string $path): array
     {
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             throw new \InvalidArgumentException("Arquivo não encontrado: {$path}");
         }
 
@@ -46,9 +46,9 @@ class NfceXmlImporter
     private function parseRoot(SimpleXMLElement|false $root): array
     {
         if ($root === false) {
-            $errors = array_map(fn($e) => $e->message, libxml_get_errors());
+            $errors = array_map(fn ($e) => $e->message, libxml_get_errors());
             libxml_clear_errors();
-            throw new \InvalidArgumentException('XML inválido: ' . implode('; ', $errors));
+            throw new \InvalidArgumentException('XML inválido: '.implode('; ', $errors));
         }
 
         $root->registerXPathNamespace('nfe', self::NS);
@@ -65,37 +65,37 @@ class NfceXmlImporter
         $accessKey = preg_replace('/\D/', '', $this->attr($infNFe, 'Id'));
 
         return [
-            'chave'      => $accessKey,
-            'numero'     => $this->val($infNFe, 'nfe:ide/nfe:nNF'),
-            'serie'      => $this->val($infNFe, 'nfe:ide/nfe:serie'),
+            'chave' => $accessKey,
+            'numero' => $this->val($infNFe, 'nfe:ide/nfe:nNF'),
+            'serie' => $this->val($infNFe, 'nfe:ide/nfe:serie'),
             'emitido_em' => $this->val($infNFe, 'nfe:ide/nfe:dhEmi'),
-            'ambiente'   => $this->val($infNFe, 'nfe:ide/nfe:tpAmb') === '1' ? 'producao' : 'homologacao',
-            'emitente'   => $this->parseEmitente($infNFe),
+            'ambiente' => $this->val($infNFe, 'nfe:ide/nfe:tpAmb') === '1' ? 'producao' : 'homologacao',
+            'emitente' => $this->parseEmitente($infNFe),
             'destinatario' => $this->parseDestinatario($infNFe),
-            'itens'      => $this->parseItens($infNFe),
-            'total'      => $this->parseTotal($infNFe),
-            'pagamento'  => $this->parsePagamento($infNFe),
+            'itens' => $this->parseItens($infNFe),
+            'total' => $this->parseTotal($infNFe),
+            'pagamento' => $this->parsePagamento($infNFe),
         ];
     }
 
     private function parseEmitente(SimpleXMLElement $infNFe): array
     {
         return [
-            'cnpj'       => $this->val($infNFe, 'nfe:emit/nfe:CNPJ'),
-            'nome'       => $this->val($infNFe, 'nfe:emit/nfe:xNome'),
+            'cnpj' => $this->val($infNFe, 'nfe:emit/nfe:CNPJ'),
+            'nome' => $this->val($infNFe, 'nfe:emit/nfe:xNome'),
             'logradouro' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xLgr'),
-            'numero'     => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:nro'),
-            'bairro'     => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xBairro'),
-            'municipio'  => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xMun'),
-            'uf'         => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:UF'),
-            'cep'        => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:CEP'),
+            'numero' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:nro'),
+            'bairro' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xBairro'),
+            'municipio' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xMun'),
+            'uf' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:UF'),
+            'cep' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:CEP'),
         ];
     }
 
     private function parseDestinatario(SimpleXMLElement $infNFe): array
     {
         return [
-            'cpf'  => $this->val($infNFe, 'nfe:dest/nfe:CPF'),
+            'cpf' => $this->val($infNFe, 'nfe:dest/nfe:CPF'),
             'cnpj' => $this->val($infNFe, 'nfe:dest/nfe:CNPJ'),
             'nome' => $this->val($infNFe, 'nfe:dest/nfe:xNome'),
         ];
@@ -109,15 +109,15 @@ class NfceXmlImporter
             $det->registerXPathNamespace('nfe', self::NS);
 
             $itens[] = [
-                'numero_item'    => (int) $this->attr($det, 'nItem'),
-                'codigo'         => $this->val($det, 'nfe:prod/nfe:cProd'),
-                'descricao'      => $this->val($det, 'nfe:prod/nfe:xProd'),
-                'ncm'            => $this->val($det, 'nfe:prod/nfe:NCM'),
-                'cfop'           => $this->val($det, 'nfe:prod/nfe:CFOP'),
-                'unidade'        => $this->val($det, 'nfe:prod/nfe:uCom'),
-                'quantidade'     => (float) $this->val($det, 'nfe:prod/nfe:qCom'),
+                'numero_item' => (int) $this->attr($det, 'nItem'),
+                'codigo' => $this->val($det, 'nfe:prod/nfe:cProd'),
+                'descricao' => $this->val($det, 'nfe:prod/nfe:xProd'),
+                'ncm' => $this->val($det, 'nfe:prod/nfe:NCM'),
+                'cfop' => $this->val($det, 'nfe:prod/nfe:CFOP'),
+                'unidade' => $this->val($det, 'nfe:prod/nfe:uCom'),
+                'quantidade' => (float) $this->val($det, 'nfe:prod/nfe:qCom'),
                 'valor_unitario' => (float) $this->val($det, 'nfe:prod/nfe:vUnCom'),
-                'valor_total'    => (float) $this->val($det, 'nfe:prod/nfe:vProd'),
+                'valor_total' => (float) $this->val($det, 'nfe:prod/nfe:vProd'),
             ];
         }
 
@@ -128,10 +128,10 @@ class NfceXmlImporter
     {
         return [
             'base_calculo_icms' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vBC'),
-            'valor_icms'        => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vICMS'),
-            'valor_produtos'    => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vProd'),
-            'valor_nota'        => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vNF'),
-            'valor_tributos'    => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vTotTrib'),
+            'valor_icms' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vICMS'),
+            'valor_produtos' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vProd'),
+            'valor_nota' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vNF'),
+            'valor_tributos' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vTotTrib'),
         ];
     }
 

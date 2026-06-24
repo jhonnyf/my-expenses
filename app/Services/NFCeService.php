@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
-use NFePHP\NFe\Tools;
 use NFePHP\Common\Certificate;
 use NFePHP\Common\UFList;
+use NFePHP\NFe\Tools;
 
 class NFCeService
 {
@@ -17,14 +17,14 @@ class NFCeService
             return $this->tools;
         }
 
-        $pfxPath     = config('nfe.certificado_path');
+        $pfxPath = config('nfe.certificado_path');
         $pfxPassword = config('nfe.certificado_senha');
-        $cnpj        = config('nfe.cnpj');
-        $razao       = config('nfe.razao_social');
-        $uf          = config('nfe.uf');
-        $tpAmb       = (int) config('nfe.ambiente', 2);
+        $cnpj = config('nfe.cnpj');
+        $razao = config('nfe.razao_social');
+        $uf = config('nfe.uf');
+        $tpAmb = (int) config('nfe.ambiente', 2);
 
-        if (!file_exists($pfxPath)) {
+        if (! file_exists($pfxPath)) {
             throw new \RuntimeException("Certificado não encontrado em: {$pfxPath}");
         }
 
@@ -32,15 +32,15 @@ class NFCeService
 
         $configJson = json_encode([
             'atualizacao' => now()->format('Y-m-d H:i:s'),
-            'tpAmb'       => $tpAmb,
+            'tpAmb' => $tpAmb,
             'razaosocial' => $razao,
-            'cnpj'        => $cnpj,
-            'siglaUF'     => $uf,
-            'schemes'     => realpath(base_path('vendor/nfephp-org/sped-nfe/schemes')),
-            'versao'      => '4.00',
-            'tokenIBPT'   => '',
-            'CSC'         => config('nfe.csc', ''),
-            'CSCid'       => config('nfe.csc_id', ''),
+            'cnpj' => $cnpj,
+            'siglaUF' => $uf,
+            'schemes' => realpath(base_path('vendor/nfephp-org/sped-nfe/schemes')),
+            'versao' => '4.00',
+            'tokenIBPT' => '',
+            'CSC' => config('nfe.csc', ''),
+            'CSCid' => config('nfe.csc_id', ''),
         ]);
 
         $this->tools = new Tools($configJson, $certificate);
@@ -64,26 +64,26 @@ class NFCeService
      */
     private function parseXmlResponse(string $xml): array
     {
-        $dom = new \DOMDocument();
+        $dom = new \DOMDocument;
         $dom->loadXML($xml);
 
         $result = [];
 
         // Status da consulta
-        $cStat  = $dom->getElementsByTagName('cStat')->item(0);
+        $cStat = $dom->getElementsByTagName('cStat')->item(0);
         $xMotivo = $dom->getElementsByTagName('xMotivo')->item(0);
 
         $result['status'] = [
-            'codigo'   => $cStat?->nodeValue,
+            'codigo' => $cStat?->nodeValue,
             'descricao' => $xMotivo?->nodeValue,
         ];
 
         // Protocolo de autorização
-        $nProt     = $dom->getElementsByTagName('nProt')->item(0);
-        $dhRecbto  = $dom->getElementsByTagName('dhRecbto')->item(0);
+        $nProt = $dom->getElementsByTagName('nProt')->item(0);
+        $dhRecbto = $dom->getElementsByTagName('dhRecbto')->item(0);
         if ($nProt) {
             $result['protocolo'] = [
-                'numero'        => $nProt->nodeValue,
+                'numero' => $nProt->nodeValue,
                 'data_recebimento' => $dhRecbto?->nodeValue,
             ];
         }
@@ -95,12 +95,12 @@ class NFCeService
             $emit = $dom->getElementsByTagName('emit')->item(0);
             if ($emit) {
                 $result['emitente'] = [
-                    'cnpj'          => $this->getTagValue($emit, 'CNPJ'),
-                    'razao_social'  => $this->getTagValue($emit, 'xNome'),
-                    'fantasia'      => $this->getTagValue($emit, 'xFant'),
-                    'ie'            => $this->getTagValue($emit, 'IE'),
-                    'uf'            => $this->getTagValue($emit, 'UF'),
-                    'municipio'     => $this->getTagValue($emit, 'xMun'),
+                    'cnpj' => $this->getTagValue($emit, 'CNPJ'),
+                    'razao_social' => $this->getTagValue($emit, 'xNome'),
+                    'fantasia' => $this->getTagValue($emit, 'xFant'),
+                    'ie' => $this->getTagValue($emit, 'IE'),
+                    'uf' => $this->getTagValue($emit, 'UF'),
+                    'municipio' => $this->getTagValue($emit, 'xMun'),
                 ];
             }
 
@@ -108,9 +108,9 @@ class NFCeService
             $dest = $dom->getElementsByTagName('dest')->item(0);
             if ($dest) {
                 $result['destinatario'] = [
-                    'cnpj_cpf'     => $this->getTagValue($dest, 'CNPJ') ?: $this->getTagValue($dest, 'CPF'),
+                    'cnpj_cpf' => $this->getTagValue($dest, 'CNPJ') ?: $this->getTagValue($dest, 'CPF'),
                     'razao_social' => $this->getTagValue($dest, 'xNome'),
-                    'uf'           => $this->getTagValue($dest, 'UF'),
+                    'uf' => $this->getTagValue($dest, 'UF'),
                 ];
             }
 
@@ -120,9 +120,9 @@ class NFCeService
                 $result['totais'] = [
                     'valor_produtos' => $this->getTagValue($total, 'vProd'),
                     'valor_desconto' => $this->getTagValue($total, 'vDesc'),
-                    'valor_frete'    => $this->getTagValue($total, 'vFrete'),
-                    'valor_total'    => $this->getTagValue($total, 'vNF'),
-                    'valor_icms'     => $this->getTagValue($total, 'vICMS'),
+                    'valor_frete' => $this->getTagValue($total, 'vFrete'),
+                    'valor_total' => $this->getTagValue($total, 'vNF'),
+                    'valor_icms' => $this->getTagValue($total, 'vICMS'),
                 ];
             }
 
@@ -132,12 +132,12 @@ class NFCeService
                 $prod = $det->getElementsByTagName('prod')->item(0);
                 if ($prod) {
                     $items[] = [
-                        'item'       => $det->getAttribute('nItem'),
-                        'codigo'     => $this->getTagValue($prod, 'cProd'),
-                        'descricao'  => $this->getTagValue($prod, 'xProd'),
-                        'ncm'        => $this->getTagValue($prod, 'NCM'),
+                        'item' => $det->getAttribute('nItem'),
+                        'codigo' => $this->getTagValue($prod, 'cProd'),
+                        'descricao' => $this->getTagValue($prod, 'xProd'),
+                        'ncm' => $this->getTagValue($prod, 'NCM'),
                         'quantidade' => $this->getTagValue($prod, 'qCom'),
-                        'unidade'    => $this->getTagValue($prod, 'uCom'),
+                        'unidade' => $this->getTagValue($prod, 'uCom'),
                         'valor_unit' => $this->getTagValue($prod, 'vUnCom'),
                         'valor_total' => $this->getTagValue($prod, 'vProd'),
                     ];
@@ -149,7 +149,7 @@ class NFCeService
             $pagamentos = [];
             foreach ($dom->getElementsByTagName('detPag') as $pag) {
                 $pagamentos[] = [
-                    'tipo'  => $this->getTagValue($pag, 'tPag'),
+                    'tipo' => $this->getTagValue($pag, 'tPag'),
                     'valor' => $this->getTagValue($pag, 'vPag'),
                 ];
             }
@@ -162,6 +162,7 @@ class NFCeService
     private function getTagValue(\DOMElement $parent, string $tag): ?string
     {
         $node = $parent->getElementsByTagName($tag)->item(0);
+
         return $node?->nodeValue;
     }
 
@@ -179,7 +180,7 @@ class NFCeService
         $response = Http::timeout(15)
             ->withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (compatible; NFCe-Reader/1.0)',
-                'Accept'     => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             ])
             ->get($url);
 
@@ -208,7 +209,7 @@ class NFCeService
 
         $host = parse_url($url, PHP_URL_HOST);
 
-        if (!$host) {
+        if (! $host) {
             throw new \InvalidArgumentException('URL inválida.');
         }
 
@@ -231,28 +232,29 @@ class NFCeService
      */
     private function parseHtmlPortal(string $html): array
     {
-        $dom = new \DOMDocument();
+        $dom = new \DOMDocument;
         @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
         $xpath = new \DOMXPath($dom);
 
         $extrair = function (string $seletor) use ($xpath): ?string {
             $nodes = $xpath->query($seletor);
+
             return $nodes->length > 0 ? trim($nodes->item(0)->textContent) : null;
         };
 
         // Tenta extrair campos comuns presentes nos portais da maioria dos estados
         $data = [
-            'emitente'     => [
+            'emitente' => [
                 'razao_social' => $extrair("//*[@id='u20']") ?? $extrair("//*[contains(@class,'txtTopo')]"),
-                'cnpj'         => $extrair("//*[@id='u07']"),
-                'endereco'     => $extrair("//*[@id='u08']"),
+                'cnpj' => $extrair("//*[@id='u07']"),
+                'endereco' => $extrair("//*[@id='u08']"),
             ],
-            'totais'       => [
-                'valor_total'    => $extrair("//*[@id='linhaTotal']//span[contains(@class,'totalNumb')]") ?? $extrair("//*[contains(@class,'totalNumb')]"),
+            'totais' => [
+                'valor_total' => $extrair("//*[@id='linhaTotal']//span[contains(@class,'totalNumb')]") ?? $extrair("//*[contains(@class,'totalNumb')]"),
                 'valor_desconto' => $extrair("//*[@id='vDescItens']") ?? $extrair("//*[@id='vDesc']"),
             ],
-            'itens'        => [],
-            'raw_disponivel' => !empty($html),
+            'itens' => [],
+            'raw_disponivel' => ! empty($html),
         ];
 
         // Tenta extrair itens da tabela de produtos
@@ -261,15 +263,15 @@ class NFCeService
             $colunas = $xpath->query('.//td', $linha);
             if ($colunas->length >= 3) {
                 $data['itens'][] = [
-                    'descricao'  => trim($colunas->item(0)->textContent ?? ''),
+                    'descricao' => trim($colunas->item(0)->textContent ?? ''),
                     'quantidade' => trim($colunas->item(1)->textContent ?? ''),
-                    'valor'      => trim($colunas->item(2)->textContent ?? ''),
+                    'valor' => trim($colunas->item(2)->textContent ?? ''),
                 ];
             }
         }
 
         // Remove itens vazios
-        $data['itens'] = array_values(array_filter($data['itens'], fn($i) => !empty($i['descricao'])));
+        $data['itens'] = array_values(array_filter($data['itens'], fn ($i) => ! empty($i['descricao'])));
 
         return $data;
     }
@@ -284,21 +286,21 @@ class NFCeService
     {
         $xmlResponse = $this->getTools()->sefazConsultaChave($key);
 
-        $dom = new \DOMDocument();
+        $dom = new \DOMDocument;
         $dom->loadXML($xmlResponse);
 
         // Verifica se a nota está autorizada (cStat = 100)
         $cStat = $dom->getElementsByTagName('cStat')->item(0);
-        if (!$cStat || $cStat->nodeValue !== '100') {
+        if (! $cStat || $cStat->nodeValue !== '100') {
             $xMotivo = $dom->getElementsByTagName('xMotivo')->item(0);
             throw new \RuntimeException(
-                'NFC-e não autorizada ou XML indisponível. Status: ' . ($xMotivo?->nodeValue ?? 'desconhecido')
+                'NFC-e não autorizada ou XML indisponível. Status: '.($xMotivo?->nodeValue ?? 'desconhecido')
             );
         }
 
         // Extrai o nfeProc (NFC-e + protocolo de autorização)
         $nfeProc = $dom->getElementsByTagName('nfeProc')->item(0);
-        if (!$nfeProc) {
+        if (! $nfeProc) {
             throw new \RuntimeException('XML da NFC-e não encontrado na resposta da SEFAZ.');
         }
 
