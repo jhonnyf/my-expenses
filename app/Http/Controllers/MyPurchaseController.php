@@ -30,10 +30,18 @@ class MyPurchaseController extends Controller
 
     public function detail(Invoice $invoice)
     {
-        abort_if($invoice->user_id !== request()->user()->id, 403);
+        $user = request()->user();
+        abort_if($invoice->user_id !== $user->id, 403);
+
+        $invoice->load('issuer', 'items', 'payments');
+
+        $isIssuerFavorite = $invoice->issuer
+            ? $user->favoriteIssuers()->where('issuers.id', $invoice->issuer_id)->exists()
+            : false;
 
         return view('my-purchase.detail', [
-            'invoice' => $invoice->load('issuer', 'items', 'payments'),
+            'invoice' => $invoice,
+            'isIssuerFavorite' => $isIssuerFavorite,
         ]);
     }
 

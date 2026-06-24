@@ -53,6 +53,13 @@
                     <h3 class="kt-card-title">
                         <i class="ki-filled ki-shop text-primary me-1"></i> Emitente
                     </h3>
+                    @if($invoice->issuer)
+                        <button onclick="toggleFavorite({{ $invoice->issuer_id }}, this)" id="btnFavoriteIssuer"
+                                class="text-lg transition-colors {{ $isIssuerFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500' }}"
+                                title="{{ $isIssuerFavorite ? 'Remover dos favoritos' : 'Favoritar emitente' }}">
+                            <i class="ki-filled ki-star"></i>
+                        </button>
+                    @endif
                 </div>
                 <div class="kt-card-content pb-5">
                     <div class="space-y-3">
@@ -181,4 +188,28 @@
         </div>
 
     </div>
+
+    <script>
+        function toggleFavorite(id, btn) {
+            fetch(`{{ url('issuers') }}/${id}/favorite`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.is_favorite) {
+                    btn.classList.remove('text-muted-foreground', 'hover:text-yellow-500');
+                    btn.classList.add('text-yellow-500');
+                    btn.title = 'Remover dos favoritos';
+                } else {
+                    btn.classList.remove('text-yellow-500');
+                    btn.classList.add('text-muted-foreground', 'hover:text-yellow-500');
+                    btn.title = 'Favoritar emitente';
+                }
+            });
+        }
+    </script>
 @endsection
