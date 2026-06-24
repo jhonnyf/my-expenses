@@ -92,5 +92,5 @@
             showUrl: '{{ route("price-history.show") }}',
         };
     </script>
-    @push('scripts') @vite('resources/js/pages/price-history.js') @endpush
+    @section('page-module', 'price-history')
 @endsection

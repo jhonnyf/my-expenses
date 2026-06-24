@@ -127,6 +127,6 @@
         </div>
     </div>
 
-    <script>window.pageConfig = { baseUrl: '{{ url("categories") }}', csrfToken: '{{ csrf_token() }}' };</script>
-    @push('scripts') @vite('resources/js/pages/category.js') @endpush
+    <script>window.pageConfig = { baseUrl: '{{ url("categories") }}' };</script>
+    @section('page-module', 'category')
 @endsection

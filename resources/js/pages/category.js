@@ -1,89 +1,79 @@
-export default function init() {
-    var BASE = window.pageConfig.baseUrl;
-    var CSRF = window.pageConfig.csrfToken;
+import { http } from '../utils';
 
-    window.showNewForm = function () {
+export default function init() {
+    const { baseUrl } = window.pageConfig;
+
+    window.showNewForm = () => {
         document.getElementById('newCategoryForm').style.display = 'block';
     };
 
-    window.hideNewForm = function () {
+    window.hideNewForm = () => {
         document.getElementById('newCategoryForm').style.display = 'none';
     };
 
-    window.saveCategory = function () {
-        var name = document.getElementById('newName').value.trim();
+    window.saveCategory = () => {
+        const name = document.getElementById('newName').value.trim();
         if (!name) return;
 
-        fetch(BASE, {
+        http(baseUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body: JSON.stringify({
-                name: name,
+            body: {
+                name,
                 color: document.getElementById('newColor').value,
                 keywords: document.getElementById('newKeywords').value,
-            }),
-        })
-        .then(function (r) { return r.json(); })
-        .then(function () { location.reload(); });
+            },
+        }).then(() => location.reload());
     };
 
-    window.editCategory = function (id, name, color, keywords) {
+    window.editCategory = (id, name, color, keywords) => {
         document.getElementById('editId').value = id;
         document.getElementById('editName').value = name;
         document.getElementById('editColor').value = color || '#94A3B8';
         document.getElementById('editKeywords').value = keywords;
-        document.getElementById('editCategoryForm').style.display = 'block';
-        document.getElementById('editCategoryForm').scrollIntoView({ behavior: 'smooth' });
+
+        const form = document.getElementById('editCategoryForm');
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.hideEditForm = function () {
+    window.hideEditForm = () => {
         document.getElementById('editCategoryForm').style.display = 'none';
     };
 
-    window.updateCategory = function () {
-        var id = document.getElementById('editId').value;
-        var name = document.getElementById('editName').value.trim();
+    window.updateCategory = () => {
+        const id = document.getElementById('editId').value;
+        const name = document.getElementById('editName').value.trim();
         if (!name) return;
 
-        fetch(BASE + '/' + id, {
+        http(`${baseUrl}/${id}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body: JSON.stringify({
-                name: name,
+            body: {
+                name,
                 color: document.getElementById('editColor').value,
                 keywords: document.getElementById('editKeywords').value,
-            }),
-        })
-        .then(function (r) { return r.json(); })
-        .then(function () { location.reload(); });
+            },
+        }).then(() => location.reload());
     };
 
-    window.deleteCategory = function (id) {
+    window.deleteCategory = (id) => {
         if (!confirm('Deseja excluir esta categoria?')) return;
-        fetch(BASE + '/' + id, {
-            method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-        })
-        .then(function (r) { return r.json(); })
-        .then(function () {
-            var el = document.getElementById('category-' + id);
-            if (el) el.remove();
-        });
+
+        http(`${baseUrl}/${id}`, { method: 'DELETE' })
+            .then(() => {
+                const el = document.getElementById('category-' + id);
+                if (el) el.remove();
+            });
     };
 
-    window.autoCategorize = function () {
-        var btn = document.getElementById('btnAuto');
+    window.autoCategorize = () => {
+        const btn = document.getElementById('btnAuto');
         btn.disabled = true;
         btn.innerHTML = '<i class="ki-filled ki-setting-2 animate-spin"></i> Processando...';
 
-        fetch(BASE + '/auto-categorize', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            alert(data.categorized + ' itens categorizados!');
-            location.reload();
-        });
+        http(`${baseUrl}/auto-categorize`, { method: 'POST' })
+            .then(data => {
+                alert(data.categorized + ' itens categorizados!');
+                location.reload();
+            });
     };
 }

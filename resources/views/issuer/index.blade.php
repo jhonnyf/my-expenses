@@ -79,6 +79,6 @@
         </div>
     </div>
 
-    <script>window.pageConfig = { issuerBaseUrl: '{{ url("issuers") }}', csrfToken: '{{ csrf_token() }}' };</script>
-    @push('scripts') @vite('resources/js/pages/issuer-favorite.js') @endpush
+    <script>window.pageConfig = { issuerBaseUrl: '{{ url("issuers") }}' };</script>
+    @section('page-module', 'issuer-favorite')
 @endsection

@@ -1,11 +1,11 @@
+import { http, formatCurrency } from '../utils';
+
 export default function init() {
-    const BASE_URL = window.pageConfig.baseUrl;
-    const CSRF_TOKEN = window.pageConfig.csrfToken;
-    const SEARCH_URL = window.pageConfig.searchUrl;
+    const { baseUrl, searchUrl } = window.pageConfig;
 
     let currentListId = null;
     let shoppingItems = [];
-    let searchTimeout = null;
+    let debounceTimer = null;
 
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
@@ -14,92 +14,88 @@ export default function init() {
     const btnNew = document.getElementById('btnNew');
     const listNameCard = document.getElementById('listNameCard');
 
-    searchInput.addEventListener('input', function () {
-        clearTimeout(searchTimeout);
-        const query = this.value.trim();
+    searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        const query = searchInput.value.trim();
+
         if (query.length < 2) {
             searchResults.classList.add('hidden');
             resultsList.innerHTML = '';
             return;
         }
-        searchTimeout = setTimeout(() => fetchResults(query), 300);
+
+        debounceTimer = setTimeout(() => fetchResults(query), 300);
     });
 
-    function apiRequest(url, method, body) {
-        const options = {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': CSRF_TOKEN,
-                'Accept': 'application/json',
-            },
-        };
-        if (body) options.body = JSON.stringify(body);
-        return fetch(url, options).then(r => r.json());
-    }
-
     function fetchResults(query) {
-        fetch(`${SEARCH_URL}?q=${encodeURIComponent(query)}`)
-            .then(r => r.json())
+        http(`${searchUrl}?q=${encodeURIComponent(query)}`)
             .then(data => {
-                resultsList.innerHTML = '';
                 if (data.length === 0) {
                     resultsList.innerHTML = '<div class="px-4 py-3 text-sm text-secondary-foreground">Nenhum produto encontrado.</div>';
                 } else {
-                    data.forEach(item => {
-                        resultsList.innerHTML += buildResultItem(item);
-                    });
+                    resultsList.innerHTML = data.map((item, index) => {
+                        const price = formatCurrency(item.unit_price);
+                        const date = item.issued_at ? new Date(item.issued_at).toLocaleDateString('pt-BR') : '';
+                        const isFav = item.is_favorite == 1;
+
+                        return `
+                            <div class="flex items-center justify-between px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors ${isFav ? 'bg-yellow-50 dark:bg-yellow-500/5' : ''}"
+                                 data-add-item="${index}">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-foreground truncate">
+                                        ${isFav ? '<i class="ki-filled ki-star text-yellow-500 text-xs me-1"></i>' : ''}${item.description}
+                                    </p>
+                                    <p class="text-xs text-secondary-foreground mt-0.5">
+                                        <span class="font-medium">${item.issuer_name}</span>
+                                        ${date ? `<span class="mx-1">&middot;</span> ${date}` : ''}
+                                        ${item.unit ? `<span class="mx-1">&middot;</span> ${item.unit}` : ''}
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-3 ms-4 shrink-0">
+                                    <span class="font-semibold font-mono text-sm text-primary">R$ ${price}</span>
+                                    <i class="ki-filled ki-plus-squared text-lg text-muted-foreground hover:text-primary"></i>
+                                </div>
+                            </div>`;
+                    }).join('');
+
+                    resultsList._lastData = data;
                 }
+
                 searchResults.classList.remove('hidden');
             });
     }
 
-    function buildResultItem(item) {
-        const price = parseFloat(item.unit_price);
-        const date = item.issued_at ? new Date(item.issued_at).toLocaleDateString('pt-BR') : '';
-        const isFav = item.is_favorite == 1;
-        const encoded = encodeURIComponent(JSON.stringify(item));
-        return `
-            <div class="flex items-center justify-between px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors ${isFav ? 'bg-yellow-50 dark:bg-yellow-500/5' : ''}"
-                 onclick='window.addToList(decodeURIComponent("${encoded}"))'>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-foreground truncate">
-                        ${isFav ? '<i class="ki-filled ki-star text-yellow-500 text-xs me-1"></i>' : ''}${item.description}
-                    </p>
-                    <p class="text-xs text-secondary-foreground mt-0.5">
-                        <span class="font-medium">${item.issuer_name}</span>
-                        ${date ? `<span class="mx-1">&middot;</span> ${date}` : ''}
-                        ${item.unit ? `<span class="mx-1">&middot;</span> ${item.unit}` : ''}
-                    </p>
-                </div>
-                <div class="flex items-center gap-3 ms-4 shrink-0">
-                    <span class="font-semibold font-mono text-sm text-primary">R$ ${price.toFixed(2).replace('.', ',')}</span>
-                    <i class="ki-filled ki-plus-squared text-lg text-muted-foreground hover:text-primary"></i>
-                </div>
-            </div>`;
-    }
+    resultsList.addEventListener('click', (e) => {
+        const row = e.target.closest('[data-add-item]');
+        if (!row || !resultsList._lastData) return;
+
+        const index = parseInt(row.dataset.addItem);
+        const item = resultsList._lastData[index];
+        if (item) addToList(item);
+    });
 
     async function ensureListExists() {
         if (currentListId) return currentListId;
 
         const name = document.getElementById('listName').value.trim() || '';
-        const data = await apiRequest(BASE_URL, 'POST', { name });
+        const data = await http(baseUrl, { method: 'POST', body: { name } });
         currentListId = data.id;
         addSavedListToSidebar(data.id, data.name, 0);
         return currentListId;
     }
 
-    async function addToList(json) {
-        const item = JSON.parse(json);
-
+    async function addToList(item) {
         await ensureListExists();
 
-        const saved = await apiRequest(`${BASE_URL}/${currentListId}/items`, 'POST', {
-            description: item.description,
-            unit_price: parseFloat(item.unit_price),
-            unit: item.unit,
-            issuer_id: item.issuer_id,
-            quantity: 1,
+        const saved = await http(`${baseUrl}/${currentListId}/items`, {
+            method: 'POST',
+            body: {
+                description: item.description,
+                unit_price: parseFloat(item.unit_price),
+                unit: item.unit,
+                issuer_id: item.issuer_id,
+                quantity: 1,
+            },
         });
 
         shoppingItems.push({
@@ -120,7 +116,7 @@ export default function init() {
 
     async function removeItem(index) {
         const item = shoppingItems[index];
-        await apiRequest(`${BASE_URL}/${currentListId}/items/${item.id}`, 'DELETE');
+        await http(`${baseUrl}/${currentListId}/items/${item.id}`, { method: 'DELETE' });
         shoppingItems.splice(index, 1);
         renderList();
     }
@@ -128,14 +124,17 @@ export default function init() {
     async function updateQuantity(index, delta) {
         const item = shoppingItems[index];
         const newQty = Math.max(1, item.quantity + delta);
-        await apiRequest(`${BASE_URL}/${currentListId}/items/${item.id}`, 'PATCH', { quantity: newQty });
+        await http(`${baseUrl}/${currentListId}/items/${item.id}`, {
+            method: 'PATCH',
+            body: { quantity: newQty },
+        });
         shoppingItems[index].quantity = newQty;
         renderList();
     }
 
     async function togglePurchased(index) {
         const item = shoppingItems[index];
-        const data = await apiRequest(`${BASE_URL}/${currentListId}/items/${item.id}/toggle-purchased`, 'POST');
+        const data = await http(`${baseUrl}/${currentListId}/items/${item.id}/toggle-purchased`, { method: 'POST' });
         shoppingItems[index].purchased_at = data.purchased_at;
         renderList();
     }
@@ -153,7 +152,8 @@ export default function init() {
         if (!currentListId) return;
         const name = document.getElementById('listName').value.trim();
         if (!name) return;
-        await apiRequest(`${BASE_URL}/${currentListId}`, 'PATCH', { name });
+
+        await http(`${baseUrl}/${currentListId}`, { method: 'PATCH', body: { name } });
         const el = document.querySelector(`#saved-list-${currentListId} p:first-child`);
         if (el) el.textContent = name;
     }
@@ -172,13 +172,10 @@ export default function init() {
 
         const pending = [];
         const purchased = [];
+
         shoppingItems.forEach((item, idx) => {
             const entry = { ...item, _index: idx };
-            if (item.purchased_at) {
-                purchased.push(entry);
-            } else {
-                pending.push(entry);
-            }
+            (item.purchased_at ? purchased : pending).push(entry);
         });
 
         document.getElementById('pendingList').innerHTML = renderGroupedItems(pending, false);
@@ -194,36 +191,23 @@ export default function init() {
             purchasedSection.style.display = 'none';
         }
 
-        let total = 0;
-        shoppingItems.forEach(item => { total += item.unit_price * item.quantity; });
-        document.getElementById('totalPrice').textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+        const total = shoppingItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+        document.getElementById('totalPrice').textContent = 'R$ ' + formatCurrency(total);
         updateSidebarCount();
     }
 
     function renderGroupedItems(items, isPurchased) {
         const grouped = {};
-        items.forEach(item => {
-            const key = item.issuer_id;
-            if (!grouped[key]) {
-                grouped[key] = { name: item.issuer_name, items: [] };
-            }
-            grouped[key].items.push(item);
-        });
+        for (const item of items) {
+            const group = grouped[item.issuer_id] ||= { name: item.issuer_name, items: [] };
+            group.items.push(item);
+        }
 
-        let html = '';
+        return Object.values(grouped).map(group => {
+            const groupTotal = group.items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+            const rows = group.items.map(item => buildItemRow(item, isPurchased)).join('');
 
-        Object.keys(grouped).forEach(key => {
-            const group = grouped[key];
-            let groupTotal = 0;
-
-            let rows = '';
-            group.items.forEach(item => {
-                const subtotal = item.unit_price * item.quantity;
-                groupTotal += subtotal;
-                rows += buildItemRow(item, isPurchased);
-            });
-
-            html += `
+            return `
                 <div class="kt-card ${isPurchased ? 'opacity-75' : ''}">
                     <div class="kt-card-header">
                         <h3 class="kt-card-title">
@@ -231,18 +215,14 @@ export default function init() {
                         </h3>
                         <span class="text-xs text-secondary-foreground">
                             ${group.items.length} ${group.items.length === 1 ? 'item' : 'itens'}
-                            &middot; R$ ${groupTotal.toFixed(2).replace('.', ',')}
+                            &middot; R$ ${formatCurrency(groupTotal)}
                         </span>
                     </div>
                     <div class="kt-card-content pb-3">
-                        <div class="divide-y divide-border">
-                            ${rows}
-                        </div>
+                        <div class="divide-y divide-border">${rows}</div>
                     </div>
                 </div>`;
-        });
-
-        return html;
+        }).join('');
     }
 
     function buildItemRow(item, isPurchased) {
@@ -253,37 +233,57 @@ export default function init() {
         return `
             <div class="flex items-center justify-between py-2.5 px-4">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
-                    <button onclick="window.togglePurchased(${item._index})"
+                    <button data-toggle-purchased="${item._index}"
                             class="flex items-center justify-center size-5 rounded border ${checkedClass} shrink-0 transition-colors">
                         ${isPurchased ? '<i class="ki-filled ki-check text-white text-xs"></i>' : ''}
                     </button>
                     <div class="min-w-0">
                         <p class="text-sm font-medium ${textClass} truncate">${item.description}</p>
-                        <p class="text-xs text-secondary-foreground">R$ ${item.unit_price.toFixed(2).replace('.', ',')} / ${item.unit || 'un'}</p>
+                        <p class="text-xs text-secondary-foreground">R$ ${formatCurrency(item.unit_price)} / ${item.unit || 'un'}</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 ms-4 shrink-0">
                     ${!isPurchased ? `
                         <div class="flex items-center gap-1.5">
-                            <button onclick="window.updateQuantity(${item._index}, -1)"
+                            <button data-qty-delta="${item._index},-1"
                                     class="kt-btn kt-btn-xs kt-btn-outline kt-btn-icon size-6 rounded-md">
                                 <i class="ki-filled ki-minus text-xs"></i>
                             </button>
                             <span class="text-sm font-medium w-8 text-center">${item.quantity}</span>
-                            <button onclick="window.updateQuantity(${item._index}, 1)"
+                            <button data-qty-delta="${item._index},1"
                                     class="kt-btn kt-btn-xs kt-btn-outline kt-btn-icon size-6 rounded-md">
                                 <i class="ki-filled ki-plus text-xs"></i>
                             </button>
                         </div>
                     ` : `<span class="text-sm text-secondary-foreground w-8 text-center">${item.quantity}</span>`}
-                    <span class="font-semibold font-mono text-sm w-24 text-right ${isPurchased ? 'text-secondary-foreground' : ''}">R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
-                    <button onclick="window.removeItem(${item._index})"
+                    <span class="font-semibold font-mono text-sm w-24 text-right ${isPurchased ? 'text-secondary-foreground' : ''}">R$ ${formatCurrency(subtotal)}</span>
+                    <button data-remove-item="${item._index}"
                             class="text-muted-foreground hover:text-destructive transition-colors">
                         <i class="ki-filled ki-trash text-sm"></i>
                     </button>
                 </div>
             </div>`;
     }
+
+    shoppingListContainer.addEventListener('click', (e) => {
+        const toggleBtn = e.target.closest('[data-toggle-purchased]');
+        if (toggleBtn) {
+            togglePurchased(parseInt(toggleBtn.dataset.togglePurchased));
+            return;
+        }
+
+        const qtyBtn = e.target.closest('[data-qty-delta]');
+        if (qtyBtn) {
+            const [index, delta] = qtyBtn.dataset.qtyDelta.split(',').map(Number);
+            updateQuantity(index, delta);
+            return;
+        }
+
+        const removeBtn = e.target.closest('[data-remove-item]');
+        if (removeBtn) {
+            removeItem(parseInt(removeBtn.dataset.removeItem));
+        }
+    });
 
     function updateSidebarCount() {
         if (!currentListId) return;
@@ -301,21 +301,20 @@ export default function init() {
 
         const container = document.getElementById('savedLists');
         const today = new Date().toLocaleDateString('pt-BR');
-        const html = `
+        container.insertAdjacentHTML('afterbegin', `
             <div class="flex items-center justify-between py-2.5 px-1 group" id="saved-list-${id}">
-                <button onclick="window.loadList(${id})" class="flex-1 text-left min-w-0">
+                <button data-load-list="${id}" class="flex-1 text-left min-w-0">
                     <p class="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">${name}</p>
                     <p class="text-xs text-secondary-foreground">${count} ${count === 1 ? 'item' : 'itens'} &middot; ${today}</p>
                 </button>
-                <button onclick="window.deleteList(${id})" class="text-muted-foreground hover:text-destructive transition-colors ms-2 opacity-0 group-hover:opacity-100">
+                <button data-delete-list="${id}" class="text-muted-foreground hover:text-destructive transition-colors ms-2 opacity-0 group-hover:opacity-100">
                     <i class="ki-filled ki-trash text-sm"></i>
                 </button>
-            </div>`;
-        container.insertAdjacentHTML('afterbegin', html);
+            </div>`);
     }
 
     async function loadList(id) {
-        const data = await apiRequest(`${BASE_URL}/${id}`, 'GET');
+        const data = await http(`${baseUrl}/${id}`);
         currentListId = data.id;
         document.getElementById('listName').value = data.name;
         shoppingItems = data.items.map(item => ({
@@ -334,9 +333,10 @@ export default function init() {
     async function deleteList(id) {
         if (!confirm('Deseja excluir esta lista?')) return;
 
-        await apiRequest(`${BASE_URL}/${id}`, 'DELETE');
+        await http(`${baseUrl}/${id}`, { method: 'DELETE' });
         const el = document.getElementById(`saved-list-${id}`);
         if (el) el.remove();
+
         if (currentListId === id) {
             currentListId = null;
             shoppingItems = [];
@@ -345,12 +345,19 @@ export default function init() {
         }
     }
 
-    window.addToList = addToList;
-    window.removeItem = removeItem;
-    window.updateQuantity = updateQuantity;
-    window.togglePurchased = togglePurchased;
+    document.getElementById('savedLists').addEventListener('click', (e) => {
+        const loadBtn = e.target.closest('[data-load-list]');
+        if (loadBtn) {
+            loadList(parseInt(loadBtn.dataset.loadList));
+            return;
+        }
+
+        const deleteBtn = e.target.closest('[data-delete-list]');
+        if (deleteBtn) {
+            deleteList(parseInt(deleteBtn.dataset.deleteList));
+        }
+    });
+
     window.newList = newList;
     window.saveName = saveName;
-    window.loadList = loadList;
-    window.deleteList = deleteList;
 }

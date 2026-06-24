@@ -1,20 +1,12 @@
-export default function init() {
-    var config = window.pageConfig || {};
-    var assignCategoryUrl = config.assignCategoryUrl || '';
-    var csrfToken = config.csrfToken || '';
+import { http } from '../utils';
 
-    window.assignCategory = function (itemId, categoryId) {
-        fetch(assignCategoryUrl, {
+export default function init() {
+    const { assignCategoryUrl } = window.pageConfig || {};
+
+    window.assignCategory = (itemId, categoryId) => {
+        http(assignCategoryUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                item_id: itemId,
-                category_id: categoryId || null,
-            }),
+            body: { item_id: itemId, category_id: categoryId || null },
         });
     };
 }

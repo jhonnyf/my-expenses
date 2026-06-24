@@ -109,6 +109,6 @@
 
     </div>
 
-    <script>window.pageConfig = { storeUrl: '{{ route("budgets.store") }}', baseUrl: '{{ url("budgets") }}', csrfToken: '{{ csrf_token() }}' };</script>
-    @push('scripts') @vite('resources/js/pages/budget.js') @endpush
+    <script>window.pageConfig = { storeUrl: '{{ route("budgets.store") }}', baseUrl: '{{ url("budgets") }}' };</script>
+    @section('page-module', 'budget')
 @endsection

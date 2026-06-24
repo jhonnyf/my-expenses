@@ -1,10 +1,10 @@
 export default function init() {
-    var config = window.pageConfig;
+    const { generateUrl } = window.pageConfig;
 
-    window.submitTo = function (url) {
-        var form = document.getElementById('reportForm');
+    window.submitTo = (url) => {
+        const form = document.getElementById('reportForm');
         form.action = url;
         form.submit();
-        form.action = config.generateUrl;
+        form.action = generateUrl;
     };
 }

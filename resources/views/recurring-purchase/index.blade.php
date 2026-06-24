@@ -112,6 +112,6 @@
         </div>
     </div>
 
-    <script>window.pageConfig = { addToListUrl: '{{ route("recurring-purchases.add-to-list") }}', csrfToken: '{{ csrf_token() }}' };</script>
-    @push('scripts') @vite('resources/js/pages/recurring-purchase.js') @endpush
+    <script>window.pageConfig = { addToListUrl: '{{ route("recurring-purchases.add-to-list") }}' };</script>
+    @section('page-module', 'recurring-purchase')
 @endsection

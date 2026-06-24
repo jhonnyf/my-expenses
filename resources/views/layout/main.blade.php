@@ -4,6 +4,7 @@
     <base href="../../">
     <title>{{ env('APP_NAME') }}</title>
     <meta charset="utf-8" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <meta content="follow, index" name="robots" />
     <link href="{{ url()->current() }}" rel="canonical" />
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
@@ -32,7 +33,7 @@
     @vite(['resources/js/app.js'])
 </head>
 
-<body class="antialiased flex h-full text-base text-foreground bg-background demo1 kt-sidebar-fixed kt-header-fixed">
+<body class="antialiased flex h-full text-base text-foreground bg-background demo1 kt-sidebar-fixed kt-header-fixed" data-page="@yield('page-module')">
     <!-- Theme Mode -->
     <script>
         const defaultThemeMode = 'light'; // light|dark|system
@@ -161,7 +162,6 @@
 
     @auth
     <script>window.pageConfig = window.pageConfig || {}; window.pageConfig.searchUrl = '{{ route("search") }}';</script>
-    @vite('resources/js/pages/global-search.js')
     @endauth
 </body>
 </html>

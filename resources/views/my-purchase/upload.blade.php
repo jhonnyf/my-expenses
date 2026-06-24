@@ -76,5 +76,5 @@
     </div>
 
     <script>window.pageConfig = { initialTab: '{{ $errors->has("qrcode_url") ? "qrcode" : "xml" }}' };</script>
-    @push('scripts') @vite('resources/js/pages/upload.js') @endpush
+    @section('page-module', 'upload')
 @endsection

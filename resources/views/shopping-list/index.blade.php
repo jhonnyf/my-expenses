@@ -155,9 +155,8 @@
     <script>
         window.pageConfig = {
             baseUrl: '{{ url("shopping-list") }}',
-            csrfToken: '{{ csrf_token() }}',
             searchUrl: '{{ route("shopping-list.search") }}',
         };
     </script>
-    @push('scripts') @vite('resources/js/pages/shopping-list.js') @endpush
+    @section('page-module', 'shopping-list')
 @endsection

@@ -1,24 +1,22 @@
 export default function init() {
-    var config = window.pageConfig || {};
+    const { initialTab } = window.pageConfig || {};
 
-    window.switchTab = function (tab) {
-        var tabs = ['xml', 'qrcode'];
-        tabs.forEach(function (t) {
-            var tabEl = document.getElementById('tab-' + t);
-            var panelEl = document.getElementById('panel-' + t);
-            if (t === tab) {
-                tabEl.classList.add('border-primary', 'text-primary');
-                tabEl.classList.remove('border-transparent', 'text-secondary-foreground');
-                panelEl.style.display = 'block';
-            } else {
-                tabEl.classList.remove('border-primary', 'text-primary');
-                tabEl.classList.add('border-transparent', 'text-secondary-foreground');
-                panelEl.style.display = 'none';
-            }
+    window.switchTab = (tab) => {
+        const tabs = ['xml', 'qrcode'];
+        tabs.forEach(t => {
+            const tabEl = document.getElementById('tab-' + t);
+            const panelEl = document.getElementById('panel-' + t);
+            const isActive = t === tab;
+
+            tabEl.classList.toggle('border-primary', isActive);
+            tabEl.classList.toggle('text-primary', isActive);
+            tabEl.classList.toggle('border-transparent', !isActive);
+            tabEl.classList.toggle('text-secondary-foreground', !isActive);
+            panelEl.style.display = isActive ? 'block' : 'none';
         });
     };
 
-    if (config.initialTab && config.initialTab !== 'xml') {
-        window.switchTab(config.initialTab);
+    if (initialTab && initialTab !== 'xml') {
+        window.switchTab(initialTab);
     }
 }

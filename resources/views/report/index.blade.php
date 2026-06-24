@@ -185,5 +185,5 @@
     </div>
 
     <script>window.pageConfig = { generateUrl: '{{ route("reports.generate") }}' };</script>
-    @push('scripts') @vite('resources/js/pages/report.js') @endpush
+    @section('page-module', 'report')
 @endsection

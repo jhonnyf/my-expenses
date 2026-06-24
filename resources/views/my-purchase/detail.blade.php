@@ -201,6 +201,6 @@
 
     </div>
 
-    <script>window.pageConfig = { assignCategoryUrl: '{{ route("categories.assign-item") }}', issuerBaseUrl: '{{ url("issuers") }}', csrfToken: '{{ csrf_token() }}' };</script>
-    @push('scripts') @vite(['resources/js/pages/issuer-favorite.js', 'resources/js/pages/invoice-detail.js']) @endpush
+    <script>window.pageConfig = { assignCategoryUrl: '{{ route("categories.assign-item") }}', issuerBaseUrl: '{{ url("issuers") }}' };</script>
+    @section('page-module', 'issuer-favorite,invoice-detail')
 @endsection
