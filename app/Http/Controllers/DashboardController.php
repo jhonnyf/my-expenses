@@ -77,6 +77,18 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        $spendingByCategory = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->where('invoices.user_id', $userId)
+            ->leftJoin('categories', 'categories.id', '=', 'invoices_items.category_id')
+            ->select(
+                DB::raw("COALESCE(categories.name, 'Sem categoria') as category_name"),
+                DB::raw("COALESCE(categories.color, '#94A3B8') as category_color"),
+                DB::raw('SUM(invoices_items.total_price) as total')
+            )
+            ->groupBy('category_name', 'category_color')
+            ->orderByDesc('total')
+            ->get();
+
         return view('dashboard.index', [
             'totalExpenses' => $stats->totalExpenses,
             'totalTaxes' => $stats->totalTaxes,
@@ -90,6 +102,7 @@ class DashboardController extends Controller
             'paymentDistribution' => $paymentDistribution,
             'averageTicket' => $averageTicket,
             'topProducts' => $topProducts,
+            'spendingByCategory' => $spendingByCategory,
         ]);
     }
 }

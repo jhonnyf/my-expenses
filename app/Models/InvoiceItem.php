@@ -20,6 +20,7 @@ class InvoiceItem extends Model
         'quantity',
         'unit_price',
         'total_price',
+        'category_id',
     ];
 
     protected $casts = [
@@ -31,5 +32,10 @@ class InvoiceItem extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 }

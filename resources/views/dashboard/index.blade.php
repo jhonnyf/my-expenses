@@ -203,6 +203,45 @@
             </div>
         </div>
 
+        {{-- Gastos por Categoria --}}
+        <div class="kt-card">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">
+                    <i class="ki-filled ki-category text-primary me-1"></i> Gastos por Categoria
+                </h3>
+                <a href="{{ route('categories.index') }}" class="text-xs text-primary hover:underline">Gerenciar</a>
+            </div>
+            <div class="kt-card-content pb-5">
+                @if($spendingByCategory->isNotEmpty())
+                    @php
+                        $catTotal = $spendingByCategory->sum('total') ?: 1;
+                    @endphp
+                    <div class="space-y-3">
+                        @foreach($spendingByCategory as $cat)
+                            @php
+                                $catPct = ($cat->total / $catTotal) * 100;
+                            @endphp
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="size-2.5 rounded-full shrink-0" style="background-color: {{ $cat->category_color }}"></span>
+                                        <span class="text-sm text-foreground">{{ $cat->category_name }}</span>
+                                    </div>
+                                    <span class="text-xs font-medium text-secondary-foreground">{{ number_format($catPct, 0) }}%</span>
+                                </div>
+                                <div class="w-full bg-accent rounded-full h-2">
+                                    <div class="rounded-full h-2" style="width: {{ $catPct }}%; background-color: {{ $cat->category_color }}"></div>
+                                </div>
+                                <p class="text-xs text-secondary-foreground mt-0.5">R$ {{ number_format($cat->total, 2, ',', '.') }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-secondary-foreground py-4">Sem dados de categoria.</p>
+                @endif
+            </div>
+        </div>
+
         {{-- Top emissores + Produtos mais comprados --}}
         <div class="grid lg:grid-cols-2 gap-5">
 

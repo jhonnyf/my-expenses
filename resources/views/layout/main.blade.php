@@ -79,7 +79,17 @@
                     <div class="flex items-stretch" id="megaMenuContainer"></div>
                     
                     <!-- Topbar -->
-                    <div class="flex items-center gap-2.5">                        
+                    <div class="flex items-center gap-2.5">
+                        <!-- Global Search -->
+                        <div class="relative hidden lg:block" id="globalSearchWrapper">
+                            <label class="kt-input w-[280px]">
+                                <i class="ki-filled ki-magnifier"></i>
+                                <input type="text" id="globalSearchInput" placeholder="Buscar..." autocomplete="off" />
+                            </label>
+                            <div id="globalSearchResults" class="hidden absolute top-full end-0 mt-2 w-[400px] bg-background border border-border rounded-lg shadow-lg z-50 max-h-[500px] overflow-y-auto">
+                            </div>
+                        </div>
+                        <!-- End of Global Search -->
                         <!-- User -->
                         <div class="shrink-0" data-kt-dropdown="true" data-kt-dropdown-offset="10px, 10px" data-kt-dropdown-offset-rtl="-20px, 10px" data-kt-dropdown-placement="bottom-end" data-kt-dropdown-placement-rtl="bottom-start" data-kt-dropdown-trigger="click">
                             <div class="cursor-pointer shrink-0" data-kt-dropdown-toggle="true">
@@ -144,6 +154,83 @@
     <script src="{{ asset('assets/vendors/ktui/ktui.min.js') }}"></script>
     <script src="{{ asset('assets/vendors/apexcharts/apexcharts.min.js') }}"></script>
     <script src="{{ asset('assets/js/widgets/general.js') }}"></script>
-    <script src="{{ asset('assets/js/layouts/demo1.js') }}"></script>    
+    <script src="{{ asset('assets/js/layouts/demo1.js') }}"></script>
+
+    @auth
+    <script>
+    (function() {
+        const gsInput = document.getElementById('globalSearchInput');
+        const gsResults = document.getElementById('globalSearchResults');
+        if (!gsInput || !gsResults) return;
+
+        let gsTimeout = null;
+        const gsToken = '{{ csrf_token() }}';
+
+        gsInput.addEventListener('input', function() {
+            clearTimeout(gsTimeout);
+            const q = this.value.trim();
+            if (q.length < 2) {
+                gsResults.classList.add('hidden');
+                gsResults.innerHTML = '';
+                return;
+            }
+            gsTimeout = setTimeout(() => gsSearch(q), 300);
+        });
+
+        function gsSearch(q) {
+            fetch(`{{ route('search') }}?q=${encodeURIComponent(q)}`, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                let html = '';
+                const sections = [
+                    { key: 'emissores', label: 'Emissores', icon: 'ki-filled ki-shop' },
+                    { key: 'notas_fiscais', label: 'Notas Fiscais', icon: 'ki-filled ki-document' },
+                    { key: 'produtos', label: 'Produtos', icon: 'ki-filled ki-basket' },
+                ];
+
+                let hasResults = false;
+                sections.forEach(sec => {
+                    const items = data[sec.key] || [];
+                    if (items.length === 0) return;
+                    hasResults = true;
+                    html += `<div class="px-3 py-2 bg-accent/40 text-xs font-semibold text-secondary-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <i class="${sec.icon} text-primary"></i> ${sec.label}
+                    </div>`;
+                    items.forEach(item => {
+                        html += `<a href="${item.url}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/30 transition-colors cursor-pointer">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-medium text-foreground truncate">${item.title}</p>
+                                <p class="text-xs text-secondary-foreground truncate">${item.subtitle}</p>
+                            </div>
+                        </a>`;
+                    });
+                });
+
+                if (!hasResults) {
+                    html = '<div class="px-4 py-3 text-sm text-secondary-foreground">Nenhum resultado encontrado.</div>';
+                }
+
+                gsResults.innerHTML = html;
+                gsResults.classList.remove('hidden');
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!document.getElementById('globalSearchWrapper').contains(e.target)) {
+                gsResults.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                gsResults.classList.add('hidden');
+                gsInput.blur();
+            }
+        });
+    })();
+    </script>
+    @endauth
 </body>
 </html>

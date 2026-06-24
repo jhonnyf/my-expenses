@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Imports\NfceXmlImporter;
+use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Issuer;
+use App\Services\CategoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -33,15 +35,18 @@ class MyPurchaseController extends Controller
         $user = request()->user();
         abort_if($invoice->user_id !== $user->id, 403);
 
-        $invoice->load('issuer', 'items', 'payments');
+        $invoice->load('issuer', 'items.category', 'payments');
 
         $isIssuerFavorite = $invoice->issuer
             ? $user->favoriteIssuers()->where('issuers.id', $invoice->issuer_id)->exists()
             : false;
 
+        $categories = Category::forUser($user->id)->orderBy('name')->get();
+
         return view('my-purchase.detail', [
             'invoice' => $invoice,
             'isIssuerFavorite' => $isIssuerFavorite,
+            'categories' => $categories,
         ]);
     }
 
@@ -70,6 +75,8 @@ class MyPurchaseController extends Controller
             $invoice = DB::transaction(function () use ($dados, $file, $userId) {
                 return $this->storeInvoice($dados, $file->get(), $userId);
             });
+
+            app(CategoryService::class)->autoCategorize($userId);
 
             return redirect()->route('my-purchases.detail', $invoice->id);
         } catch (\InvalidArgumentException $e) {

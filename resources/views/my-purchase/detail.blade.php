@@ -154,6 +154,7 @@
                             <tr>
                                 <th class="w-10 text-center">#</th>
                                 <th class="min-w-[260px]">Descrição</th>
+                                <th class="min-w-[120px]">Categoria</th>
                                 <th class="min-w-[100px]">Código</th>
                                 <th class="min-w-[80px]">NCM</th>
                                 <th class="min-w-[70px]">CFOP</th>
@@ -168,6 +169,17 @@
                                 <tr>
                                     <td class="text-center text-secondary-foreground">{{ $item->item_number }}</td>
                                     <td class="font-medium text-foreground">{{ $item->description }}</td>
+                                    <td>
+                                        <select onchange="assignCategory({{ $item->id }}, this.value)"
+                                                class="text-xs bg-accent border border-border rounded px-2 py-1 cursor-pointer">
+                                            <option value="">—</option>
+                                            @foreach($categories as $cat)
+                                                <option value="{{ $cat->id }}" {{ $item->category_id == $cat->id ? 'selected' : '' }}>
+                                                    {{ $cat->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </td>
                                     <td class="text-secondary-foreground font-mono text-xs">{{ $item->code }}</td>
                                     <td class="text-secondary-foreground font-mono text-xs">{{ $item->ncm ?: '—' }}</td>
                                     <td class="text-secondary-foreground font-mono text-xs">{{ $item->cfop ?: '—' }}</td>
@@ -178,7 +190,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="text-center text-secondary-foreground py-6">Nenhum item encontrado.</td>
+                                    <td colspan="10" class="text-center text-secondary-foreground py-6">Nenhum item encontrado.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -190,6 +202,21 @@
     </div>
 
     <script>
+        function assignCategory(itemId, categoryId) {
+            fetch('{{ route("categories.assign-item") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    category_id: categoryId || null,
+                }),
+            });
+        }
+
         function toggleFavorite(id, btn) {
             fetch(`{{ url('issuers') }}/${id}/favorite`, {
                 method: 'POST',

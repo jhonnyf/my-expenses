@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MyPurchaseController;
+use App\Http\Controllers\PriceHistoryController;
+use App\Http\Controllers\RecurringPurchaseController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShoppingListController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +38,28 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('detail/{invoice}', [MyPurchaseController::class, 'detail'])->name('detail');
         Route::get('upload', [MyPurchaseController::class, 'uploadForm'])->name('upload.form');
         Route::post('upload', [MyPurchaseController::class, 'upload'])->name('upload');
+    });
+
+    Route::group(['prefix' => 'categories', 'as' => 'categories.'], function () {
+        Route::get('/', [CategoryController::class, 'index'])->name('index');
+        Route::post('/', [CategoryController::class, 'store'])->name('store');
+        Route::patch('{category}', [CategoryController::class, 'update'])->name('update');
+        Route::delete('{category}', [CategoryController::class, 'destroy'])->name('destroy');
+        Route::post('assign-item', [CategoryController::class, 'assignItem'])->name('assign-item');
+        Route::post('auto-categorize', [CategoryController::class, 'autoCategorize'])->name('auto-categorize');
+    });
+
+    Route::group(['prefix' => 'price-history', 'as' => 'price-history.'], function () {
+        Route::get('/', [PriceHistoryController::class, 'index'])->name('index');
+        Route::get('search', [PriceHistoryController::class, 'search'])->name('search');
+        Route::get('show', [PriceHistoryController::class, 'show'])->name('show');
+    });
+
+    Route::get('search', [SearchController::class, 'search'])->name('search');
+
+    Route::group(['prefix' => 'recurring-purchases', 'as' => 'recurring-purchases.'], function () {
+        Route::get('/', [RecurringPurchaseController::class, 'index'])->name('index');
+        Route::post('add-to-list', [RecurringPurchaseController::class, 'addToShoppingList'])->name('add-to-list');
     });
 
     Route::group(['prefix' => 'shopping-list', 'as' => 'shopping-list.'], function () {
