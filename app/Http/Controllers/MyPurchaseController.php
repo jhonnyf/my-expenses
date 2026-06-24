@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Services\CategoryService;
+use App\Services\NFCeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -82,6 +83,58 @@ class MyPurchaseController extends Controller
         } catch (\InvalidArgumentException $e) {
             return back()
                 ->withErrors(['xml' => $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    public function importByQrCode(Request $request)
+    {
+        $request->validate([
+            'qrcode_url' => ['required', 'url'],
+        ]);
+
+        try {
+            $nfceService = app(NFCeService::class);
+            $url = $request->input('qrcode_url');
+
+            $chaveMatch = [];
+            if (preg_match('/chNFe=(\d{44})/', $url, $chaveMatch)) {
+                $chave = $chaveMatch[1];
+            } else {
+                return back()
+                    ->withErrors(['qrcode_url' => 'Não foi possível extrair a chave de acesso da URL.'])
+                    ->withInput();
+            }
+
+            $jaExiste = Invoice::query()
+                ->where('user_id', $request->user()->id)
+                ->where('access_key', $chave)
+                ->exists();
+
+            if ($jaExiste) {
+                return back()
+                    ->withErrors(['qrcode_url' => 'Esta nota fiscal já foi importada anteriormente.'])
+                    ->withInput();
+            }
+
+            $xmlContent = $nfceService->downloadXml($chave);
+            $dados = $this->importer->fromString($xmlContent);
+
+            $userId = $request->user()->id;
+            $invoice = DB::transaction(function () use ($dados, $xmlContent, $userId) {
+                return $this->storeInvoice($dados, $xmlContent, $userId);
+            });
+
+            app(CategoryService::class)->autoCategorize($userId);
+
+            return redirect()->route('my-purchases.detail', $invoice->id);
+        } catch (\InvalidArgumentException $e) {
+            return back()
+                ->withErrors(['qrcode_url' => $e->getMessage()])
+                ->withInput();
+        } catch (\RuntimeException $e) {
+            return back()
+                ->withErrors(['qrcode_url' => $e->getMessage()])
                 ->withInput();
         }
     }

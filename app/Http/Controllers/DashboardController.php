@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Budget;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
@@ -89,6 +90,21 @@ class DashboardController extends Controller
             ->orderByDesc('total')
             ->get();
 
+        $budgets = Budget::where('user_id', $userId)->with('category')->get();
+        $monthlySpendingByCategory = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->where('invoices.user_id', $userId)
+            ->where('invoices.issued_at', '>=', $startOfMonth)
+            ->select('invoices_items.category_id', DB::raw('SUM(invoices_items.total_price) as total'))
+            ->groupBy('invoices_items.category_id')
+            ->pluck('total', 'category_id');
+
+        $budgets->each(function ($budget) use ($monthlySpendingByCategory, $currentMonthExpenses) {
+            $budget->spent = $budget->category_id
+                ? (float) ($monthlySpendingByCategory[$budget->category_id] ?? 0)
+                : (float) $currentMonthExpenses;
+            $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0;
+        });
+
         return view('dashboard.index', [
             'totalExpenses' => $stats->totalExpenses,
             'totalTaxes' => $stats->totalTaxes,
@@ -103,6 +119,7 @@ class DashboardController extends Controller
             'averageTicket' => $averageTicket,
             'topProducts' => $topProducts,
             'spendingByCategory' => $spendingByCategory,
+            'budgets' => $budgets,
         ]);
     }
 }

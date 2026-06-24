@@ -166,6 +166,41 @@
             </div>
         </div>
 
+        {{-- Orçamento --}}
+        @if($budgets->isNotEmpty())
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">
+                        <i class="ki-filled ki-wallet text-primary me-1"></i> Orçamento do Mês
+                    </h3>
+                    <a href="{{ route('budgets.index') }}" class="text-xs text-primary hover:underline">Gerenciar</a>
+                </div>
+                <div class="kt-card-content pb-5">
+                    <div class="space-y-4">
+                        @foreach($budgets->sortByDesc('percentage')->take(5) as $budget)
+                            @php
+                                $pct = min($budget->percentage, 100);
+                                $barColor = $budget->percentage < 75 ? 'bg-green-500' : ($budget->percentage < 100 ? 'bg-yellow-500' : 'bg-red-500');
+                            @endphp
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-sm text-foreground">
+                                        {{ $budget->category->name ?? 'Geral' }}
+                                    </span>
+                                    <span class="text-xs font-medium text-secondary-foreground">
+                                        R$ {{ number_format($budget->spent, 2, ',', '.') }} / R$ {{ number_format($budget->amount, 2, ',', '.') }}
+                                    </span>
+                                </div>
+                                <div class="w-full bg-accent rounded-full h-2.5">
+                                    <div class="{{ $barColor }} rounded-full h-2.5" style="width: {{ $pct }}%"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
+
         {{-- Gráfico de gastos mensais --}}
         <div class="kt-card">
             <div class="kt-card-header">

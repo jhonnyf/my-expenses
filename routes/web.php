@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssuerController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MyPurchaseController;
 use App\Http\Controllers\PriceHistoryController;
 use App\Http\Controllers\RecurringPurchaseController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShoppingListController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +40,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('detail/{invoice}', [MyPurchaseController::class, 'detail'])->name('detail');
         Route::get('upload', [MyPurchaseController::class, 'uploadForm'])->name('upload.form');
         Route::post('upload', [MyPurchaseController::class, 'upload'])->name('upload');
+        Route::post('import-qrcode', [MyPurchaseController::class, 'importByQrCode'])->name('import-qrcode');
     });
 
     Route::group(['prefix' => 'categories', 'as' => 'categories.'], function () {
@@ -56,6 +59,19 @@ Route::group(['middleware' => 'auth'], function () {
     });
 
     Route::get('search', [SearchController::class, 'search'])->name('search');
+
+    Route::group(['prefix' => 'budgets', 'as' => 'budgets.'], function () {
+        Route::get('/', [BudgetController::class, 'index'])->name('index');
+        Route::post('/', [BudgetController::class, 'store'])->name('store');
+        Route::delete('{budget}', [BudgetController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::group(['prefix' => 'reports', 'as' => 'reports.'], function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::post('generate', [ReportController::class, 'generate'])->name('generate');
+        Route::post('pdf', [ReportController::class, 'exportPdf'])->name('pdf');
+        Route::post('csv', [ReportController::class, 'exportCsv'])->name('csv');
+    });
 
     Route::group(['prefix' => 'recurring-purchases', 'as' => 'recurring-purchases.'], function () {
         Route::get('/', [RecurringPurchaseController::class, 'index'])->name('index');
