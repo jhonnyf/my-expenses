@@ -14,29 +14,35 @@ class CategoryService
             ->orderByRaw("CASE WHEN name = 'Outros' THEN 1 ELSE 0 END")
             ->get();
 
-        $uncategorized = InvoiceItem::whereNull('category_id')
-            ->whereHas('invoice', fn ($q) => $q->where('user_id', $userId))
-            ->get();
+        if ($categories->isEmpty()) {
+            return 0;
+        }
 
         $totalCategorized = 0;
         $updates = [];
 
-        foreach ($uncategorized as $item) {
-            $desc = mb_strtoupper($item->description);
-            foreach ($categories as $category) {
-                $keywords = $category->keywords ?? [];
-                foreach ($keywords as $keyword) {
-                    if (str_contains($desc, mb_strtoupper($keyword))) {
-                        $updates[$category->id][] = $item->id;
-                        $totalCategorized++;
-                        break 2;
+        InvoiceItem::whereNull('category_id')
+            ->whereHas('invoice', fn ($q) => $q->where('user_id', $userId))
+            ->select('id', 'description')
+            ->chunkById(500, function ($items) use ($categories, &$updates, &$totalCategorized) {
+                foreach ($items as $item) {
+                    $desc = mb_strtoupper($item->description);
+                    foreach ($categories as $category) {
+                        foreach ($category->keywords ?? [] as $keyword) {
+                            if (str_contains($desc, mb_strtoupper($keyword))) {
+                                $updates[$category->id][] = $item->id;
+                                $totalCategorized++;
+                                break 2;
+                            }
+                        }
                     }
                 }
-            }
-        }
+            });
 
         foreach ($updates as $categoryId => $itemIds) {
-            InvoiceItem::whereIn('id', $itemIds)->update(['category_id' => $categoryId]);
+            foreach (array_chunk($itemIds, 500) as $chunk) {
+                InvoiceItem::whereIn('id', $chunk)->update(['category_id' => $categoryId]);
+            }
         }
 
         return $totalCategorized;

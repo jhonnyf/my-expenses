@@ -23,7 +23,8 @@ class IssuerController extends Controller
 
     public function detail($id)
     {
-        $issuer = Issuer::with('invoices.items')->findOrFail($id);
+        $userId = Auth::id();
+        $issuer = Issuer::with(['invoices' => fn ($q) => $q->where('user_id', $userId), 'invoices.items'])->findOrFail($id);
         $isFavorite = Auth::user()->favoriteIssuers()->where('issuers.id', $id)->exists();
 
         return view('issuer.detail', [

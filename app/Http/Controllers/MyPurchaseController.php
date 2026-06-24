@@ -11,6 +11,7 @@ use App\Services\CategoryService;
 use App\Services\NFCeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class MyPurchaseController extends Controller
@@ -22,7 +23,7 @@ class MyPurchaseController extends Controller
     public function index()
     {
         return view('my-purchase.index', [
-            'records' => Invoice::query()->paginate(),
+            'records' => Invoice::where('user_id', Auth::id())->orderByDesc('issued_at')->paginate(),
         ]);
     }
 
@@ -57,34 +58,10 @@ class MyPurchaseController extends Controller
             'xml' => ['required', 'file', 'mimes:xml,text/xml', 'max:10240'],
         ]);
 
-        try {
-            $file = $request->file('xml');
-            $dados = $this->parseXml($file->getRealPath());
+        $file = $request->file('xml');
+        $dados = $this->importer->fromFile($file->getRealPath());
 
-            $jaExiste = Invoice::query()
-                ->where('user_id', $request->user()->id)
-                ->where('access_key', $dados['chave'])
-                ->exists();
-
-            if ($jaExiste) {
-                return back()
-                    ->withErrors(['xml' => 'Esta nota fiscal já foi importada anteriormente.'])
-                    ->withInput();
-            }
-
-            $userId = $request->user()->id;
-            $invoice = DB::transaction(function () use ($dados, $file, $userId) {
-                return $this->storeInvoice($dados, $file->get(), $userId);
-            });
-
-            app(CategoryService::class)->autoCategorize($userId);
-
-            return redirect()->route('my-purchases.detail', $invoice->id);
-        } catch (\InvalidArgumentException $e) {
-            return back()
-                ->withErrors(['xml' => $e->getMessage()])
-                ->withInput();
-        }
+        return $this->processImport($dados, $file->get(), 'xml');
     }
 
     public function importByQrCode(Request $request)
@@ -93,55 +70,46 @@ class MyPurchaseController extends Controller
             'qrcode_url' => ['required', 'url'],
         ]);
 
-        try {
-            $nfceService = app(NFCeService::class);
-            $url = $request->input('qrcode_url');
+        $url = $request->input('qrcode_url');
 
-            $chaveMatch = [];
-            if (preg_match('/chNFe=(\d{44})/', $url, $chaveMatch)) {
-                $chave = $chaveMatch[1];
-            } else {
-                return back()
-                    ->withErrors(['qrcode_url' => 'Não foi possível extrair a chave de acesso da URL.'])
-                    ->withInput();
-            }
-
-            $jaExiste = Invoice::query()
-                ->where('user_id', $request->user()->id)
-                ->where('access_key', $chave)
-                ->exists();
-
-            if ($jaExiste) {
-                return back()
-                    ->withErrors(['qrcode_url' => 'Esta nota fiscal já foi importada anteriormente.'])
-                    ->withInput();
-            }
-
-            $xmlContent = $nfceService->downloadXml($chave);
-            $dados = $this->importer->fromString($xmlContent);
-
-            $userId = $request->user()->id;
-            $invoice = DB::transaction(function () use ($dados, $xmlContent, $userId) {
-                return $this->storeInvoice($dados, $xmlContent, $userId);
-            });
-
-            app(CategoryService::class)->autoCategorize($userId);
-
-            return redirect()->route('my-purchases.detail', $invoice->id);
-        } catch (\InvalidArgumentException $e) {
+        if (! preg_match('/chNFe=(\d{44})/', $url, $chaveMatch)) {
             return back()
-                ->withErrors(['qrcode_url' => $e->getMessage()])
+                ->withErrors(['qrcode_url' => 'Não foi possível extrair a chave de acesso da URL.'])
                 ->withInput();
+        }
+
+        try {
+            $xmlContent = app(NFCeService::class)->downloadXml($chaveMatch[1]);
+            $dados = $this->importer->fromString($xmlContent);
         } catch (\RuntimeException $e) {
             return back()
                 ->withErrors(['qrcode_url' => $e->getMessage()])
                 ->withInput();
         }
+
+        return $this->processImport($dados, $xmlContent, 'qrcode_url');
     }
 
-    private function parseXml(string $path): array
+    private function processImport(array $dados, string $xmlContent, string $errorField)
     {
-        return $this->importer->fromFile($path);
+        $userId = Auth::id();
+
+        if (Invoice::where('user_id', $userId)->where('access_key', $dados['chave'])->exists()) {
+            return back()
+                ->withErrors([$errorField => 'Esta nota fiscal já foi importada anteriormente.'])
+                ->withInput();
+        }
+
+        try {
+            $invoice = DB::transaction(fn () => $this->storeInvoice($dados, $xmlContent, $userId));
+            app(CategoryService::class)->autoCategorize($userId);
+
+            return redirect()->route('my-purchases.detail', $invoice->id);
+        } catch (\InvalidArgumentException $e) {
+            return back()
+                ->withErrors([$errorField => $e->getMessage()])
+                ->withInput();
+        }
     }
 
     private function storeInvoice(array $dados, string $xmlContent, int $userId): Invoice

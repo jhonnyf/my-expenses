@@ -7,6 +7,7 @@ use App\Models\InvoiceItem;
 use App\Services\CategoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CategoryController extends Controller
 {
@@ -16,14 +17,16 @@ class CategoryController extends Controller
 
         $categories = Category::forUser($userId)
             ->withCount(['items' => fn ($q) => $q->whereHas('invoice', fn ($q2) => $q2->where('user_id', $userId))])
-            ->get()
-            ->map(function ($category) use ($userId) {
-                $category->total_spent = InvoiceItem::where('category_id', $category->id)
-                    ->whereHas('invoice', fn ($q) => $q->where('user_id', $userId))
-                    ->sum('total_price');
+            ->get();
 
-                return $category;
-            });
+        $spendingByCategory = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->where('invoices.user_id', $userId)
+            ->whereNotNull('invoices_items.category_id')
+            ->select('invoices_items.category_id', DB::raw('SUM(invoices_items.total_price) as total'))
+            ->groupBy('invoices_items.category_id')
+            ->pluck('total', 'category_id');
+
+        $categories->each(fn ($cat) => $cat->total_spent = (float) ($spendingByCategory[$cat->id] ?? 0));
 
         return view('category.index', ['categories' => $categories]);
     }
@@ -52,7 +55,7 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
-        if ($category->user_id && $category->user_id !== Auth::id()) {
+        if (! $category->user_id || $category->user_id !== Auth::id()) {
             abort(403);
         }
 

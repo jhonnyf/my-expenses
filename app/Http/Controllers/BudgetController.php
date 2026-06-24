@@ -31,10 +31,7 @@ class BudgetController extends Controller
             ->groupBy('invoices_items.category_id')
             ->pluck('total', 'category_id');
 
-        $totalMonthlySpending = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-            ->where('invoices.user_id', $userId)
-            ->where('invoices.issued_at', '>=', $startOfMonth)
-            ->sum('invoices_items.total_price');
+        $totalMonthlySpending = $monthlySpendingByCategory->sum();
 
         $budgets->each(function ($budget) use ($monthlySpendingByCategory, $totalMonthlySpending) {
             if ($budget->category_id) {
@@ -61,15 +58,25 @@ class BudgetController extends Controller
             'amount' => 'required|numeric|min:0.01',
         ]);
 
-        $budget = Budget::updateOrCreate(
-            [
-                'user_id' => Auth::id(),
-                'category_id' => $request->input('category_id'),
-            ],
-            [
+        $userId = Auth::id();
+        $categoryId = $request->input('category_id');
+
+        $budget = Budget::where('user_id', $userId)
+            ->where(fn ($q) => $categoryId
+                ? $q->where('category_id', $categoryId)
+                : $q->whereNull('category_id')
+            )
+            ->first();
+
+        if ($budget) {
+            $budget->update(['amount' => $request->input('amount')]);
+        } else {
+            $budget = Budget::create([
+                'user_id' => $userId,
+                'category_id' => $categoryId,
                 'amount' => $request->input('amount'),
-            ]
-        );
+            ]);
+        }
 
         return response()->json($budget->load('category'));
     }
