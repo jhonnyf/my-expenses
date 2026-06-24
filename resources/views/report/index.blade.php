@@ -184,12 +184,6 @@
 
     </div>
 
-    <script>
-        function submitTo(url) {
-            const form = document.getElementById('reportForm');
-            form.action = url;
-            form.submit();
-            form.action = '{{ route('reports.generate') }}';
-        }
-    </script>
+    <script>window.pageConfig = { generateUrl: '{{ route("reports.generate") }}' };</script>
+    @push('scripts') @vite('resources/js/pages/report.js') @endpush
 @endsection

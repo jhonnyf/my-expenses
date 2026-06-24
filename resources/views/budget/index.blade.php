@@ -109,36 +109,6 @@
 
     </div>
 
-    <script>
-        function saveBudget() {
-            const categoryId = document.getElementById('budgetCategory').value || null;
-            const amount = parseFloat(document.getElementById('budgetAmount').value);
-            if (!amount || amount <= 0) return;
-
-            fetch('{{ route("budgets.store") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ category_id: categoryId, amount }),
-            })
-            .then(r => r.json())
-            .then(() => location.reload());
-        }
-
-        function deleteBudget(id) {
-            if (!confirm('Deseja remover este orçamento?')) return;
-            fetch(`{{ url('budgets') }}/${id}`, {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-            })
-            .then(r => r.json())
-            .then(() => {
-                const el = document.getElementById(`budget-${id}`);
-                if (el) el.remove();
-            });
-        }
-    </script>
+    <script>window.pageConfig = { storeUrl: '{{ route("budgets.store") }}', baseUrl: '{{ url("budgets") }}', csrfToken: '{{ csrf_token() }}' };</script>
+    @push('scripts') @vite('resources/js/pages/budget.js') @endpush
 @endsection

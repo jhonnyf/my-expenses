@@ -75,26 +75,6 @@
         </div>
     </div>
 
-    <script>
-        function switchTab(tab) {
-            const tabs = ['xml', 'qrcode'];
-            tabs.forEach(t => {
-                const tabEl = document.getElementById(`tab-${t}`);
-                const panelEl = document.getElementById(`panel-${t}`);
-                if (t === tab) {
-                    tabEl.classList.add('border-primary', 'text-primary');
-                    tabEl.classList.remove('border-transparent', 'text-secondary-foreground');
-                    panelEl.style.display = 'block';
-                } else {
-                    tabEl.classList.remove('border-primary', 'text-primary');
-                    tabEl.classList.add('border-transparent', 'text-secondary-foreground');
-                    panelEl.style.display = 'none';
-                }
-            });
-        }
-
-        @if($errors->has('qrcode_url'))
-            switchTab('qrcode');
-        @endif
-    </script>
+    <script>window.pageConfig = { initialTab: '{{ $errors->has("qrcode_url") ? "qrcode" : "xml" }}' };</script>
+    @push('scripts') @vite('resources/js/pages/upload.js') @endpush
 @endsection

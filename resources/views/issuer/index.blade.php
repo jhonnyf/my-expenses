@@ -50,7 +50,7 @@
                                     @foreach ($records->items() as $item)
                                         <tr>
                                             <td class="text-center">
-                                                <button onclick="toggleFavorite({{ $item->id }}, this)"
+                                                <button data-favorite-id="{{ $item->id }}"
                                                         class="text-lg transition-colors {{ $favoriteIds->contains($item->id) ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500' }}">
                                                     <i class="ki-filled ki-star"></i>
                                                 </button>
@@ -79,25 +79,6 @@
         </div>
     </div>
 
-    <script>
-        function toggleFavorite(id, btn) {
-            fetch(`{{ url('issuers') }}/${id}/favorite`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                },
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.is_favorite) {
-                    btn.classList.remove('text-muted-foreground', 'hover:text-yellow-500');
-                    btn.classList.add('text-yellow-500');
-                } else {
-                    btn.classList.remove('text-yellow-500');
-                    btn.classList.add('text-muted-foreground', 'hover:text-yellow-500');
-                }
-            });
-        }
-    </script>
+    <script>window.pageConfig = { issuerBaseUrl: '{{ url("issuers") }}', csrfToken: '{{ csrf_token() }}' };</script>
+    @push('scripts') @vite('resources/js/pages/issuer-favorite.js') @endpush
 @endsection

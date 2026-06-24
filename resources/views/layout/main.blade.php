@@ -29,6 +29,7 @@
     <link href="{{ asset('assets/vendors/apexcharts/apexcharts.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/vendors/keenicons/styles.bundle.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/css/styles.css') }}" rel="stylesheet" />
+    @vite(['resources/js/app.js'])
 </head>
 
 <body class="antialiased flex h-full text-base text-foreground bg-background demo1 kt-sidebar-fixed kt-header-fixed">
@@ -156,81 +157,11 @@
     <script src="{{ asset('assets/js/widgets/general.js') }}"></script>
     <script src="{{ asset('assets/js/layouts/demo1.js') }}"></script>
 
+    @stack('scripts')
+
     @auth
-    <script>
-    (function() {
-        const gsInput = document.getElementById('globalSearchInput');
-        const gsResults = document.getElementById('globalSearchResults');
-        if (!gsInput || !gsResults) return;
-
-        let gsTimeout = null;
-        const gsToken = '{{ csrf_token() }}';
-
-        gsInput.addEventListener('input', function() {
-            clearTimeout(gsTimeout);
-            const q = this.value.trim();
-            if (q.length < 2) {
-                gsResults.classList.add('hidden');
-                gsResults.innerHTML = '';
-                return;
-            }
-            gsTimeout = setTimeout(() => gsSearch(q), 300);
-        });
-
-        function gsSearch(q) {
-            fetch(`{{ route('search') }}?q=${encodeURIComponent(q)}`, {
-                headers: { 'Accept': 'application/json' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                let html = '';
-                const sections = [
-                    { key: 'emissores', label: 'Emissores', icon: 'ki-filled ki-shop' },
-                    { key: 'notas_fiscais', label: 'Notas Fiscais', icon: 'ki-filled ki-document' },
-                    { key: 'produtos', label: 'Produtos', icon: 'ki-filled ki-basket' },
-                ];
-
-                let hasResults = false;
-                sections.forEach(sec => {
-                    const items = data[sec.key] || [];
-                    if (items.length === 0) return;
-                    hasResults = true;
-                    html += `<div class="px-3 py-2 bg-accent/40 text-xs font-semibold text-secondary-foreground uppercase tracking-wide flex items-center gap-1.5">
-                        <i class="${sec.icon} text-primary"></i> ${sec.label}
-                    </div>`;
-                    items.forEach(item => {
-                        html += `<a href="${item.url}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/30 transition-colors cursor-pointer">
-                            <div class="min-w-0 flex-1">
-                                <p class="text-sm font-medium text-foreground truncate">${item.title}</p>
-                                <p class="text-xs text-secondary-foreground truncate">${item.subtitle}</p>
-                            </div>
-                        </a>`;
-                    });
-                });
-
-                if (!hasResults) {
-                    html = '<div class="px-4 py-3 text-sm text-secondary-foreground">Nenhum resultado encontrado.</div>';
-                }
-
-                gsResults.innerHTML = html;
-                gsResults.classList.remove('hidden');
-            });
-        }
-
-        document.addEventListener('click', function(e) {
-            if (!document.getElementById('globalSearchWrapper').contains(e.target)) {
-                gsResults.classList.add('hidden');
-            }
-        });
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                gsResults.classList.add('hidden');
-                gsInput.blur();
-            }
-        });
-    })();
-    </script>
+    <script>window.pageConfig = window.pageConfig || {}; window.pageConfig.searchUrl = '{{ route("search") }}';</script>
+    @vite('resources/js/pages/global-search.js')
     @endauth
 </body>
 </html>

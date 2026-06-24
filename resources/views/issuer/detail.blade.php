@@ -13,7 +13,7 @@
                 </p>
             </div>
             <div class="flex items-center gap-2.5">
-                <button onclick="toggleFavorite({{ $record->id }}, this)" id="btnFavorite"
+                <button data-favorite-id="{{ $record->id }}" id="btnFavorite"
                         class="kt-btn kt-btn-outline {{ $isFavorite ? 'text-yellow-500 border-yellow-500' : '' }}">
                     <i class="ki-filled ki-star"></i>
                     <span>{{ $isFavorite ? 'Favoritado' : 'Favoritar' }}</span>
@@ -169,25 +169,6 @@
 
     </div>
 
-    <script>
-        function toggleFavorite(id, btn) {
-            fetch(`{{ url('issuers') }}/${id}/favorite`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                },
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.is_favorite) {
-                    btn.classList.add('text-yellow-500', 'border-yellow-500');
-                    btn.querySelector('span').textContent = 'Favoritado';
-                } else {
-                    btn.classList.remove('text-yellow-500', 'border-yellow-500');
-                    btn.querySelector('span').textContent = 'Favoritar';
-                }
-            });
-        }
-    </script>
+    <script>window.pageConfig = { issuerBaseUrl: '{{ url("issuers") }}', csrfToken: '{{ csrf_token() }}' };</script>
+    @push('scripts') @vite('resources/js/pages/issuer-favorite.js') @endpush
 @endsection

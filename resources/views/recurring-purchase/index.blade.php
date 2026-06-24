@@ -112,50 +112,6 @@
         </div>
     </div>
 
-    <script>
-        const CSRF = '{{ csrf_token() }}';
-
-        function toggleDropdown(btn) {
-            const dropdown = btn.nextElementSibling;
-            document.querySelectorAll('.absolute.end-0').forEach(d => {
-                if (d !== dropdown) d.classList.add('hidden');
-            });
-            dropdown.classList.toggle('hidden');
-        }
-
-        document.addEventListener('click', function (e) {
-            if (!e.target.closest('.relative')) {
-                document.querySelectorAll('.absolute.end-0').forEach(d => d.classList.add('hidden'));
-            }
-        });
-
-        function addToList(listId, description, unitPrice, issuerId, unit, btn) {
-            fetch('{{ route("recurring-purchases.add-to-list") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': CSRF,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    shopping_list_id: listId,
-                    description: description,
-                    unit_price: unitPrice,
-                    issuer_id: issuerId,
-                    unit: unit || null,
-                }),
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    const wrapper = btn.closest('.relative');
-                    wrapper.querySelector('.hidden, div:not(.hidden)')?.classList.add('hidden');
-                    const check = document.createElement('span');
-                    check.className = 'text-green-500 text-sm';
-                    check.innerHTML = '<i class="ki-filled ki-check"></i>';
-                    wrapper.parentElement.appendChild(check);
-                }
-            });
-        }
-    </script>
+    <script>window.pageConfig = { addToListUrl: '{{ route("recurring-purchases.add-to-list") }}', csrfToken: '{{ csrf_token() }}' };</script>
+    @push('scripts') @vite('resources/js/pages/recurring-purchase.js') @endpush
 @endsection
