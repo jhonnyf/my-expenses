@@ -3,29 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Models\Issuer;
+use Illuminate\Support\Facades\Auth;
 
 class IssuerController extends Controller
 {
 
     public function index()
     {
-        $issuers = Issuer::orderBy('name')->paginate(15);
+        $favoriteIds = Auth::user()->favoriteIssuers()->pluck('issuers.id');
 
-        $data = [
+        $issuers = Issuer::orderByRaw("FIELD(id, " . ($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0') . ") DESC")
+            ->orderBy('name')
+            ->paginate(15);
+
+        return view('issuer.index', [
             'records' => $issuers,
-        ];
-
-        return view('issuer.index', $data);
+            'favoriteIds' => $favoriteIds,
+        ]);
     }
 
     public function detail($id)
     {
-        $issuer = Issuer::find($id);
+        $issuer = Issuer::with('invoices.items')->findOrFail($id);
+        $isFavorite = Auth::user()->favoriteIssuers()->where('issuers.id', $id)->exists();
 
-        $data = [
+        return view('issuer.detail', [
             'record' => $issuer,
-        ];
+            'isFavorite' => $isFavorite,
+        ]);
+    }
 
-        return view('issuer.detail', $data);
+    public function toggleFavorite($id)
+    {
+        $issuer = Issuer::findOrFail($id);
+        $user = Auth::user();
+
+        $result = $user->favoriteIssuers()->toggle($issuer->id);
+        $isFavorite = !empty($result['attached']);
+
+        return response()->json(['is_favorite' => $isFavorite]);
     }
 }

@@ -21,6 +21,7 @@ class Invoice extends Model
         'total_products',
         'total_amount',
         'total_taxes',
+        'raw_xml',
     ];
 
     protected $casts = [

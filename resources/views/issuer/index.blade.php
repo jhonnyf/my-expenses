@@ -36,7 +36,8 @@
                         <div class="kt-scrollable-x-auto">
                             <table class="kt-table table-auto kt-table-border">
                                 <thead>
-                                    <tr>                                        
+                                    <tr>
+                                        <th class="w-[50px]"></th>
                                         <th class="min-w-[200px]">Documento</th>
                                         <th class="min-w-[165px]">Razão Social</th>
                                         <th class="min-w-[165px]">CEP</th>
@@ -48,11 +49,17 @@
                                 <tbody>
                                     @foreach ($records->items() as $item)
                                         <tr>
+                                            <td class="text-center">
+                                                <button onclick="toggleFavorite({{ $item->id }}, this)"
+                                                        class="text-lg transition-colors {{ $favoriteIds->contains($item->id) ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500' }}">
+                                                    <i class="ki-filled ki-star"></i>
+                                                </button>
+                                            </td>
                                             <td>{{ $item->cnpj }}</td>
                                             <td class="font-normal text-foreground">{{ $item->name }}</td>
                                             <td class="font-normal text-foreground">{{ $item->zip_code }}</td>
                                             <td class="font-normal text-foreground">{{ $item->city }}</td>
-                                            <td class="font-normal text-foreground">{{ $item->state }}</td>                                            
+                                            <td class="font-normal text-foreground">{{ $item->state }}</td>
                                             <td>
                                                 <a href="{{ route('issuers.detail', ['id' => $item->id]) }}">Editar</a>
                                             </td>
@@ -71,4 +78,26 @@
             </div>            
         </div>
     </div>
+
+    <script>
+        function toggleFavorite(id, btn) {
+            fetch(`{{ url('issuers') }}/${id}/favorite`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.is_favorite) {
+                    btn.classList.remove('text-muted-foreground', 'hover:text-yellow-500');
+                    btn.classList.add('text-yellow-500');
+                } else {
+                    btn.classList.remove('text-yellow-500');
+                    btn.classList.add('text-muted-foreground', 'hover:text-yellow-500');
+                }
+            });
+        }
+    </script>
 @endsection
