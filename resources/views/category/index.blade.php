@@ -47,6 +47,34 @@
             </div>
         </div>
 
+        {{-- Formulário editar categoria --}}
+        <div class="kt-card" id="editCategoryForm" style="display:none;">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">Editar Categoria</h3>
+            </div>
+            <div class="kt-card-content pb-5">
+                <input type="hidden" id="editId" />
+                <div class="grid lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-xs text-secondary-foreground">Nome</label>
+                        <input type="text" id="editName" class="kt-input mt-1 w-full" />
+                    </div>
+                    <div>
+                        <label class="text-xs text-secondary-foreground">Cor</label>
+                        <input type="color" id="editColor" class="mt-1 w-full h-9 rounded border border-border cursor-pointer" />
+                    </div>
+                    <div>
+                        <label class="text-xs text-secondary-foreground">Keywords (separadas por vírgula)</label>
+                        <input type="text" id="editKeywords" class="kt-input mt-1 w-full" />
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="updateCategory()" class="kt-btn kt-btn-sm kt-btn-primary">Atualizar</button>
+                    <button onclick="hideEditForm()" class="kt-btn kt-btn-sm kt-btn-outline">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
         {{-- Grid de categorias --}}
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5" id="categoriesGrid">
             @foreach($categories as $category)
@@ -56,12 +84,18 @@
                             <span class="size-3 rounded-full shrink-0" style="background-color: {{ $category->color ?? '#94A3B8' }}"></span>
                             {{ $category->name }}
                         </h3>
-                        @if($category->user_id)
-                            <button onclick="deleteCategory({{ $category->id }})"
-                                    class="text-muted-foreground hover:text-destructive transition-colors">
-                                <i class="ki-filled ki-trash text-sm"></i>
-                            </button>
-                        @endif
+                        <div class="flex items-center gap-2">
+                            @if($category->user_id)
+                                <button onclick="editCategory({{ $category->id }}, '{{ addslashes($category->name) }}', '{{ $category->color }}', '{{ implode(', ', $category->keywords ?? []) }}')"
+                                        class="text-muted-foreground hover:text-primary transition-colors">
+                                    <i class="ki-filled ki-pencil text-sm"></i>
+                                </button>
+                                <button onclick="deleteCategory({{ $category->id }})"
+                                        class="text-muted-foreground hover:text-destructive transition-colors">
+                                    <i class="ki-filled ki-trash text-sm"></i>
+                                </button>
+                            @endif
+                        </div>
                     </div>
                     <div class="kt-card-content pb-5">
                         <div class="space-y-3">
@@ -111,6 +145,35 @@
                     name,
                     color: document.getElementById('newColor').value,
                     keywords: document.getElementById('newKeywords').value,
+                }),
+            })
+            .then(r => r.json())
+            .then(() => location.reload());
+        }
+
+        function editCategory(id, name, color, keywords) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editName').value = name;
+            document.getElementById('editColor').value = color || '#94A3B8';
+            document.getElementById('editKeywords').value = keywords;
+            document.getElementById('editCategoryForm').style.display = 'block';
+            document.getElementById('editCategoryForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideEditForm() { document.getElementById('editCategoryForm').style.display = 'none'; }
+
+        function updateCategory() {
+            const id = document.getElementById('editId').value;
+            const name = document.getElementById('editName').value.trim();
+            if (!name) return;
+
+            fetch(`${BASE}/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body: JSON.stringify({
+                    name,
+                    color: document.getElementById('editColor').value,
+                    keywords: document.getElementById('editKeywords').value,
                 }),
             })
             .then(r => r.json())
