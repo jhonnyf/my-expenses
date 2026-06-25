@@ -4,17 +4,61 @@ namespace App\Http\Controllers;
 
 use App\Models\InvoiceItem;
 use App\Models\ShoppingList;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class RecurringPurchaseController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $userId = Auth::id();
 
-        $recurring = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+        $recurring = $this->getRecurringItems($userId);
+        $topDescriptions = $recurring->take(30)->pluck('description');
+        $bestIssuers = $this->getBestIssuers($userId, $topDescriptions);
+
+        $shoppingLists = ShoppingList::where('user_id', $userId)
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return view('recurring-purchase.index', [
+            'recurring' => $recurring,
+            'bestIssuers' => $bestIssuers,
+            'shoppingLists' => $shoppingLists,
+        ]);
+    }
+
+    public function addToShoppingList(Request $request): JsonResponse
+    {
+        $request->validate([
+            'shopping_list_id' => 'required|exists:shopping_lists,id',
+            'description' => 'required|string',
+            'unit_price' => 'required|numeric',
+            'issuer_id' => 'required|exists:issuers,id',
+            'unit' => 'nullable|string',
+        ]);
+
+        $shoppingList = ShoppingList::findOrFail($request->input('shopping_list_id'));
+        $this->authorize('interact', $shoppingList);
+
+        $item = $shoppingList->items()->create([
+            'description' => $request->input('description'),
+            'unit_price' => $request->input('unit_price'),
+            'issuer_id' => $request->input('issuer_id'),
+            'unit' => $request->input('unit'),
+            'quantity' => 1,
+        ]);
+
+        return response()->json(['success' => true, 'item_id' => $item->id]);
+    }
+
+    private function getRecurringItems(int $userId): Collection
+    {
+        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->where('invoices.user_id', $userId)
             ->select(
                 'invoices_items.description',
@@ -40,61 +84,29 @@ class RecurringPurchaseController extends Controller
             })
             ->sortByDesc('purchases_per_month')
             ->values();
-
-        $topDescriptions = $recurring->take(30)->pluck('description');
-
-        $bestIssuers = collect();
-        if ($topDescriptions->isNotEmpty()) {
-            $bestIssuers = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-                ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
-                ->where('invoices.user_id', $userId)
-                ->whereIn('invoices_items.description', $topDescriptions)
-                ->select(
-                    'invoices_items.description',
-                    'issuers.id as issuer_id',
-                    'issuers.name as issuer_name',
-                    DB::raw('AVG(invoices_items.unit_price) as avg_price'),
-                    DB::raw('COUNT(*) as count'),
-                    DB::raw('MAX(invoices_items.unit) as unit')
-                )
-                ->groupBy('invoices_items.description', 'issuers.id', 'issuers.name')
-                ->get()
-                ->groupBy('description')
-                ->map(fn ($group) => $group->sortBy('avg_price')->first());
-        }
-
-        $shoppingLists = ShoppingList::where('user_id', $userId)
-            ->orderByDesc('updated_at')
-            ->get();
-
-        return view('recurring-purchase.index', [
-            'recurring' => $recurring,
-            'bestIssuers' => $bestIssuers,
-            'shoppingLists' => $shoppingLists,
-        ]);
     }
 
-    public function addToShoppingList(Request $request)
+    private function getBestIssuers(int $userId, Collection $topDescriptions): Collection
     {
-        $request->validate([
-            'shopping_list_id' => 'required|exists:shopping_lists,id',
-            'description' => 'required|string',
-            'unit_price' => 'required|numeric',
-            'issuer_id' => 'required|exists:issuers,id',
-            'unit' => 'nullable|string',
-        ]);
+        if ($topDescriptions->isEmpty()) {
+            return collect();
+        }
 
-        $shoppingList = ShoppingList::findOrFail($request->input('shopping_list_id'));
-        abort_if($shoppingList->user_id !== Auth::id(), 403);
-
-        $item = $shoppingList->items()->create([
-            'description' => $request->input('description'),
-            'unit_price' => $request->input('unit_price'),
-            'issuer_id' => $request->input('issuer_id'),
-            'unit' => $request->input('unit'),
-            'quantity' => 1,
-        ]);
-
-        return response()->json(['success' => true, 'item_id' => $item->id]);
+        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
+            ->where('invoices.user_id', $userId)
+            ->whereIn('invoices_items.description', $topDescriptions)
+            ->select(
+                'invoices_items.description',
+                'issuers.id as issuer_id',
+                'issuers.name as issuer_name',
+                DB::raw('AVG(invoices_items.unit_price) as avg_price'),
+                DB::raw('COUNT(*) as count'),
+                DB::raw('MAX(invoices_items.unit) as unit')
+            )
+            ->groupBy('invoices_items.description', 'issuers.id', 'issuers.name')
+            ->get()
+            ->groupBy('description')
+            ->map(fn ($group) => $group->sortBy('avg_price')->first());
     }
 }

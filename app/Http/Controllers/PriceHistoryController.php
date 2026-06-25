@@ -3,18 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\InvoiceItem;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class PriceHistoryController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         return view('price-history.index');
     }
 
-    public function search(Request $request)
+    public function search(Request $request): JsonResponse
     {
         $query = $request->input('q', '');
 
@@ -41,7 +43,7 @@ class PriceHistoryController extends Controller
         return response()->json($items);
     }
 
-    public function show(Request $request)
+    public function show(Request $request): JsonResponse
     {
         $description = $request->input('description', '');
 
@@ -64,6 +66,7 @@ class PriceHistoryController extends Controller
                 'issuers.id as issuer_id'
             )
             ->orderBy('invoices.issued_at')
+            ->limit(100)
             ->get();
 
         $prices = $timeline->pluck('unit_price')->map(fn ($p) => (float) $p);

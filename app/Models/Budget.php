@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Budget extends Model
 {
+    public float $spent = 0.0;
+
+    public float $percentage = 0.0;
+
+    public float $remaining = 0.0;
+
     protected $fillable = [
         'user_id',
         'category_id',

@@ -6,13 +6,16 @@ use App\Models\Budget;
 use App\Models\Category;
 use App\Models\InvoiceItem;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class BudgetController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $userId = Auth::id();
         $startOfMonth = Carbon::now()->startOfMonth();
@@ -21,27 +24,10 @@ class BudgetController extends Controller
             ->with('category')
             ->get();
 
-        $monthlySpendingByCategory = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-            ->where('invoices.user_id', $userId)
-            ->where('invoices.issued_at', '>=', $startOfMonth)
-            ->select(
-                'invoices_items.category_id',
-                DB::raw('SUM(invoices_items.total_price) as total')
-            )
-            ->groupBy('invoices_items.category_id')
-            ->pluck('total', 'category_id');
-
+        $monthlySpendingByCategory = $this->getMonthlySpendingByCategory($userId, $startOfMonth);
         $totalMonthlySpending = $monthlySpendingByCategory->sum();
 
-        $budgets->each(function ($budget) use ($monthlySpendingByCategory, $totalMonthlySpending) {
-            if ($budget->category_id) {
-                $budget->spent = (float) ($monthlySpendingByCategory[$budget->category_id] ?? 0);
-            } else {
-                $budget->spent = (float) $totalMonthlySpending;
-            }
-            $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0;
-            $budget->remaining = max(0, $budget->amount - $budget->spent);
-        });
+        $budgets = $this->applySpendingToBudgets($budgets, $monthlySpendingByCategory, $totalMonthlySpending);
 
         $categories = Category::forUser($userId)->orderBy('name')->get();
 
@@ -51,7 +37,7 @@ class BudgetController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
             'category_id' => 'nullable|integer|exists:categories,id',
@@ -61,34 +47,49 @@ class BudgetController extends Controller
         $userId = Auth::id();
         $categoryId = $request->input('category_id');
 
-        $budget = Budget::where('user_id', $userId)
-            ->where(fn ($q) => $categoryId
-                ? $q->where('category_id', $categoryId)
-                : $q->whereNull('category_id')
-            )
-            ->first();
-
-        if ($budget) {
-            $budget->update(['amount' => $request->input('amount')]);
-        } else {
-            $budget = Budget::create([
+        $budget = Budget::updateOrCreate(
+            [
                 'user_id' => $userId,
                 'category_id' => $categoryId,
-                'amount' => $request->input('amount'),
-            ]);
-        }
+            ],
+            ['amount' => $request->input('amount')]
+        );
 
         return response()->json($budget->load('category'));
     }
 
-    public function destroy(Budget $budget)
+    public function destroy(Budget $budget): JsonResponse
     {
-        if ($budget->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('delete', $budget);
 
         $budget->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    private function getMonthlySpendingByCategory(int $userId, Carbon $startOfMonth): Collection
+    {
+        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->where('invoices.user_id', $userId)
+            ->where('invoices.issued_at', '>=', $startOfMonth)
+            ->select(
+                'invoices_items.category_id',
+                DB::raw('SUM(invoices_items.total_price) as total')
+            )
+            ->groupBy('invoices_items.category_id')
+            ->pluck('total', 'category_id');
+    }
+
+    private function applySpendingToBudgets(Collection $budgets, Collection $monthlySpending, float $totalMonthlySpending): Collection
+    {
+        return $budgets->map(function (Budget $budget) use ($monthlySpending, $totalMonthlySpending) {
+            $budget->spent = $budget->category_id
+                ? (float) ($monthlySpending[$budget->category_id] ?? 0)
+                : (float) $totalMonthlySpending;
+            $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0.0;
+            $budget->remaining = max(0.0, (float) $budget->amount - $budget->spent);
+
+            return $budget;
+        });
     }
 }

@@ -2,59 +2,72 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\OverallStats;
 use App\Models\Budget;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        $userId       = Auth::id();
-        $now          = Carbon::now();
+        $userId = Auth::id();
+        $now = Carbon::now();
         $startOfMonth = $now->copy()->startOfMonth();
 
-        $stats                = $this->getOverallStats($userId);
-        $monthComparison      = $this->getMonthComparison($userId, $now, $startOfMonth);
+        $stats = $this->getOverallStats($userId);
+        $monthComparison = $this->getMonthComparison($userId, $now, $startOfMonth);
         $currentMonthExpenses = $monthComparison['currentMonthExpenses'];
 
         return view('dashboard.index', [
-            'totalExpenses'       => $stats->totalExpenses,
-            'totalTaxes'          => $stats->totalTaxes,
-            'totalPurchases'      => $stats->totalPurchases,
-            'averageTicket'       => $stats->totalPurchases > 0
-            ? $stats->totalExpenses / $stats->totalPurchases
-            : 0,
+            'totalExpenses' => $stats->totalExpenses,
+            'totalTaxes' => $stats->totalTaxes,
+            'totalPurchases' => $stats->totalPurchases,
+            'averageTicket' => $this->calculateAverageTicket($stats),
             ...$monthComparison,
-            'lastPurchase'        => $this->getLastPurchase($userId),
+            'lastPurchase' => $this->getLastPurchase($userId),
             'paymentDistribution' => $this->getPaymentDistribution($userId),
-            'budgets'             => $this->getBudgets($userId, $startOfMonth, $currentMonthExpenses),
-            'monthlyExpenses'     => $this->getMonthlyExpenses($userId, $now),
-            'spendingByCategory'  => $this->getSpendingByCategory($userId),
-            'topIssuers'          => $this->getTopIssuers($userId),
-            'topProducts'         => $this->getTopProducts($userId),
+            'budgets' => $this->getBudgets($userId, $startOfMonth, $currentMonthExpenses),
+            'monthlyExpenses' => $this->getMonthlyExpenses($userId, $now),
+            'spendingByCategory' => $this->getSpendingByCategory($userId),
+            'topIssuers' => $this->getTopIssuers($userId),
+            'topProducts' => $this->getTopProducts($userId),
         ]);
     }
 
-    private function getOverallStats(int $userId)
+    private function calculateAverageTicket(OverallStats $stats): float
     {
-        return Invoice::where('user_id', $userId)
-            ->selectRaw('
-                COALESCE(SUM(total_amount), 0) as totalExpenses,
-                COALESCE(SUM(total_taxes), 0) as totalTaxes,
-                COUNT(id) as totalPurchases
-            ')
-            ->first();
+        return $stats->totalPurchases > 0
+            ? $stats->totalExpenses / $stats->totalPurchases
+            : 0.0;
+    }
+
+    private function getOverallStats(int $userId): OverallStats
+    {
+        return Cache::remember("dashboard.overall_stats.{$userId}", 300, function () use ($userId) {
+            $result = Invoice::where('user_id', $userId)
+                ->selectRaw('
+                    COALESCE(SUM(total_amount), 0) as totalExpenses,
+                    COALESCE(SUM(total_taxes), 0) as totalTaxes,
+                    COUNT(id) as totalPurchases
+                ')
+                ->first();
+
+            return OverallStats::fromQueryResult($result);
+        });
     }
 
     private function getMonthComparison(int $userId, Carbon $now, Carbon $startOfMonth): array
     {
         $startOfLastMonth = $now->copy()->subMonth()->startOfMonth();
-        $endOfLastMonth   = $now->copy()->subMonth()->endOfMonth();
+        $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
 
         $currentMonthExpenses = Invoice::where('user_id', $userId)
             ->where('issued_at', '>=', $startOfMonth)
@@ -65,17 +78,17 @@ class DashboardController extends Controller
             ->sum('total_amount');
 
         $monthVariation = $lastMonthExpenses > 0
-        ? (($currentMonthExpenses - $lastMonthExpenses) / $lastMonthExpenses) * 100
-        : null;
+            ? (($currentMonthExpenses - $lastMonthExpenses) / $lastMonthExpenses) * 100
+            : null;
 
         return [
             'currentMonthExpenses' => $currentMonthExpenses,
-            'lastMonthExpenses'    => $lastMonthExpenses,
-            'monthVariation'       => $monthVariation,
+            'lastMonthExpenses' => $lastMonthExpenses,
+            'monthVariation' => $monthVariation,
         ];
     }
 
-    private function getLastPurchase(int $userId)
+    private function getLastPurchase(int $userId): ?Invoice
     {
         return Invoice::where('user_id', $userId)
             ->with('issuer')
@@ -83,7 +96,7 @@ class DashboardController extends Controller
             ->first();
     }
 
-    private function getPaymentDistribution(int $userId)
+    private function getPaymentDistribution(int $userId): Collection
     {
         return InvoicePayment::join('invoices', 'invoices.id', '=', 'invoices_payments.invoice_id')
             ->where('invoices.user_id', $userId)
@@ -93,7 +106,7 @@ class DashboardController extends Controller
             ->get();
     }
 
-    private function getBudgets(int $userId, Carbon $startOfMonth, float $currentMonthExpenses)
+    private function getBudgets(int $userId, Carbon $startOfMonth, float $currentMonthExpenses): Collection
     {
         $budgets = Budget::where('user_id', $userId)->with('category')->get();
 
@@ -104,17 +117,17 @@ class DashboardController extends Controller
             ->groupBy('invoices_items.category_id')
             ->pluck('total', 'category_id');
 
-        $budgets->each(function ($budget) use ($monthlySpending, $currentMonthExpenses) {
+        return $budgets->map(function (Budget $budget) use ($monthlySpending, $currentMonthExpenses) {
             $budget->spent = $budget->category_id
-            ? (float) ($monthlySpending[$budget->category_id] ?? 0)
-            : (float) $currentMonthExpenses;
-            $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0;
-        });
+                ? (float) ($monthlySpending[$budget->category_id] ?? 0)
+                : (float) $currentMonthExpenses;
+            $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0.0;
 
-        return $budgets;
+            return $budget;
+        });
     }
 
-    private function getMonthlyExpenses(int $userId, Carbon $now)
+    private function getMonthlyExpenses(int $userId, Carbon $now): Collection
     {
         return Invoice::where('user_id', $userId)
             ->where('issued_at', '>=', $now->copy()->subMonths(11)->startOfMonth())
@@ -124,7 +137,7 @@ class DashboardController extends Controller
             ->get();
     }
 
-    private function getSpendingByCategory(int $userId)
+    private function getSpendingByCategory(int $userId): Collection
     {
         return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->where('invoices.user_id', $userId)
@@ -136,28 +149,33 @@ class DashboardController extends Controller
             )
             ->groupBy('category_name', 'category_color')
             ->orderByDesc('total')
-            ->get();
-    }
-
-    private function getTopIssuers(int $userId)
-    {
-        return Invoice::where('invoices.user_id', $userId)
-            ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
-            ->select('issuers.name', DB::raw('SUM(invoices.total_amount) as total'), DB::raw('COUNT(invoices.id) as count'))
-            ->groupBy('issuers.id', 'issuers.name')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->get();
-    }
-
-    private function getTopProducts(int $userId)
-    {
-        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-            ->where('invoices.user_id', $userId)
-            ->select('invoices_items.description', DB::raw('COUNT(*) as frequency'), DB::raw('AVG(invoices_items.unit_price) as avg_price'))
-            ->groupBy('invoices_items.description')
-            ->orderByDesc('frequency')
             ->limit(10)
             ->get();
+    }
+
+    private function getTopIssuers(int $userId): Collection
+    {
+        return Cache::remember("dashboard.top_issuers.{$userId}", 300, function () use ($userId) {
+            return Invoice::where('invoices.user_id', $userId)
+                ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
+                ->select('issuers.name', DB::raw('SUM(invoices.total_amount) as total'), DB::raw('COUNT(invoices.id) as count'))
+                ->groupBy('issuers.id', 'issuers.name')
+                ->orderByDesc('total')
+                ->limit(5)
+                ->get();
+        });
+    }
+
+    private function getTopProducts(int $userId): Collection
+    {
+        return Cache::remember("dashboard.top_products.{$userId}", 300, function () use ($userId) {
+            return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+                ->where('invoices.user_id', $userId)
+                ->select('invoices_items.description', DB::raw('COUNT(*) as frequency'), DB::raw('AVG(invoices_items.unit_price) as avg_price'))
+                ->groupBy('invoices_items.description')
+                ->orderByDesc('frequency')
+                ->limit(10)
+                ->get();
+        });
     }
 }

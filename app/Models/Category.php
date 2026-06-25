@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
+    public float $total_spent = 0.0;
+
     protected $fillable = [
         'user_id',
         'name',

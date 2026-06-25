@@ -6,12 +6,14 @@ use App\Models\InvoiceItem;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class ShoppingListController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $lists = ShoppingList::where('user_id', Auth::id())
             ->withCount('items')
@@ -21,7 +23,7 @@ class ShoppingListController extends Controller
         return view('shopping-list.index', ['lists' => $lists]);
     }
 
-    public function search(Request $request)
+    public function search(Request $request): JsonResponse
     {
         $query = $request->input('q', '');
 
@@ -29,7 +31,7 @@ class ShoppingListController extends Controller
             return response()->json([]);
         }
 
-        $userId      = Auth::id();
+        $userId = Auth::id();
         $favoriteIds = Auth::user()->favoriteIssuers()->pluck('issuers.id');
 
         $items = InvoiceItem::select(
@@ -41,7 +43,7 @@ class ShoppingListController extends Controller
             'issuers.id as issuer_id',
             'invoices.issued_at'
         )
-            ->selectRaw('IF(issuers.id IN (' . ($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0') . '), 1, 0) as is_favorite')
+            ->selectRaw('IF(issuers.id IN ('.($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0').'), 1, 0) as is_favorite')
             ->join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
             ->where('invoices.user_id', $userId)
@@ -54,34 +56,30 @@ class ShoppingListController extends Controller
         return response()->json($items);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        $name = $request->input('name') ?: 'Lista de compras ' . Carbon::now()->format('d/m/Y');
+        $name = $request->input('name') ?: 'Lista de compras '.Carbon::now()->format('d/m/Y');
 
         $list = ShoppingList::create([
             'user_id' => Auth::id(),
-            'name'    => $name,
+            'name' => $name,
         ]);
 
         return response()->json(['id' => $list->id, 'name' => $list->name]);
     }
 
-    public function show(ShoppingList $shoppingList)
+    public function show(ShoppingList $shoppingList): JsonResponse
     {
-        if ($shoppingList->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('interact', $shoppingList);
 
         $shoppingList->load('items.issuer');
 
         return response()->json($shoppingList);
     }
 
-    public function update(Request $request, ShoppingList $shoppingList)
+    public function update(Request $request, ShoppingList $shoppingList): JsonResponse
     {
-        if ($shoppingList->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('interact', $shoppingList);
 
         $request->validate(['name' => 'required|string|max:255']);
         $shoppingList->update(['name' => $request->input('name')]);
@@ -89,36 +87,32 @@ class ShoppingListController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function destroy(ShoppingList $shoppingList)
+    public function destroy(ShoppingList $shoppingList): JsonResponse
     {
-        if ($shoppingList->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('interact', $shoppingList);
 
         $shoppingList->delete();
 
         return response()->json(['success' => true]);
     }
 
-    public function addItem(Request $request, ShoppingList $shoppingList)
+    public function addItem(Request $request, ShoppingList $shoppingList): JsonResponse
     {
-        if ($shoppingList->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('interact', $shoppingList);
 
         $request->validate([
             'description' => 'required|string',
-            'unit_price'  => 'required|numeric',
-            'issuer_id'   => 'required|integer|exists:issuers,id',
-            'quantity'    => 'required|integer|min:1',
+            'unit_price' => 'required|numeric',
+            'issuer_id' => 'required|integer|exists:issuers,id',
+            'quantity' => 'required|integer|min:1',
         ]);
 
         $item = $shoppingList->items()->create([
-            'issuer_id'   => $request->input('issuer_id'),
+            'issuer_id' => $request->input('issuer_id'),
             'description' => $request->input('description'),
-            'unit'        => $request->input('unit'),
-            'unit_price'  => $request->input('unit_price'),
-            'quantity'    => $request->input('quantity'),
+            'unit' => $request->input('unit'),
+            'unit_price' => $request->input('unit_price'),
+            'quantity' => $request->input('quantity'),
         ]);
 
         $item->load('issuer');
@@ -127,11 +121,9 @@ class ShoppingListController extends Controller
         return response()->json($item);
     }
 
-    public function updateItem(Request $request, ShoppingList $shoppingList, ShoppingListItem $item)
+    public function updateItem(Request $request, ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
     {
-        if ($shoppingList->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('interact', $shoppingList);
 
         $request->validate(['quantity' => 'required|integer|min:1']);
         $item->update(['quantity' => $request->input('quantity')]);
@@ -140,11 +132,9 @@ class ShoppingListController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function removeItem(ShoppingList $shoppingList, ShoppingListItem $item)
+    public function removeItem(ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
     {
-        if ($shoppingList->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('interact', $shoppingList);
 
         $item->delete();
         $shoppingList->touch();
@@ -152,11 +142,9 @@ class ShoppingListController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function togglePurchased(ShoppingList $shoppingList, ShoppingListItem $item)
+    public function togglePurchased(ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
     {
-        if ($shoppingList->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('interact', $shoppingList);
 
         $item->purchased_at = $item->purchased_at ? null : Carbon::now();
         $item->save();

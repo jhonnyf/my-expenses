@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\NfceXmlImporter;
 use App\Services\InvoiceService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class NfceImportController extends Controller
@@ -13,7 +14,7 @@ class NfceImportController extends Controller
         private readonly InvoiceService $invoiceService,
     ) {}
 
-    public function importar(Request $request)
+    public function importar(Request $request): JsonResponse
     {
         $path = public_path('/import/nfc-e.xml');
 

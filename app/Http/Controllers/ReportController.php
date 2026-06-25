@@ -10,11 +10,13 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $userId = Auth::id();
 
@@ -30,18 +32,14 @@ class ReportController extends Controller
         ]);
     }
 
-    public function generate(Request $request)
+    public function generate(Request $request): View
     {
-        $data = $this->buildReportData($request);
-
-        return view('report.index', $data);
+        return view('report.index', $this->buildReportData($request));
     }
 
-    public function exportPdf(Request $request)
+    public function exportPdf(Request $request): Response
     {
-        $data = $this->buildReportData($request);
-
-        $pdf = Pdf::loadView('report.pdf', $data);
+        $pdf = Pdf::loadView('report.pdf', $this->buildReportData($request));
 
         return $pdf->download('relatorio.pdf');
     }

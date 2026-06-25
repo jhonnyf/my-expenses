@@ -10,32 +10,36 @@ use App\Models\InvoicePayment;
 use App\Models\Issuer;
 use App\Services\CategoryService;
 use App\Services\NFCeService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class MyPurchaseController extends Controller
 {
     public function __construct(
         private readonly NfceXmlImporter $importer,
+        private readonly NFCeService $nfceService,
+        private readonly CategoryService $categoryService,
     ) {}
 
-    public function index()
+    public function index(): View
     {
         return view('my-purchase.index', [
             'records' => Invoice::where('user_id', Auth::id())->orderByDesc('issued_at')->paginate(),
         ]);
     }
 
-    public function uploadForm()
+    public function uploadForm(): View
     {
         return view('my-purchase.upload');
     }
 
-    public function detail(Invoice $invoice)
+    public function detail(Invoice $invoice): View
     {
-        $user = request()->user();
+        $user = Auth::user();
         abort_if($invoice->user_id !== $user->id, 403);
 
         $invoice->load('issuer', 'items.category', 'payments');
@@ -53,7 +57,7 @@ class MyPurchaseController extends Controller
         ]);
     }
 
-    public function upload(Request $request)
+    public function upload(Request $request): RedirectResponse
     {
         $request->validate([
             'xml' => ['required', 'file', 'mimes:xml,text/xml', 'max:10240'],
@@ -65,34 +69,32 @@ class MyPurchaseController extends Controller
         return $this->processImport($dados, $file->get(), 'xml');
     }
 
-    public function importByQrCode(Request $request)
+    public function importByQrCode(Request $request): RedirectResponse
     {
         $request->validate([
             'qrcode_url' => ['required', 'string', 'regex:/^https?:\/\/.+/i'],
         ]);
 
         $url = $request->input('qrcode_url');
-        $nfceService = app(NFCeService::class);
+        $chave = $this->nfceService->extrairChaveDeUrl($url);
 
-        $chave = $nfceService->extrairChaveDeUrl($url);
-
-        if (! $chave) {
+        if (!$chave) {
             return back()
                 ->withErrors(['qrcode_url' => 'Não foi possível extrair a chave de acesso da URL.'])
                 ->withInput();
         }
 
-        if ($nfceService->isCertificadoConfigurado()) {
+        if ($this->nfceService->isCertificadoConfigurado()) {
             try {
-                return $this->importViaXmlSefaz($nfceService, $chave, 'qrcode_url');
+                return $this->importViaXmlSefaz($chave, 'qrcode_url');
             } catch (\Throwable) {
                 // fallback para scraping HTML
             }
         }
 
         try {
-            $resultado = $nfceService->consultarPorQRCode($url);
-            $dados = $nfceService->normalizarDadosPortal($resultado['dados'], $chave);
+            $resultado = $this->nfceService->consultarPorQRCode($url);
+            $dados = $this->nfceService->normalizarDadosPortal($resultado['dados'], $chave);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return back()
                 ->withErrors(['qrcode_url' => $e->getMessage()])
@@ -102,7 +104,7 @@ class MyPurchaseController extends Controller
         return $this->processImport($dados, $resultado['html'], 'qrcode_url');
     }
 
-    public function importByAccessKey(Request $request)
+    public function importByAccessKey(Request $request): RedirectResponse
     {
         $request->merge([
             'access_key' => preg_replace('/\D/', '', $request->input('access_key', '')),
@@ -112,17 +114,14 @@ class MyPurchaseController extends Controller
             'access_key' => ['required', 'string', 'regex:/^\d{44}$/'],
         ]);
 
-        $chave = $request->input('access_key');
-        $nfceService = app(NFCeService::class);
-
-        if (! $nfceService->isCertificadoConfigurado()) {
+        if (!$this->nfceService->isCertificadoConfigurado()) {
             return back()
                 ->withErrors(['access_key' => 'Certificado digital não configurado. Configure as variáveis NFE_CERTIFICADO_PATH e NFE_CERTIFICADO_SENHA no arquivo .env.'])
                 ->withInput();
         }
 
         try {
-            return $this->importViaXmlSefaz($nfceService, $chave, 'access_key');
+            return $this->importViaXmlSefaz($request->input('access_key'), 'access_key');
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return back()
                 ->withErrors(['access_key' => $e->getMessage()])
@@ -130,15 +129,15 @@ class MyPurchaseController extends Controller
         }
     }
 
-    private function importViaXmlSefaz(NFCeService $nfceService, string $chave, string $errorField)
+    private function importViaXmlSefaz(string $chave, string $errorField): RedirectResponse
     {
-        $xml = $nfceService->downloadXml($chave);
+        $xml = $this->nfceService->downloadXml($chave);
         $dados = $this->importer->fromString($xml);
 
         return $this->processImport($dados, $xml, $errorField);
     }
 
-    private function processImport(array $dados, string $xmlContent, string $errorField)
+    private function processImport(array $dados, string $xmlContent, string $errorField): RedirectResponse
     {
         $userId = Auth::id();
 
@@ -150,7 +149,7 @@ class MyPurchaseController extends Controller
 
         try {
             $invoice = DB::transaction(fn () => $this->storeInvoice($dados, $xmlContent, $userId));
-            app(CategoryService::class)->autoCategorize($userId);
+            $this->categoryService->autoCategorize($userId);
 
             return redirect()->route('my-purchases.detail', $invoice->id);
         } catch (\InvalidArgumentException $e) {
@@ -219,13 +218,20 @@ class MyPurchaseController extends Controller
     {
         $invoice->payments()->delete();
 
-        foreach ($payments as $payment) {
-            InvoicePayment::create([
+        if (empty($payments)) {
+            return;
+        }
+
+        $now = now();
+        InvoicePayment::insert(
+            array_map(fn (array $payment) => [
                 'invoice_id' => $invoice->id,
                 'method' => Arr::get($payment, 'forma', 'outros'),
                 'amount' => (float) Arr::get($payment, 'valor', 0),
-            ]);
-        }
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], $payments)
+        );
     }
 
     private function syncItems(Invoice $invoice, array $items): void

@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\InvoiceItem;
 use App\Services\CategoryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $userId = Auth::id();
 
@@ -26,38 +28,36 @@ class CategoryController extends Controller
             ->groupBy('invoices_items.category_id')
             ->pluck('total', 'category_id');
 
-        $categories->each(fn ($cat) => $cat->total_spent = (float) ($spendingByCategory[$cat->id] ?? 0));
+        $categories = $categories->map(function (Category $cat) use ($spendingByCategory) {
+            $cat->total_spent = (float) ($spendingByCategory[$cat->id] ?? 0);
+
+            return $cat;
+        });
 
         return view('category.index', ['categories' => $categories]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'color' => 'nullable|string|max:7',
             'keywords' => 'nullable|string',
         ]);
-
-        $keywords = $request->input('keywords')
-            ? array_map('trim', explode(',', $request->input('keywords')))
-            : [];
 
         $category = Category::create([
             'user_id' => Auth::id(),
             'name' => $request->input('name'),
             'color' => $request->input('color', '#94A3B8'),
-            'keywords' => $keywords,
+            'keywords' => $this->parseKeywords($request),
         ]);
 
         return response()->json($category);
     }
 
-    public function update(Request $request, Category $category)
+    public function update(Request $request, Category $category): JsonResponse
     {
-        if (! $category->user_id || $category->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('update', $category);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -65,31 +65,25 @@ class CategoryController extends Controller
             'keywords' => 'nullable|string',
         ]);
 
-        $keywords = $request->input('keywords')
-            ? array_map('trim', explode(',', $request->input('keywords')))
-            : [];
-
         $category->update([
             'name' => $request->input('name'),
             'color' => $request->input('color'),
-            'keywords' => $keywords,
+            'keywords' => $this->parseKeywords($request),
         ]);
 
         return response()->json($category);
     }
 
-    public function destroy(Category $category)
+    public function destroy(Category $category): JsonResponse
     {
-        if (! $category->user_id || $category->user_id !== Auth::id()) {
-            abort(403);
-        }
+        $this->authorize('delete', $category);
 
         $category->delete();
 
         return response()->json(['success' => true]);
     }
 
-    public function assignItem(Request $request)
+    public function assignItem(Request $request): JsonResponse
     {
         $request->validate([
             'item_id' => 'required|integer|exists:invoices_items,id',
@@ -104,10 +98,17 @@ class CategoryController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function autoCategorize(CategoryService $service)
+    public function autoCategorize(CategoryService $service): JsonResponse
     {
         $count = $service->autoCategorize(Auth::id());
 
         return response()->json(['categorized' => $count]);
+    }
+
+    private function parseKeywords(Request $request): array
+    {
+        return $request->input('keywords')
+            ? array_map('trim', explode(',', $request->input('keywords')))
+            : [];
     }
 }

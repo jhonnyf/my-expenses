@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Budget;
+use App\Models\User;
+
+class BudgetPolicy
+{
+    public function delete(User $user, Budget $budget): bool
+    {
+        return $user->id === $budget->user_id;
+    }
+}
