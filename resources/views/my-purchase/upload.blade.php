@@ -51,7 +51,7 @@
                     <div>
                         <label for="qrcode_url" class="block text-sm font-medium mb-2">URL do QR Code da NFC-e</label>
                         <input type="url" id="qrcode_url" name="qrcode_url" class="kt-input w-full"
-                               placeholder="https://www.sefaz.rs.gov.br/NFCE/NFCE-COM.aspx?chNFe=..."
+                               placeholder="https://www.nfce.fazenda.sp.gov.br/...?p=... ou https://www.sefaz.rs.gov.br/...?chNFe=..."
                                value="{{ old('qrcode_url') }}" required>
                         @error('qrcode_url')
                             <p class="mt-2 text-sm text-destructive">{{ $message }}</p>
@@ -60,11 +60,8 @@
                     <div class="bg-accent/50 rounded-lg p-4">
                         <p class="text-xs text-secondary-foreground">
                             <i class="ki-filled ki-information-2 text-primary me-1"></i>
-                            Cole a URL que aparece no QR Code impresso no cupom fiscal. A URL contém a chave de acesso
-                            da nota e será usada para baixar o XML diretamente da SEFAZ.
-                        </p>
-                        <p class="text-xs text-secondary-foreground mt-2">
-                            <strong>Requer:</strong> Certificado digital configurado nas variáveis de ambiente NFE_*.
+                            Cole a URL que aparece no QR Code impresso no cupom fiscal. Os dados da nota serão
+                            buscados diretamente no portal da SEFAZ.
                         </p>
                     </div>
                     <button type="submit" class="kt-btn kt-btn-primary w-full">

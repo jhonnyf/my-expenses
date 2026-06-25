@@ -6,6 +6,7 @@ use App\Imports\NfceXmlImporter;
 use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\InvoicePayment;
 use App\Models\Issuer;
 use App\Services\CategoryService;
 use App\Services\NFCeService;
@@ -67,27 +68,30 @@ class MyPurchaseController extends Controller
     public function importByQrCode(Request $request)
     {
         $request->validate([
-            'qrcode_url' => ['required', 'url'],
+            'qrcode_url' => ['required', 'string', 'regex:/^https?:\/\/.+/i'],
         ]);
 
         $url = $request->input('qrcode_url');
+        $nfceService = app(NFCeService::class);
 
-        if (! preg_match('/chNFe=(\d{44})/', $url, $chaveMatch)) {
+        $chave = $nfceService->extrairChaveDeUrl($url);
+
+        if (! $chave) {
             return back()
                 ->withErrors(['qrcode_url' => 'Não foi possível extrair a chave de acesso da URL.'])
                 ->withInput();
         }
 
         try {
-            $xmlContent = app(NFCeService::class)->downloadXml($chaveMatch[1]);
-            $dados = $this->importer->fromString($xmlContent);
-        } catch (\RuntimeException $e) {
+            $resultado = $nfceService->consultarPorQRCode($url);
+            $dados = $nfceService->normalizarDadosPortal($resultado['dados'], $chave);
+        } catch (\RuntimeException|\InvalidArgumentException $e) {
             return back()
                 ->withErrors(['qrcode_url' => $e->getMessage()])
                 ->withInput();
         }
 
-        return $this->processImport($dados, $xmlContent, 'qrcode_url');
+        return $this->processImport($dados, $resultado['html'], 'qrcode_url');
     }
 
     private function processImport(array $dados, string $xmlContent, string $errorField)
@@ -122,6 +126,7 @@ class MyPurchaseController extends Controller
         );
 
         $this->syncItems($invoice, Arr::get($dados, 'itens', []));
+        $this->syncPayments($invoice, Arr::get($dados, 'pagamento', []));
 
         return $invoice;
     }
@@ -164,6 +169,19 @@ class MyPurchaseController extends Controller
             'total_taxes' => (float) Arr::get($dados, 'total.valor_tributos', 0),
             'raw_xml' => $xmlContent,
         ];
+    }
+
+    private function syncPayments(Invoice $invoice, array $payments): void
+    {
+        $invoice->payments()->delete();
+
+        foreach ($payments as $payment) {
+            InvoicePayment::create([
+                'invoice_id' => $invoice->id,
+                'method' => Arr::get($payment, 'forma', 'outros'),
+                'amount' => (float) Arr::get($payment, 'valor', 0),
+            ]);
+        }
     }
 
     private function syncItems(Invoice $invoice, array $items): void

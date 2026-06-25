@@ -12,43 +12,116 @@
         'vale_presente'   => 'Vale Presente',
         'vale_combustivel'=> 'Vale Combustível',
         'boleto'          => 'Boleto',
+        'pix'             => 'Pix',
         'sem_pagamento'   => 'Sem Pagamento',
         'outros'          => 'Outros',
+    ];
+
+    $paymentIcons = [
+        'dinheiro'        => 'ki-filled ki-dollar',
+        'cartao_credito'  => 'ki-filled ki-credit-cart',
+        'cartao_debito'   => 'ki-filled ki-credit-cart',
+        'vale_alimentacao'=> 'ki-filled ki-basket',
+        'vale_refeicao'   => 'ki-filled ki-coffee',
+        'pix'             => 'ki-filled ki-send',
+        'boleto'          => 'ki-filled ki-document',
     ];
 @endphp
 
 @section('content')
-    {{-- Cabeçalho --}}
+    {{-- Header --}}
     <div class="kt-container-fixed">
         <div class="flex flex-wrap items-center lg:items-end justify-between gap-5 pb-7.5">
-            <div>
-                <h1 class="text-xl font-medium leading-none text-mono">
-                    NFC-e Nº {{ $invoice->number }} / Série {{ $invoice->series }}
-                </h1>
-                <p class="text-sm text-secondary-foreground mt-1 font-mono">
-                    Chave: {{ wordwrap($invoice->access_key, 11, ' ', true) }}
-                </p>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center size-12 rounded-xl bg-primary/10 shrink-0">
+                    <i class="ki-filled ki-document text-primary text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <h1 class="text-xl font-medium leading-none text-mono">
+                            NFC-e Nº {{ $invoice->number }} / Série {{ $invoice->series }}
+                        </h1>
+                        @if($invoice->environment === 'staging')
+                            <span class="kt-badge kt-badge-warning kt-badge-outline kt-badge-sm">Homologação</span>
+                        @else
+                            <span class="kt-badge kt-badge-success kt-badge-outline kt-badge-sm">Produção</span>
+                        @endif
+                    </div>
+                    <p class="text-sm text-secondary-foreground mt-1.5">
+                        <i class="ki-filled ki-calendar text-xs me-1"></i>
+                        {{ $invoice->issued_at->format('d/m/Y') }} às {{ $invoice->issued_at->format('H:i') }}
+                    </p>
+                </div>
             </div>
-            <div class="flex items-center gap-2.5">
-                @if($invoice->environment === 'staging')
-                    <span class="kt-badge kt-badge-warning">Homologação</span>
-                @else
-                    <span class="kt-badge kt-badge-success">Produção</span>
-                @endif
-                <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-outline">
-                    <i class="ki-filled ki-arrow-left"></i> Voltar
-                </a>
-            </div>
+            <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-outline">
+                <i class="ki-filled ki-arrow-left"></i> Voltar
+            </a>
         </div>
     </div>
 
     <div class="kt-container-fixed space-y-5 pb-10">
 
-        {{-- Resumo + Emitente --}}
-        <div class="grid lg:grid-cols-2 gap-5">
+        {{-- Cards de destaque: Total, Produtos, Impostos, Itens --}}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="kt-card">
+                <div class="kt-card-content py-5 px-5">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0">
+                            <p class="text-xs text-secondary-foreground mb-2">Total da Nota</p>
+                            <p class="text-xl sm:text-2xl font-bold text-primary truncate">R$ {{ number_format($invoice->total_amount, 2, ',', '.') }}</p>
+                        </div>
+                        <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 shrink-0">
+                            <i class="ki-filled ki-dollar text-primary text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="kt-card">
+                <div class="kt-card-content py-5 px-5">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0">
+                            <p class="text-xs text-secondary-foreground mb-2">Valor Produtos</p>
+                            <p class="text-xl sm:text-2xl font-bold text-foreground truncate">R$ {{ number_format($invoice->total_products, 2, ',', '.') }}</p>
+                        </div>
+                        <div class="flex items-center justify-center size-10 rounded-lg bg-info/10 shrink-0">
+                            <i class="ki-filled ki-purchase text-info text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="kt-card">
+                <div class="kt-card-content py-5 px-5">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0">
+                            <p class="text-xs text-secondary-foreground mb-2">Tributos Aprox.</p>
+                            <p class="text-xl sm:text-2xl font-bold text-foreground truncate">R$ {{ number_format($invoice->total_taxes, 2, ',', '.') }}</p>
+                        </div>
+                        <div class="flex items-center justify-center size-10 rounded-lg bg-warning/10 shrink-0">
+                            <i class="ki-filled ki-chart text-warning text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="kt-card">
+                <div class="kt-card-content py-5 px-5">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0">
+                            <p class="text-xs text-secondary-foreground mb-2">Itens</p>
+                            <p class="text-xl sm:text-2xl font-bold text-foreground">{{ $invoice->items->count() }}</p>
+                        </div>
+                        <div class="flex items-center justify-center size-10 rounded-lg bg-success/10 shrink-0">
+                            <i class="ki-filled ki-basket text-success text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Emitente + Detalhes fiscais + Pagamentos --}}
+        <div class="grid lg:grid-cols-3 gap-5">
 
             {{-- Emitente --}}
-            <div class="kt-card">
+            <div class="kt-card lg:col-span-2">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
                         <i class="ki-filled ki-shop text-primary me-1"></i> Emitente
@@ -63,76 +136,134 @@
                 </div>
                 <div class="kt-card-content pb-5">
                     <div class="space-y-3">
-                        <div>
-                            <p class="text-xs text-secondary-foreground">Razão Social</p>
-                            <p class="font-semibold text-foreground">{{ $invoice->issuer->name ?? '—' }}</p>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 shrink-0">
+                                <i class="ki-filled ki-shop text-primary"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-semibold text-foreground truncate">{{ $invoice->issuer->name ?? '—' }}</p>
+                                <p class="text-xs text-secondary-foreground font-mono">{{ $invoice->issuer->cnpj ?? '—' }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-xs text-secondary-foreground">CNPJ</p>
-                            <p class="font-medium">{{ $invoice->issuer->cnpj ?? '—' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-secondary-foreground">Endereço</p>
-                            <p class="font-medium">
-                                @if($invoice->issuer)
-                                    {{ $invoice->issuer->street }}, {{ $invoice->issuer->street_number }}
-                                    — {{ $invoice->issuer->neighborhood }},
-                                    {{ $invoice->issuer->city }}/{{ $invoice->issuer->state }}
-                                    @if($invoice->issuer->zip_code)
-                                        — CEP {{ $invoice->issuer->zip_code }}
+
+                        <div class="border-t border-border pt-3">
+                            <div class="flex items-start gap-2">
+                                <i class="ki-filled ki-geolocation text-secondary-foreground text-sm mt-0.5 shrink-0"></i>
+                                <p class="text-sm text-foreground">
+                                    @if($invoice->issuer)
+                                        {{ $invoice->issuer->street }}, {{ $invoice->issuer->street_number }}
+                                        — {{ $invoice->issuer->neighborhood }}<br>
+                                        {{ $invoice->issuer->city }}/{{ $invoice->issuer->state }}
+                                        @if($invoice->issuer->zip_code)
+                                            — CEP {{ $invoice->issuer->zip_code }}
+                                        @endif
+                                    @else
+                                        —
                                     @endif
-                                @else
-                                    —
-                                @endif
-                            </p>
+                                </p>
+                            </div>
                         </div>
+
+                        @if($invoice->issuer && $invoice->issuer->street && $invoice->issuer->city)
+                            @php
+                                $mapAddress = implode(', ', array_filter([
+                                    $invoice->issuer->street,
+                                    $invoice->issuer->street_number,
+                                    $invoice->issuer->neighborhood,
+                                    $invoice->issuer->city,
+                                    $invoice->issuer->state,
+                                ]));
+                            @endphp
+                            <div class="mt-3 rounded-lg overflow-hidden border border-border">
+                                <iframe
+                                    width="100%"
+                                    height="300"
+                                    style="border:0;"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                    src="https://maps.google.com/maps?q={{ urlencode($mapAddress) }}&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                                    allowfullscreen>
+                                </iframe>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
 
-            {{-- Totais --}}
+            {{-- Detalhes Fiscais --}}
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-dollar text-primary me-1"></i> Totais
+                        <i class="ki-filled ki-document text-primary me-1"></i> Detalhes Fiscais
                     </h3>
-                    <span class="text-xs text-secondary-foreground">
-                        Emitida em {{ $invoice->issued_at->format('d/m/Y H:i') }}
-                    </span>
                 </div>
                 <div class="kt-card-content pb-5">
                     <div class="space-y-3">
-                        <div class="flex justify-between">
+                        <div class="flex justify-between items-center">
                             <span class="text-sm text-secondary-foreground">Valor dos produtos</span>
-                            <span class="font-medium">R$ {{ number_format($invoice->total_products, 2, ',', '.') }}</span>
+                            <span class="font-medium font-mono text-sm">R$ {{ number_format($invoice->total_products, 2, ',', '.') }}</span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between items-center">
                             <span class="text-sm text-secondary-foreground">Base de cálculo ICMS</span>
-                            <span class="font-medium">R$ {{ number_format($invoice->total_icms_base, 2, ',', '.') }}</span>
+                            <span class="font-medium font-mono text-sm">R$ {{ number_format($invoice->total_icms_base, 2, ',', '.') }}</span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between items-center">
                             <span class="text-sm text-secondary-foreground">ICMS</span>
-                            <span class="font-medium">R$ {{ number_format($invoice->total_icms, 2, ',', '.') }}</span>
+                            <span class="font-medium font-mono text-sm">R$ {{ number_format($invoice->total_icms, 2, ',', '.') }}</span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between items-center">
                             <span class="text-sm text-secondary-foreground">Tributos aprox.</span>
-                            <span class="font-medium">R$ {{ number_format($invoice->total_taxes, 2, ',', '.') }}</span>
+                            <span class="font-medium font-mono text-sm">R$ {{ number_format($invoice->total_taxes, 2, ',', '.') }}</span>
                         </div>
-                        <div class="border-t border-border pt-3 flex justify-between">
+                        <div class="border-t border-border pt-3 flex justify-between items-center">
                             <span class="font-semibold text-foreground">Total da nota</span>
-                            <span class="font-bold text-lg text-primary">R$ {{ number_format($invoice->total_amount, 2, ',', '.') }}</span>
+                            <span class="font-bold text-lg text-primary font-mono">R$ {{ number_format($invoice->total_amount, 2, ',', '.') }}</span>
                         </div>
                     </div>
 
+                    {{-- Chave de acesso --}}
+                    <div class="mt-5 pt-4 border-t border-border">
+                        <p class="text-xs text-secondary-foreground mb-1.5">Chave de Acesso</p>
+                        <p class="text-xs font-mono text-foreground bg-accent rounded-lg px-3 py-2 break-all leading-relaxed select-all">
+                            {{ wordwrap($invoice->access_key, 4, ' ', true) }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Pagamentos --}}
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">
+                        <i class="ki-filled ki-wallet text-primary me-1"></i> Pagamentos
+                    </h3>
+                </div>
+                <div class="kt-card-content pb-5">
                     @if($invoice->payments->isNotEmpty())
-                        <div class="mt-5 pt-4 border-t border-border space-y-2">
-                            <p class="text-xs font-semibold text-secondary-foreground uppercase tracking-wide">Pagamentos</p>
+                        <div class="space-y-3">
                             @foreach($invoice->payments as $payment)
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-secondary-foreground">{{ $paymentLabels[$payment->method] ?? $payment->method }}</span>
-                                    <span class="font-medium">R$ {{ number_format($payment->amount, 2, ',', '.') }}</span>
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex items-center justify-center size-9 rounded-lg bg-accent shrink-0">
+                                            <i class="{{ $paymentIcons[$payment->method] ?? 'ki-filled ki-wallet' }} text-secondary-foreground text-sm"></i>
+                                        </div>
+                                        <span class="text-sm text-foreground">{{ $paymentLabels[$payment->method] ?? $payment->method }}</span>
+                                    </div>
+                                    <span class="font-semibold font-mono text-sm">R$ {{ number_format($payment->amount, 2, ',', '.') }}</span>
                                 </div>
                             @endforeach
+                        </div>
+
+                        @if($invoice->payments->count() > 1)
+                            <div class="border-t border-border mt-4 pt-3 flex justify-between items-center">
+                                <span class="text-sm font-semibold text-foreground">Total pago</span>
+                                <span class="font-bold text-primary font-mono">R$ {{ number_format($invoice->payments->sum('amount'), 2, ',', '.') }}</span>
+                            </div>
+                        @endif
+                    @else
+                        <div class="flex flex-col items-center justify-center py-8 text-secondary-foreground">
+                            <i class="ki-filled ki-wallet text-2xl mb-2"></i>
+                            <p class="text-sm">Sem dados de pagamento</p>
                         </div>
                     @endif
                 </div>
@@ -143,9 +274,11 @@
         <div class="kt-card kt-card-grid">
             <div class="kt-card-header">
                 <h3 class="kt-card-title">
-                    <i class="ki-filled ki-basket text-primary me-1"></i> Itens da nota
+                    <i class="ki-filled ki-basket text-primary me-1"></i> Itens da Nota
                 </h3>
-                <span class="text-xs text-secondary-foreground">{{ $invoice->items->count() }} {{ $invoice->items->count() === 1 ? 'item' : 'itens' }}</span>
+                <span class="kt-badge kt-badge-primary kt-badge-outline kt-badge-sm">
+                    {{ $invoice->items->count() }} {{ $invoice->items->count() === 1 ? 'item' : 'itens' }}
+                </span>
             </div>
             <div class="kt-card-content">
                 <div class="kt-scrollable-x-auto">

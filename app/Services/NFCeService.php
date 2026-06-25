@@ -166,9 +166,28 @@ class NFCeService
         return $node?->nodeValue;
     }
 
+    public function extrairChaveDeUrl(string $url): ?string
+    {
+        $query = parse_url($url, PHP_URL_QUERY) ?? '';
+        $decodedQuery = urldecode($query);
+
+        if (preg_match('/chNFe=(\d{44})/', $decodedQuery, $m)) {
+            return $m[1];
+        }
+
+        if (preg_match('/[?&]p=(\d{44})\|/', $decodedQuery, $m)) {
+            return $m[1];
+        }
+
+        if (preg_match('/(\d{44})/', $decodedQuery, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
     /**
-     * Consulta a NFC-e a partir da URL do QR Code impresso no cupom.
-     * Não requer certificado digital nem CSC.
+     * @return array{dados: array, html: string}
      *
      * @throws \InvalidArgumentException Se a URL não for de um domínio SEFAZ válido.
      * @throws \RuntimeException Se a consulta falhar.
@@ -188,7 +207,12 @@ class NFCeService
             throw new \RuntimeException("Erro ao consultar portal SEFAZ: HTTP {$response->status()}");
         }
 
-        return $this->parseHtmlPortal($response->body());
+        $html = $response->body();
+
+        return [
+            'dados' => $this->parseHtmlPortal($html),
+            'html' => $html,
+        ];
     }
 
     /**
@@ -227,53 +251,305 @@ class NFCeService
         throw new \InvalidArgumentException("URL não pertence a um domínio SEFAZ reconhecido: {$host}");
     }
 
-    /**
-     * Extrai dados do HTML do portal do consumidor da SEFAZ.
-     */
     private function parseHtmlPortal(string $html): array
     {
         $dom = new \DOMDocument;
         @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
         $xpath = new \DOMXPath($dom);
 
-        $extrair = function (string $seletor) use ($xpath): ?string {
-            $nodes = $xpath->query($seletor);
+        return [
+            'chave' => $this->extrairChaveDoHtml($xpath),
+            'emitente' => $this->extrairEmitenteDoHtml($xpath),
+            'itens' => $this->extrairItensDoHtml($xpath),
+            'totais' => $this->extrairTotaisDoHtml($xpath),
+            'pagamento' => $this->extrairPagamentoDoHtml($xpath),
+            'metadados' => $this->extrairMetadadosDoHtml($xpath),
+        ];
+    }
 
-            return $nodes->length > 0 ? trim($nodes->item(0)->textContent) : null;
-        };
+    private function extrairChaveDoHtml(\DOMXPath $xpath): string
+    {
+        $node = $xpath->query("//*[contains(@class,'chave')]")->item(0);
+        if ($node) {
+            return preg_replace('/\D/', '', $node->textContent);
+        }
 
-        // Tenta extrair campos comuns presentes nos portais da maioria dos estados
-        $data = [
-            'emitente' => [
-                'razao_social' => $extrair("//*[@id='u20']") ?? $extrair("//*[contains(@class,'txtTopo')]"),
-                'cnpj' => $extrair("//*[@id='u07']"),
-                'endereco' => $extrair("//*[@id='u08']"),
-            ],
-            'totais' => [
-                'valor_total' => $extrair("//*[@id='linhaTotal']//span[contains(@class,'totalNumb')]") ?? $extrair("//*[contains(@class,'totalNumb')]"),
-                'valor_desconto' => $extrair("//*[@id='vDescItens']") ?? $extrair("//*[@id='vDesc']"),
-            ],
-            'itens' => [],
-            'raw_disponivel' => ! empty($html),
+        return '';
+    }
+
+    private function extrairEmitenteDoHtml(\DOMXPath $xpath): array
+    {
+        $nome = '';
+        $cnpj = '';
+        $endereco = '';
+
+        $nomeNode = $xpath->query("//*[@id='u20']")->item(0)
+            ?? $xpath->query("//*[contains(@class,'txtTopo')]")->item(0);
+        if ($nomeNode) {
+            $nome = trim($nomeNode->textContent);
+        }
+
+        $textDivs = $xpath->query("//div[contains(@class,'txtCenter')]//div[contains(@class,'text')]");
+        foreach ($textDivs as $div) {
+            $text = trim($div->textContent);
+            if (str_contains($text, 'CNPJ')) {
+                $cnpj = preg_replace('/\D/', '', preg_replace('/.*CNPJ:\s*/', '', $text));
+            } else {
+                $endereco = $text;
+            }
+        }
+
+        $endParts = $this->parsearEndereco($endereco);
+
+        return [
+            'cnpj' => $cnpj,
+            'nome' => $nome,
+            'logradouro' => $endParts['logradouro'],
+            'numero' => $endParts['numero'],
+            'bairro' => $endParts['bairro'],
+            'municipio' => $endParts['municipio'],
+            'uf' => $endParts['uf'],
+            'cep' => $endParts['cep'],
+        ];
+    }
+
+    private function parsearEndereco(string $endereco): array
+    {
+        $default = ['logradouro' => '', 'numero' => '', 'bairro' => '', 'municipio' => '', 'uf' => '', 'cep' => ''];
+
+        if (empty($endereco)) {
+            return $default;
+        }
+
+        // SP format: "RUA X , NUMERO , COMPLEMENTO , BAIRRO , CIDADE , UF"
+        $parts = array_map('trim', explode(',', $endereco));
+        $parts = array_values(array_filter($parts, fn ($p) => $p !== ''));
+
+        $count = count($parts);
+
+        return [
+            'logradouro' => $parts[0] ?? '',
+            'numero' => $count >= 2 ? $parts[1] : '',
+            'bairro' => $count >= 4 ? $parts[$count - 3] : '',
+            'municipio' => $count >= 3 ? $parts[$count - 2] : '',
+            'uf' => $count >= 2 ? $parts[$count - 1] : '',
+            'cep' => '',
+        ];
+    }
+
+    private function extrairItensDoHtml(\DOMXPath $xpath): array
+    {
+        $itens = [];
+        $rows = $xpath->query("//*[@id='tabResult']//tr[starts-with(@id,'Item')]");
+
+        foreach ($rows as $index => $row) {
+            $descNode = $xpath->query(".//span[contains(@class,'txtTit')]", $row)->item(0);
+            $codNode = $xpath->query(".//span[contains(@class,'RCod')]", $row)->item(0);
+            $qtdNode = $xpath->query(".//span[contains(@class,'Rqtd')]", $row)->item(0);
+            $unNode = $xpath->query(".//span[contains(@class,'RUN')]", $row)->item(0);
+            $vlUnitNode = $xpath->query(".//span[contains(@class,'RvlUnit')]", $row)->item(0);
+            $vlTotalNode = $xpath->query(".//span[contains(@class,'valor')]", $row)->item(0);
+
+            $codigo = '';
+            if ($codNode) {
+                preg_match('/Código:\s*([\w.-]+)/', $codNode->textContent, $m);
+                $codigo = $m[1] ?? '';
+            }
+
+            $quantidade = '';
+            if ($qtdNode) {
+                preg_match('/Qtde\.?:\s*([\d.,]+)/', $qtdNode->textContent, $m);
+                $quantidade = $m[1] ?? '';
+            }
+
+            $unidade = '';
+            if ($unNode) {
+                preg_match('/UN:\s*(\S+)/', $unNode->textContent, $m);
+                $unidade = $m[1] ?? '';
+            }
+
+            $valorUnitario = '';
+            if ($vlUnitNode) {
+                preg_match('/Vl\.\s*Unit\.?:\s*([\d.,]+)/', $vlUnitNode->textContent, $m);
+                $valorUnitario = $m[1] ?? '';
+            }
+
+            $itens[] = [
+                'numero_item' => $index + 1,
+                'codigo' => trim($codigo),
+                'descricao' => $descNode ? trim($descNode->textContent) : '',
+                'unidade' => trim($unidade),
+                'quantidade' => $this->parseBrDecimal($quantidade),
+                'valor_unitario' => $this->parseBrDecimal($valorUnitario),
+                'valor_total' => $vlTotalNode ? $this->parseBrDecimal(trim($vlTotalNode->textContent)) : 0.0,
+            ];
+        }
+
+        return $itens;
+    }
+
+    private function extrairTotaisDoHtml(\DOMXPath $xpath): array
+    {
+        $valorTotal = 0.0;
+        $valorTributos = 0.0;
+
+        $totalNode = $xpath->query("//*[@id='totalNota']//span[contains(@class,'txtMax')]")->item(0);
+        if ($totalNode) {
+            $valorTotal = $this->parseBrDecimal(trim($totalNode->textContent));
+        }
+
+        $tribNode = $xpath->query("//*[@id='totalNota']//span[contains(@class,'txtObs')]")->item(0);
+        if ($tribNode) {
+            $valorTributos = $this->parseBrDecimal(trim($tribNode->textContent));
+        }
+
+        return [
+            'valor_produtos' => $valorTotal,
+            'valor_nota' => $valorTotal,
+            'valor_tributos' => $valorTributos,
+        ];
+    }
+
+    private function extrairPagamentoDoHtml(\DOMXPath $xpath): array
+    {
+        $pagamentos = [];
+        $formasPagamentoMap = [
+            'dinheiro' => 'dinheiro',
+            'cartão de crédito' => 'cartao_credito',
+            'cartao de credito' => 'cartao_credito',
+            'crédito' => 'cartao_credito',
+            'cartão de débito' => 'cartao_debito',
+            'cartao de debito' => 'cartao_debito',
+            'débito' => 'cartao_debito',
+            'pix' => 'pix',
+            'vale alimentação' => 'vale_alimentacao',
+            'vale refeição' => 'vale_refeicao',
         ];
 
-        // Tenta extrair itens da tabela de produtos
-        $linhas = $xpath->query("//*[@id='tuberculoData']//tr | //table[contains(@class,'box-body')]//tr");
+        $linhas = $xpath->query("//*[@id='totalNota']//*[@id='linhaTotal']");
+
         foreach ($linhas as $linha) {
-            $colunas = $xpath->query('.//td', $linha);
-            if ($colunas->length >= 3) {
-                $data['itens'][] = [
-                    'descricao' => trim($colunas->item(0)->textContent ?? ''),
-                    'quantidade' => trim($colunas->item(1)->textContent ?? ''),
-                    'valor' => trim($colunas->item(2)->textContent ?? ''),
+            $label = $xpath->query(".//label[contains(@class,'tx')]", $linha)->item(0);
+            $valor = $xpath->query(".//span[contains(@class,'totalNumb')]", $linha)->item(0);
+
+            if ($label && $valor) {
+                $formaTexto = mb_strtolower(trim($label->textContent));
+                if ($formaTexto === 'troco' || str_contains($formaTexto, 'troco')) {
+                    continue;
+                }
+
+                $forma = 'outros';
+                foreach ($formasPagamentoMap as $key => $mapped) {
+                    if (str_contains($formaTexto, $key)) {
+                        $forma = $mapped;
+                        break;
+                    }
+                }
+
+                $pagamentos[] = [
+                    'forma' => $forma,
+                    'valor' => $this->parseBrDecimal(trim($valor->textContent)),
                 ];
             }
         }
 
-        // Remove itens vazios
-        $data['itens'] = array_values(array_filter($data['itens'], fn ($i) => ! empty($i['descricao'])));
+        return $pagamentos;
+    }
 
-        return $data;
+    private function extrairMetadadosDoHtml(\DOMXPath $xpath): array
+    {
+        $numero = '';
+        $serie = '';
+        $emissao = '';
+
+        $infoNode = $xpath->query("//*[@id='infos']//li")->item(0);
+        if ($infoNode) {
+            $text = $infoNode->textContent;
+
+            if (preg_match('/Número:\s*(\d+)/', $text, $m)) {
+                $numero = $m[1];
+            }
+            if (preg_match('/Série:\s*(\d+)/', $text, $m)) {
+                $serie = $m[1];
+            }
+            if (preg_match('/Emissão:\s*([\d\/]+\s+[\d:]+)/', $text, $m)) {
+                $emissao = $m[1];
+            }
+        }
+
+        return [
+            'numero' => $numero,
+            'serie' => $serie,
+            'emitido_em' => $emissao,
+        ];
+    }
+
+    public function normalizarDadosPortal(array $dadosHtml, string $chaveAcesso): array
+    {
+        $emitente = $dadosHtml['emitente'] ?? [];
+        $totais = $dadosHtml['totais'] ?? [];
+        $metadados = $dadosHtml['metadados'] ?? [];
+
+        $itens = array_map(fn (array $item) => [
+            'numero_item' => $item['numero_item'],
+            'codigo' => $item['codigo'] ?? '',
+            'descricao' => $item['descricao'] ?? '',
+            'ncm' => '',
+            'cfop' => '',
+            'unidade' => $item['unidade'] ?? '',
+            'quantidade' => $item['quantidade'] ?? 0.0,
+            'valor_unitario' => $item['valor_unitario'] ?? 0.0,
+            'valor_total' => $item['valor_total'] ?? 0.0,
+        ], $dadosHtml['itens'] ?? []);
+
+        $emitidoEm = $metadados['emitido_em'] ?? '';
+        if ($emitidoEm && preg_match('#(\d{2})/(\d{2})/(\d{4})\s+([\d:]+)#', $emitidoEm, $m)) {
+            $emitidoEm = "{$m[3]}-{$m[2]}-{$m[1]}T{$m[4]}";
+        }
+
+        return [
+            'chave' => $chaveAcesso,
+            'numero' => $metadados['numero'] ?? '',
+            'serie' => $metadados['serie'] ?? '',
+            'emitido_em' => $emitidoEm,
+            'ambiente' => 'producao',
+            'emitente' => [
+                'cnpj' => $emitente['cnpj'] ?? '',
+                'nome' => $emitente['nome'] ?? '',
+                'logradouro' => $emitente['logradouro'] ?? '',
+                'numero' => $emitente['numero'] ?? '',
+                'bairro' => $emitente['bairro'] ?? '',
+                'municipio' => $emitente['municipio'] ?? '',
+                'uf' => $emitente['uf'] ?? '',
+                'cep' => $emitente['cep'] ?? '',
+            ],
+            'destinatario' => [
+                'cpf' => '',
+                'cnpj' => '',
+                'nome' => '',
+            ],
+            'itens' => $itens,
+            'total' => [
+                'base_calculo_icms' => 0.0,
+                'valor_icms' => 0.0,
+                'valor_produtos' => $totais['valor_produtos'] ?? 0.0,
+                'valor_nota' => $totais['valor_nota'] ?? 0.0,
+                'valor_tributos' => $totais['valor_tributos'] ?? 0.0,
+            ],
+            'pagamento' => $dadosHtml['pagamento'] ?? [],
+        ];
+    }
+
+    private function parseBrDecimal(string $value): float
+    {
+        if (empty($value)) {
+            return 0.0;
+        }
+
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+
+        return (float) $value;
     }
 
     /**
