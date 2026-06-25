@@ -29,7 +29,7 @@ class ShoppingListController extends Controller
             return response()->json([]);
         }
 
-        $userId = Auth::id();
+        $userId      = Auth::id();
         $favoriteIds = Auth::user()->favoriteIssuers()->pluck('issuers.id');
 
         $items = InvoiceItem::select(
@@ -41,7 +41,7 @@ class ShoppingListController extends Controller
             'issuers.id as issuer_id',
             'invoices.issued_at'
         )
-            ->selectRaw('IF(issuers.id IN ('.($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0').'), 1, 0) as is_favorite')
+            ->selectRaw('IF(issuers.id IN (' . ($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0') . '), 1, 0) as is_favorite')
             ->join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
             ->where('invoices.user_id', $userId)
@@ -56,11 +56,11 @@ class ShoppingListController extends Controller
 
     public function store(Request $request)
     {
-        $name = $request->input('name') ?: 'Lista de compras '.Carbon::now()->format('d/m/Y');
+        $name = $request->input('name') ?: 'Lista de compras ' . Carbon::now()->format('d/m/Y');
 
         $list = ShoppingList::create([
             'user_id' => Auth::id(),
-            'name' => $name,
+            'name'    => $name,
         ]);
 
         return response()->json(['id' => $list->id, 'name' => $list->name]);
@@ -108,17 +108,17 @@ class ShoppingListController extends Controller
 
         $request->validate([
             'description' => 'required|string',
-            'unit_price' => 'required|numeric',
-            'issuer_id' => 'required|integer|exists:issuers,id',
-            'quantity' => 'required|integer|min:1',
+            'unit_price'  => 'required|numeric',
+            'issuer_id'   => 'required|integer|exists:issuers,id',
+            'quantity'    => 'required|integer|min:1',
         ]);
 
         $item = $shoppingList->items()->create([
-            'issuer_id' => $request->input('issuer_id'),
+            'issuer_id'   => $request->input('issuer_id'),
             'description' => $request->input('description'),
-            'unit' => $request->input('unit'),
-            'unit_price' => $request->input('unit_price'),
-            'quantity' => $request->input('quantity'),
+            'unit'        => $request->input('unit'),
+            'unit_price'  => $request->input('unit_price'),
+            'quantity'    => $request->input('quantity'),
         ]);
 
         $item->load('issuer');
