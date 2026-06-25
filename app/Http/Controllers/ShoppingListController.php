@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AddShoppingListItemRequest;
+use App\Http\Requests\UpdateShoppingListItemRequest;
+use App\Http\Requests\UpdateShoppingListRequest;
 use App\Models\InvoiceItem;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
@@ -62,7 +65,7 @@ class ShoppingListController extends Controller
 
         $list = ShoppingList::create([
             'user_id' => Auth::id(),
-            'name' => $name,
+            'name'    => $name,
         ]);
 
         return response()->json(['id' => $list->id, 'name' => $list->name]);
@@ -77,11 +80,10 @@ class ShoppingListController extends Controller
         return response()->json($shoppingList);
     }
 
-    public function update(Request $request, ShoppingList $shoppingList): JsonResponse
+    public function update(UpdateShoppingListRequest $request, ShoppingList $shoppingList): JsonResponse
     {
         $this->authorize('interact', $shoppingList);
 
-        $request->validate(['name' => 'required|string|max:255']);
         $shoppingList->update(['name' => $request->input('name')]);
 
         return response()->json(['success' => true]);
@@ -96,23 +98,16 @@ class ShoppingListController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function addItem(Request $request, ShoppingList $shoppingList): JsonResponse
+    public function addItem(AddShoppingListItemRequest $request, ShoppingList $shoppingList): JsonResponse
     {
         $this->authorize('interact', $shoppingList);
 
-        $request->validate([
-            'description' => 'required|string',
-            'unit_price' => 'required|numeric',
-            'issuer_id' => 'required|integer|exists:issuers,id',
-            'quantity' => 'required|integer|min:1',
-        ]);
-
         $item = $shoppingList->items()->create([
-            'issuer_id' => $request->input('issuer_id'),
+            'issuer_id'   => $request->input('issuer_id'),
             'description' => $request->input('description'),
-            'unit' => $request->input('unit'),
-            'unit_price' => $request->input('unit_price'),
-            'quantity' => $request->input('quantity'),
+            'unit'        => $request->input('unit'),
+            'unit_price'  => $request->input('unit_price'),
+            'quantity'    => $request->input('quantity'),
         ]);
 
         $item->load('issuer');
@@ -121,11 +116,10 @@ class ShoppingListController extends Controller
         return response()->json($item);
     }
 
-    public function updateItem(Request $request, ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
+    public function updateItem(UpdateShoppingListItemRequest $request, ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
     {
         $this->authorize('interact', $shoppingList);
 
-        $request->validate(['quantity' => 'required|integer|min:1']);
         $item->update(['quantity' => $request->input('quantity')]);
         $shoppingList->touch();
 

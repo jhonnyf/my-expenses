@@ -4,9 +4,32 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\InvoiceItem;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CategoryService
 {
+    public function getCategoriesWithSpending(int $userId): Collection
+    {
+        $categories = Category::forUser($userId)
+            ->withCount(['items' => fn ($q) => $q->whereHas('invoice', fn ($q2) => $q2->where('user_id', $userId))])
+            ->get();
+
+        $spendingByCategory = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->where('invoices.user_id', $userId)
+            ->whereNotNull('invoices_items.category_id')
+            ->select('invoices_items.category_id', DB::raw('SUM(invoices_items.total_price) as total'))
+            ->groupBy('invoices_items.category_id')
+            ->pluck('total', 'category_id');
+
+        return $categories->map(function (Category $cat) use ($spendingByCategory) {
+            $cat->total_spent = (float) ($spendingByCategory[$cat->id] ?? 0);
+
+            return $cat;
+        });
+    }
+
+
     public function autoCategorize(int $userId): int
     {
         $categories = Category::forUser($userId)

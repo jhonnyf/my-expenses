@@ -1,145 +1,164 @@
 @extends('layout.main')
+@section('page-module', 'dashboard')
 
-@php
-    $paymentLabels = [
-        'dinheiro'        => 'Dinheiro',
-        'cheque'          => 'Cheque',
-        'cartao_credito'  => 'Cartão de Crédito',
-        'cartao_debito'   => 'Cartão de Débito',
-        'credito_loja'    => 'Crédito Loja',
-        'vale_alimentacao'=> 'Vale Alimentação',
-        'vale_refeicao'   => 'Vale Refeição',
-        'vale_presente'   => 'Vale Presente',
-        'vale_combustivel'=> 'Vale Combustível',
-        'boleto'          => 'Boleto',
-        'sem_pagamento'   => 'Sem Pagamento',
-        'outros'          => 'Outros',
-    ];
-
-    $paymentIcons = [
-        'dinheiro'        => 'ki-filled ki-dollar',
-        'cartao_credito'  => 'ki-filled ki-credit-cart',
-        'cartao_debito'   => 'ki-filled ki-credit-cart',
-        'vale_alimentacao'=> 'ki-filled ki-basket',
-        'vale_refeicao'   => 'ki-filled ki-coffee',
-        'pix'             => 'ki-filled ki-send',
-        'boleto'          => 'ki-filled ki-document',
-    ];
-@endphp
 
 @section('content')
-    <div class="kt-container-fixed">
-        <div class="flex flex-wrap items-center lg:items-end justify-between gap-5 pb-7.5">
-            <div class="flex flex-col justify-center gap-2">
-                <h1 class="text-xl font-medium leading-none text-mono">Dashboard</h1>
-                <p class="text-sm text-secondary-foreground">Visão geral dos seus gastos</p>
+
+    {{-- ===== PAGE HEADER ===== --}}
+    <div class="kt-container-fixed mb-6 px-4 lg:px-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-semibold text-foreground leading-tight">Dashboard</h1>
+                <p class="text-sm text-secondary-foreground mt-0.5">
+                    {{ now()->translatedFormat('l, d \d\e F \d\e Y') }}
+                </p>
             </div>
+            <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm">
+                <i class="ki-filled ki-file-up text-base"></i>
+                Importar NF-e
+            </a>
         </div>
     </div>
 
-    <div class="kt-container-fixed space-y-5 pb-10">
+    <div class="kt-container-fixed space-y-5 pb-10 px-4 lg:px-6">
 
-        {{-- Cards de resumo --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {{-- ===== CARDS DE RESUMO ===== --}}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+
             <div class="kt-card">
-                <div class="kt-card-content py-5 px-5">
-                    <div class="flex items-center justify-between">
-                        <div class="min-w-0">
-                            <p class="text-xs text-secondary-foreground mb-2">Total de Gastos</p>
-                            <p class="text-xl sm:text-2xl font-bold text-foreground truncate">R$ {{ number_format($totalExpenses, 2, ',', '.') }}</p>
+                <div class="kt-card-content p-4 sm:p-5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[11px] sm:text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-2">
+                                Total Gasto
+                            </p>
+                            <p class="text-lg sm:text-2xl font-bold text-foreground leading-none truncate tabular-nums">
+                                R$ {{ number_format($totalExpenses, 2, ',', '.') }}
+                            </p>
+                            <p class="text-[11px] sm:text-xs text-secondary-foreground mt-2">acumulado geral</p>
                         </div>
-                        <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 shrink-0">
-                            <i class="ki-filled ki-dollar text-primary text-lg"></i>
+                        <div class="flex items-center justify-center size-9 sm:size-11 rounded-xl bg-primary/10 shrink-0">
+                            <i class="ki-filled ki-dollar text-primary text-base sm:text-xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
+
             <div class="kt-card">
-                <div class="kt-card-content py-5 px-5">
-                    <div class="flex items-center justify-between">
-                        <div class="min-w-0">
-                            <p class="text-xs text-secondary-foreground mb-2">Total de Impostos</p>
-                            <p class="text-xl sm:text-2xl font-bold text-foreground truncate">R$ {{ number_format($totalTaxes, 2, ',', '.') }}</p>
+                <div class="kt-card-content p-4 sm:p-5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[11px] sm:text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-2">
+                                Impostos
+                            </p>
+                            <p class="text-lg sm:text-2xl font-bold text-foreground leading-none truncate tabular-nums">
+                                R$ {{ number_format($totalTaxes, 2, ',', '.') }}
+                            </p>
+                            <p class="text-[11px] sm:text-xs text-secondary-foreground mt-2">valor tributos</p>
                         </div>
-                        <div class="flex items-center justify-center size-10 rounded-lg bg-warning/10 shrink-0">
-                            <i class="ki-filled ki-chart text-warning text-lg"></i>
+                        <div class="flex items-center justify-center size-9 sm:size-11 rounded-xl bg-warning/10 shrink-0">
+                            <i class="ki-filled ki-chart text-warning text-base sm:text-xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
+
             <div class="kt-card">
-                <div class="kt-card-content py-5 px-5">
-                    <div class="flex items-center justify-between">
-                        <div class="min-w-0">
-                            <p class="text-xs text-secondary-foreground mb-2">Total de Compras</p>
-                            <p class="text-xl sm:text-2xl font-bold text-foreground">{{ $totalPurchases }}</p>
+                <div class="kt-card-content p-4 sm:p-5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[11px] sm:text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-2">
+                                Compras
+                            </p>
+                            <p class="text-lg sm:text-2xl font-bold text-foreground leading-none tabular-nums">
+                                {{ $totalPurchases }}
+                            </p>
+                            <p class="text-[11px] sm:text-xs text-secondary-foreground mt-2">NF-e importadas</p>
                         </div>
-                        <div class="flex items-center justify-center size-10 rounded-lg bg-info/10 shrink-0">
-                            <i class="ki-filled ki-purchase text-info text-lg"></i>
+                        <div class="flex items-center justify-center size-9 sm:size-11 rounded-xl bg-info/10 shrink-0">
+                            <i class="ki-filled ki-purchase text-info text-base sm:text-xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
+
             <div class="kt-card">
-                <div class="kt-card-content py-5 px-5">
-                    <div class="flex items-center justify-between">
-                        <div class="min-w-0">
-                            <p class="text-xs text-secondary-foreground mb-2">Ticket Médio</p>
-                            <p class="text-xl sm:text-2xl font-bold text-primary truncate">R$ {{ number_format($averageTicket, 2, ',', '.') }}</p>
+                <div class="kt-card-content p-4 sm:p-5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[11px] sm:text-xs text-secondary-foreground font-medium uppercase tracking-wide mb-2">
+                                Ticket Médio
+                            </p>
+                            <p class="text-lg sm:text-2xl font-bold text-primary leading-none truncate tabular-nums">
+                                R$ {{ number_format($averageTicket, 2, ',', '.') }}
+                            </p>
+                            <p class="text-[11px] sm:text-xs text-secondary-foreground mt-2">por compra</p>
                         </div>
-                        <div class="flex items-center justify-center size-10 rounded-lg bg-success/10 shrink-0">
-                            <i class="ki-filled ki-basket text-success text-lg"></i>
+                        <div class="flex items-center justify-center size-9 sm:size-11 rounded-xl bg-success/10 shrink-0">
+                            <i class="ki-filled ki-basket text-success text-base sm:text-xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
 
-        {{-- Mês atual vs anterior + Última compra --}}
-        <div class="grid lg:grid-cols-3 gap-5">
+        {{-- ===== MÊS ATUAL + ÚLTIMA COMPRA + FORMAS DE PAGAMENTO ===== --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-            {{-- Mês atual --}}
+            {{-- Mês atual vs anterior --}}
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-calendar text-primary me-1"></i> Mês Atual
+                        <i class="ki-filled ki-calendar text-primary me-1.5 text-base"></i>
+                        Mês Atual
                     </h3>
                     @if($monthVariation !== null)
                         <div class="kt-card-toolbar">
                             @if($monthVariation > 0)
                                 <span class="kt-badge kt-badge-destructive kt-badge-outline kt-badge-sm">
-                                    <i class="ki-filled ki-arrow-up text-2xs me-0.5"></i> +{{ number_format($monthVariation, 1) }}%
+                                    <i class="ki-filled ki-arrow-up text-2xs"></i>
+                                    +{{ number_format($monthVariation, 1) }}%
                                 </span>
                             @elseif($monthVariation < 0)
                                 <span class="kt-badge kt-badge-success kt-badge-outline kt-badge-sm">
-                                    <i class="ki-filled ki-arrow-down text-2xs me-0.5"></i> {{ number_format($monthVariation, 1) }}%
+                                    <i class="ki-filled ki-arrow-down text-2xs"></i>
+                                    {{ number_format($monthVariation, 1) }}%
                                 </span>
                             @else
-                                <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm">Igual</span>
+                                <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm">Estável</span>
                             @endif
                         </div>
                     @endif
                 </div>
-                <div class="kt-card-content pb-5">
-                    <div class="space-y-4">
-                        <div>
-                            <p class="text-xs text-secondary-foreground">Gastos em {{ now()->translatedFormat('F') }}</p>
-                            <p class="text-2xl font-bold text-foreground mt-1">R$ {{ number_format($currentMonthExpenses, 2, ',', '.') }}</p>
-                        </div>
-                        <div class="border-t border-border pt-3">
-                            <p class="text-xs text-secondary-foreground">Mês anterior ({{ now()->subMonth()->translatedFormat('F') }})</p>
-                            <p class="text-lg font-semibold text-foreground mt-1">R$ {{ number_format($lastMonthExpenses, 2, ',', '.') }}</p>
+                <div class="kt-card-content pb-5 space-y-3">
+                    <div class="rounded-xl bg-primary/5 border border-primary/10 p-4">
+                        <p class="text-xs text-secondary-foreground mb-1.5 capitalize">
+                            {{ now()->translatedFormat('F Y') }}
+                        </p>
+                        <p class="text-2xl font-bold text-foreground truncate tabular-nums">
+                            R$ {{ number_format($currentMonthExpenses, 2, ',', '.') }}
+                        </p>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 px-1 py-2 rounded-lg hover:bg-accent/40 transition-colors">
+                        <div class="min-w-0">
+                            <p class="text-xs text-secondary-foreground capitalize">
+                                {{ now()->subMonth()->translatedFormat('F') }}
+                            </p>
+                            <p class="text-sm font-semibold text-foreground truncate tabular-nums">
+                                R$ {{ number_format($lastMonthExpenses, 2, ',', '.') }}
+                            </p>
                         </div>
                         @if($monthVariation !== null)
-                            <p class="text-xs text-secondary-foreground">
+                            <span class="text-xs font-medium shrink-0 {{ $monthVariation > 0 ? 'text-destructive' : ($monthVariation < 0 ? 'text-success' : 'text-secondary-foreground') }}">
                                 @if($monthVariation > 0)
-                                    Você gastou <strong class="text-destructive">{{ number_format(abs($monthVariation), 1) }}% a mais</strong> que o mês anterior
+                                    +{{ number_format(abs($monthVariation), 1) }}% a mais
                                 @elseif($monthVariation < 0)
-                                    Você gastou <strong class="text-success">{{ number_format(abs($monthVariation), 1) }}% a menos</strong> que o mês anterior
+                                    {{ number_format(abs($monthVariation), 1) }}% a menos
                                 @else
-                                    Gastos iguais ao mês anterior
+                                    Sem variação
                                 @endif
-                            </p>
+                            </span>
                         @endif
                     </div>
                 </div>
@@ -149,105 +168,155 @@
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-purchase text-primary me-1"></i> Última Compra
+                        <i class="ki-filled ki-purchase text-primary me-1.5 text-base"></i>
+                        Última Compra
                     </h3>
                 </div>
                 <div class="kt-card-content pb-5">
                     @if($lastPurchase)
                         <div class="space-y-3">
                             <div class="flex items-center gap-3">
-                                <div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 shrink-0">
-                                    <i class="ki-filled ki-shop text-primary"></i>
+                                <div class="flex items-center justify-center size-11 rounded-xl bg-primary/10 shrink-0">
+                                    <i class="ki-filled ki-shop text-primary text-xl"></i>
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="font-semibold text-foreground truncate">{{ $lastPurchase->issuer->name ?? '—' }}</p>
-                                    <p class="text-xs text-secondary-foreground">{{ $lastPurchase->issued_at->format('d/m/Y H:i') }}</p>
+                                    <p class="text-sm font-semibold text-foreground truncate">
+                                        {{ $lastPurchase->issuer->name ?? '—' }}
+                                    </p>
+                                    <p class="text-xs text-secondary-foreground mt-0.5">
+                                        {{ $lastPurchase->issued_at->translatedFormat('d \d\e M') }}
+                                        · {{ $lastPurchase->issued_at->format('H:i') }}
+                                    </p>
                                 </div>
                             </div>
-                            <div class="border-t border-border pt-3">
-                                <p class="text-xs text-secondary-foreground">Valor total</p>
-                                <p class="text-2xl font-bold text-primary mt-1">R$ {{ number_format($lastPurchase->total_amount, 2, ',', '.') }}</p>
+                            <div class="rounded-xl bg-primary/5 border border-primary/10 p-4">
+                                <p class="text-xs text-secondary-foreground mb-1">Valor total</p>
+                                <p class="text-2xl font-bold text-primary truncate tabular-nums">
+                                    R$ {{ number_format($lastPurchase->total_amount, 2, ',', '.') }}
+                                </p>
                             </div>
-                            <a href="{{ route('my-purchases.detail', ['invoice' => $lastPurchase->id]) }}" class="kt-btn kt-btn-sm kt-btn-light w-full mt-2">
-                                <i class="ki-filled ki-eye text-sm me-1"></i> Ver detalhes
+                            <a href="{{ route('my-purchases.detail', ['invoice' => $lastPurchase->id]) }}"
+                               class="kt-btn kt-btn-secondary kt-btn-sm w-full justify-center">
+                                <i class="ki-filled ki-eye text-sm"></i>
+                                Ver detalhes
                             </a>
                         </div>
                     @else
-                        <p class="text-sm text-secondary-foreground py-4">Nenhuma compra registrada.</p>
+                        <div class="flex flex-col items-center justify-center py-8 text-center">
+                            <div class="flex items-center justify-center size-12 rounded-xl bg-secondary/50 mb-3">
+                                <i class="ki-filled ki-purchase text-secondary-foreground text-xl"></i>
+                            </div>
+                            <p class="text-sm text-secondary-foreground mb-3">Nenhuma compra registrada.</p>
+                            <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm">
+                                Importar NF-e
+                            </a>
+                        </div>
                     @endif
                 </div>
             </div>
 
-            {{-- Distribuição por pagamento --}}
-            <div class="kt-card">
+            {{-- Formas de pagamento --}}
+            <div class="kt-card sm:col-span-2 lg:col-span-1">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-wallet text-primary me-1"></i> Formas de Pagamento
+                        <i class="ki-filled ki-wallet text-primary me-1.5 text-base"></i>
+                        Formas de Pagamento
                     </h3>
                 </div>
                 <div class="kt-card-content pb-5">
                     @if($paymentDistribution->isNotEmpty())
-                        @php $paymentTotal = $paymentDistribution->sum('total'); @endphp
-                        <div class="space-y-3">
+                        @php $paymentTotal = $paymentDistribution->sum('total') ?: 1; @endphp
+                        <div class="space-y-3.5">
                             @foreach($paymentDistribution as $payment)
-                                @php $pct = $paymentTotal > 0 ? ($payment->total / $paymentTotal) * 100 : 0; @endphp
+                                @php $pct = ($payment->total / $paymentTotal) * 100; @endphp
                                 <div>
-                                    <div class="flex justify-between items-center mb-1.5">
-                                        <div class="flex items-center gap-2">
-                                            <i class="{{ $paymentIcons[$payment->method] ?? 'ki-filled ki-wallet' }} text-sm text-secondary-foreground"></i>
-                                            <span class="text-sm text-foreground">{{ $paymentLabels[$payment->method] ?? $payment->method }}</span>
+                                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <i class="{{ $paymentIcons[$payment->method] ?? 'ki-filled ki-wallet' }} text-sm text-muted-foreground shrink-0"></i>
+                                            <span class="text-sm text-foreground truncate">
+                                                {{ $paymentLabels[$payment->method] ?? $payment->method }}
+                                            </span>
                                         </div>
-                                        <span class="text-xs font-semibold text-foreground">{{ number_format($pct, 0) }}%</span>
+                                        <div class="flex items-center gap-1.5 shrink-0">
+                                            <span class="text-xs text-secondary-foreground tabular-nums">
+                                                {{ number_format($pct, 0) }}%
+                                            </span>
+                                            <span class="text-xs font-semibold text-foreground tabular-nums">
+                                                R$ {{ number_format($payment->total, 2, ',', '.') }}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div class="kt-progress">
+                                    <div class="kt-progress h-1.5">
                                         <div class="kt-progress-indicator" style="width: {{ $pct }}%"></div>
                                     </div>
-                                    <p class="text-xs text-secondary-foreground mt-1">R$ {{ number_format($payment->total, 2, ',', '.') }}</p>
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <p class="text-sm text-secondary-foreground py-4">Sem dados de pagamento.</p>
+                        <div class="flex flex-col items-center justify-center py-8 text-center">
+                            <i class="ki-filled ki-wallet text-4xl text-secondary-foreground/30 mb-2"></i>
+                            <p class="text-sm text-secondary-foreground">Sem dados de pagamento.</p>
+                        </div>
                     @endif
                 </div>
             </div>
+
         </div>
 
-        {{-- Orçamento --}}
+        {{-- ===== ORÇAMENTO DO MÊS ===== --}}
         @if($budgets->isNotEmpty())
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-chart text-primary me-1"></i> Orçamento do Mês
+                        <i class="ki-filled ki-chart text-primary me-1.5 text-base"></i>
+                        Orçamento do Mês
                     </h3>
                     <div class="kt-card-toolbar">
-                        <a href="{{ route('budgets.index') }}" class="kt-btn kt-btn-sm kt-btn-light">
-                            <i class="ki-filled ki-setting-2 text-sm me-1"></i> Gerenciar
+                        <a href="{{ route('budgets.index') }}" class="kt-btn kt-btn-secondary kt-btn-sm">
+                            <i class="ki-filled ki-setting-2 text-sm"></i>
+                            <span class="hidden sm:inline">Gerenciar</span>
                         </a>
                     </div>
                 </div>
                 <div class="kt-card-content pb-5">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         @foreach($budgets->sortByDesc('percentage')->take(6) as $budget)
                             @php
-                                $pct = min($budget->percentage, 100);
-                                $status = $budget->percentage < 75 ? 'success' : ($budget->percentage < 100 ? 'warning' : 'destructive');
-                                $statusLabel = $budget->percentage < 75 ? 'Dentro do limite' : ($budget->percentage < 100 ? 'Atenção' : 'Estourado');
+                                $pct    = min($budget->percentage, 100);
+                                $over   = $budget->percentage >= 100;
+                                $warn   = $budget->percentage >= 75 && !$over;
+                                $status = $over ? 'destructive' : ($warn ? 'warning' : 'success');
+                                $label  = $over ? 'Estourado' : ($warn ? 'Atenção' : 'No limite');
                             @endphp
-                            <div class="border border-border rounded-lg p-4">
-                                <div class="flex justify-between items-start gap-2 mb-3">
+                            <div class="rounded-xl border border-border p-4 space-y-3 hover:border-border/80 transition-colors">
+                                <div class="flex items-start justify-between gap-2">
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-foreground truncate">{{ $budget->category->name ?? 'Geral' }}</p>
-                                        <p class="text-xs text-secondary-foreground mt-0.5">
-                                            R$ {{ number_format($budget->spent, 2, ',', '.') }} de R$ {{ number_format($budget->amount, 2, ',', '.') }}
+                                        <p class="text-sm font-semibold text-foreground truncate">
+                                            {{ $budget->category->name ?? 'Geral' }}
+                                        </p>
+                                        <p class="text-xs text-secondary-foreground mt-0.5 tabular-nums">
+                                            R$ {{ number_format($budget->spent, 2, ',', '.') }}
+                                            <span class="text-secondary-foreground/50">
+                                                / R$ {{ number_format($budget->amount, 2, ',', '.') }}
+                                            </span>
                                         </p>
                                     </div>
-                                    <span class="kt-badge kt-badge-{{ $status }} kt-badge-outline kt-badge-sm shrink-0">{{ $statusLabel }}</span>
+                                    <span class="kt-badge kt-badge-{{ $status }} kt-badge-outline kt-badge-sm shrink-0">
+                                        {{ $label }}
+                                    </span>
                                 </div>
-                                <div class="kt-progress">
-                                    <div class="kt-progress-indicator kt-progress-{{ $status }}" style="width: {{ $pct }}%"></div>
+                                <div class="kt-progress h-2">
+                                    <div class="kt-progress-indicator kt-progress-{{ $status }}"
+                                         style="width: {{ $pct }}%"></div>
                                 </div>
-                                <p class="text-xs text-secondary-foreground mt-1.5 text-right">{{ number_format($budget->percentage, 0) }}%</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-secondary-foreground tabular-nums">
+                                        Restante: R$ {{ number_format(max($budget->remaining, 0), 2, ',', '.') }}
+                                    </span>
+                                    <span class="text-xs font-bold tabular-nums {{ $over ? 'text-destructive' : ($warn ? 'text-warning' : 'text-success') }}">
+                                        {{ number_format($budget->percentage, 0) }}%
+                                    </span>
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -255,126 +324,163 @@
             </div>
         @endif
 
-        {{-- Gráfico de gastos mensais (ApexCharts) --}}
-        <div class="kt-card">
-            <div class="kt-card-header">
-                <h3 class="kt-card-title">
-                    <i class="ki-filled ki-chart-line text-primary me-1"></i> Gastos Mensais
-                </h3>
-                <div class="kt-card-toolbar">
-                    <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm">Últimos 12 meses</span>
-                </div>
-            </div>
-            <div class="kt-card-content pb-5">
-                @if($monthlyExpenses->isNotEmpty())
-                    <div id="monthlyExpensesChart" class="h-56 sm:h-72"></div>
-                @else
-                    <p class="text-sm text-secondary-foreground py-4">Sem dados para exibir.</p>
-                @endif
-            </div>
-        </div>
-
-        {{-- Gastos por Categoria --}}
-        <div class="grid lg:grid-cols-2 gap-5">
+        {{-- ===== GRÁFICO EVOLUÇÃO MENSAL ===== --}}
+        @if($monthlyExpenses->isNotEmpty())
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-category text-primary me-1"></i> Gastos por Categoria
+                        <i class="ki-filled ki-chart-line text-primary me-1.5 text-base"></i>
+                        Evolução de Gastos
                     </h3>
                     <div class="kt-card-toolbar">
-                        <a href="{{ route('categories.index') }}" class="kt-btn kt-btn-sm kt-btn-light">
-                            <i class="ki-filled ki-setting-2 text-sm me-1"></i> Gerenciar
+                        <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm">
+                            Últimos 12 meses
+                        </span>
+                    </div>
+                </div>
+                <div class="kt-card-content pb-5">
+                    <div id="monthlyExpensesChart" class="w-full" style="height: 260px;"></div>
+                </div>
+            </div>
+        @endif
+
+        {{-- ===== CATEGORIAS + DISTRIBUIÇÃO DE PAGAMENTOS ===== --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {{-- Gastos por categoria --}}
+            <div class="kt-card">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">
+                        <i class="ki-filled ki-category text-primary me-1.5 text-base"></i>
+                        Gastos por Categoria
+                    </h3>
+                    <div class="kt-card-toolbar">
+                        <a href="{{ route('categories.index') }}" class="kt-btn kt-btn-secondary kt-btn-sm">
+                            <i class="ki-filled ki-setting-2 text-sm"></i>
+                            <span class="hidden sm:inline">Gerenciar</span>
                         </a>
                     </div>
                 </div>
                 <div class="kt-card-content pb-5">
                     @if($spendingByCategory->isNotEmpty())
-                        <div id="categoryChart" class="h-56 sm:h-72 mb-4"></div>
+                        <div id="categoryChart" class="w-full" style="height: 200px;"></div>
                         @php $catTotal = $spendingByCategory->sum('total') ?: 1; @endphp
-                        <div class="space-y-2">
+                        <div class="mt-3 space-y-0.5">
                             @foreach($spendingByCategory->take(6) as $cat)
                                 @php $catPct = ($cat->total / $catTotal) * 100; @endphp
-                                <div class="flex items-center justify-between gap-2 py-1">
-                                    <div class="flex items-center gap-2 min-w-0">
-                                        <span class="size-2.5 rounded-full shrink-0" style="background-color: {{ $cat->category_color }}"></span>
+                                <div class="flex items-center justify-between gap-3 px-2 py-2 rounded-lg hover:bg-accent/40 transition-colors">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <span class="size-2.5 rounded-full shrink-0"
+                                              style="background-color: {{ $cat->category_color }}"></span>
                                         <span class="text-sm text-foreground truncate">{{ $cat->category_name }}</span>
                                     </div>
-                                    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-                                        <span class="text-xs text-secondary-foreground">{{ number_format($catPct, 0) }}%</span>
-                                        <span class="text-xs sm:text-sm font-semibold font-mono text-foreground text-right">R$ {{ number_format($cat->total, 2, ',', '.') }}</span>
+                                    <div class="flex items-center gap-2.5 shrink-0">
+                                        <span class="text-xs text-secondary-foreground tabular-nums">
+                                            {{ number_format($catPct, 0) }}%
+                                        </span>
+                                        <span class="text-sm font-semibold text-foreground tabular-nums">
+                                            R$ {{ number_format($cat->total, 2, ',', '.') }}
+                                        </span>
                                     </div>
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <p class="text-sm text-secondary-foreground py-4">Sem dados de categoria.</p>
+                        <div class="flex flex-col items-center justify-center py-10 text-center">
+                            <div class="flex items-center justify-center size-12 rounded-xl bg-secondary/50 mb-3">
+                                <i class="ki-filled ki-category text-secondary-foreground text-xl"></i>
+                            </div>
+                            <p class="text-sm text-secondary-foreground">Sem dados de categoria.</p>
+                        </div>
                     @endif
                 </div>
             </div>
 
-            {{-- Distribuição por pagamento (donut chart) --}}
+            {{-- Distribuição de pagamentos --}}
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-wallet text-primary me-1"></i> Distribuição de Pagamentos
+                        <i class="ki-filled ki-wallet text-primary me-1.5 text-base"></i>
+                        Distribuição de Pagamentos
                     </h3>
                 </div>
                 <div class="kt-card-content pb-5">
                     @if($paymentDistribution->isNotEmpty())
-                        <div id="paymentChart" class="h-56 sm:h-72 mb-4"></div>
-                        @php $paymentTotal = $paymentDistribution->sum('total'); @endphp
-                        <div class="space-y-2">
+                        <div id="paymentChart" class="w-full" style="height: 200px;"></div>
+                        @php $paymentTotal = $paymentDistribution->sum('total') ?: 1; @endphp
+                        <div class="mt-3 space-y-0.5">
                             @foreach($paymentDistribution as $payment)
-                                @php $pct = $paymentTotal > 0 ? ($payment->total / $paymentTotal) * 100 : 0; @endphp
-                                <div class="flex items-center justify-between gap-2 py-1">
-                                    <div class="flex items-center gap-2 min-w-0">
-                                        <i class="{{ $paymentIcons[$payment->method] ?? 'ki-filled ki-wallet' }} text-sm text-secondary-foreground shrink-0"></i>
-                                        <span class="text-sm text-foreground truncate">{{ $paymentLabels[$payment->method] ?? $payment->method }}</span>
+                                @php $pct = ($payment->total / $paymentTotal) * 100; @endphp
+                                <div class="flex items-center justify-between gap-3 px-2 py-2 rounded-lg hover:bg-accent/40 transition-colors">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <i class="{{ $paymentIcons[$payment->method] ?? 'ki-filled ki-wallet' }} text-sm text-muted-foreground shrink-0"></i>
+                                        <span class="text-sm text-foreground truncate">
+                                            {{ $paymentLabels[$payment->method] ?? $payment->method }}
+                                        </span>
                                     </div>
-                                    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-                                        <span class="text-xs text-secondary-foreground">{{ number_format($pct, 0) }}%</span>
-                                        <span class="text-xs sm:text-sm font-semibold font-mono text-foreground text-right">R$ {{ number_format($payment->total, 2, ',', '.') }}</span>
+                                    <div class="flex items-center gap-2.5 shrink-0">
+                                        <span class="text-xs text-secondary-foreground tabular-nums">
+                                            {{ number_format($pct, 0) }}%
+                                        </span>
+                                        <span class="text-sm font-semibold text-foreground tabular-nums">
+                                            R$ {{ number_format($payment->total, 2, ',', '.') }}
+                                        </span>
                                     </div>
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <p class="text-sm text-secondary-foreground py-4">Sem dados de pagamento.</p>
+                        <div class="flex flex-col items-center justify-center py-10 text-center">
+                            <div class="flex items-center justify-center size-12 rounded-xl bg-secondary/50 mb-3">
+                                <i class="ki-filled ki-wallet text-secondary-foreground text-xl"></i>
+                            </div>
+                            <p class="text-sm text-secondary-foreground">Sem dados de pagamento.</p>
+                        </div>
                     @endif
                 </div>
             </div>
+
         </div>
 
-        {{-- Top emissores + Produtos mais comprados --}}
-        <div class="grid lg:grid-cols-2 gap-5">
+        {{-- ===== TOP EMISSORES + PRODUTOS MAIS COMPRADOS ===== --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-            {{-- Top 5 emissores --}}
+            {{-- Onde você mais gasta --}}
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-shop text-primary me-1"></i> Onde Você Mais Gasta
+                        <i class="ki-filled ki-shop text-primary me-1.5 text-base"></i>
+                        Onde Você Mais Gasta
                     </h3>
                 </div>
-                <div class="kt-card-content pb-4">
+                <div class="kt-card-content pb-2">
                     @if($topIssuers->isNotEmpty())
-                        <div class="divide-y divide-border">
-                            @foreach($topIssuers as $i => $issuer)
-                                <div class="flex items-center justify-between gap-2 py-3 px-1">
-                                    <div class="flex items-center gap-3 min-w-0">
-                                        <span class="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary text-xs font-bold shrink-0">
-                                            {{ $i + 1 }}º
-                                        </span>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-medium text-foreground truncate">{{ $issuer->name }}</p>
-                                            <p class="text-xs text-secondary-foreground">{{ $issuer->count }} {{ $issuer->count == 1 ? 'compra' : 'compras' }}</p>
-                                        </div>
+                        @foreach($topIssuers as $i => $issuer)
+                            <div class="flex items-center justify-between gap-3 px-2 py-3 rounded-lg hover:bg-accent/40 transition-colors border-b border-border/40 last:border-0">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="flex items-center justify-center size-8 rounded-lg shrink-0 font-bold text-xs
+                                        {{ $i === 0 ? 'bg-primary/10 text-primary' : 'bg-secondary/60 text-secondary-foreground' }}">
+                                        {{ $i + 1 }}º
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-foreground truncate">{{ $issuer->name }}</p>
+                                        <p class="text-xs text-secondary-foreground">
+                                            {{ $issuer->count }} {{ $issuer->count == 1 ? 'compra' : 'compras' }}
+                                        </p>
                                     </div>
-                                    <span class="font-semibold font-mono text-xs sm:text-sm shrink-0">R$ {{ number_format($issuer->total, 2, ',', '.') }}</span>
                                 </div>
-                            @endforeach
-                        </div>
+                                <span class="text-sm font-semibold text-foreground shrink-0 tabular-nums">
+                                    R$ {{ number_format($issuer->total, 2, ',', '.') }}
+                                </span>
+                            </div>
+                        @endforeach
                     @else
-                        <p class="text-sm text-secondary-foreground py-4">Sem dados.</p>
+                        <div class="flex flex-col items-center justify-center py-10 text-center">
+                            <div class="flex items-center justify-center size-12 rounded-xl bg-secondary/50 mb-3">
+                                <i class="ki-filled ki-shop text-secondary-foreground text-xl"></i>
+                            </div>
+                            <p class="text-sm text-secondary-foreground">Sem dados de emissores.</p>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -383,29 +489,40 @@
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">
-                        <i class="ki-filled ki-basket text-primary me-1"></i> Produtos Mais Comprados
+                        <i class="ki-filled ki-basket text-primary me-1.5 text-base"></i>
+                        Produtos Mais Comprados
                     </h3>
                 </div>
-                <div class="kt-card-content pb-4">
+                <div class="kt-card-content pb-2">
                     @if($topProducts->isNotEmpty())
-                        <div class="divide-y divide-border">
-                            @foreach($topProducts as $i => $product)
-                                <div class="flex items-center justify-between gap-2 py-3 px-1">
-                                    <div class="flex items-center gap-3 min-w-0">
-                                        <span class="flex items-center justify-center size-8 rounded-lg bg-accent text-foreground text-xs font-bold shrink-0">
-                                            {{ $i + 1 }}º
-                                        </span>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-medium text-foreground truncate">{{ $product->description }}</p>
-                                            <p class="text-xs text-secondary-foreground">Preço médio: R$ {{ number_format($product->avg_price, 2, ',', '.') }}</p>
-                                        </div>
+                        @foreach($topProducts as $i => $product)
+                            <div class="flex items-center justify-between gap-3 px-2 py-3 rounded-lg hover:bg-accent/40 transition-colors border-b border-border/40 last:border-0">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="flex items-center justify-center size-8 rounded-lg shrink-0 font-bold text-xs
+                                        {{ $i === 0 ? 'bg-info/10 text-info' : 'bg-secondary/60 text-secondary-foreground' }}">
+                                        {{ $i + 1 }}º
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-foreground truncate">
+                                            {{ $product->description }}
+                                        </p>
+                                        <p class="text-xs text-secondary-foreground tabular-nums">
+                                            Preço médio: R$ {{ number_format($product->avg_price, 2, ',', '.') }}
+                                        </p>
                                     </div>
-                                    <span class="kt-badge kt-badge-primary kt-badge-outline kt-badge-sm shrink-0">{{ $product->frequency }}x</span>
                                 </div>
-                            @endforeach
-                        </div>
+                                <span class="kt-badge kt-badge-primary kt-badge-outline kt-badge-sm shrink-0 tabular-nums">
+                                    {{ $product->frequency }}×
+                                </span>
+                            </div>
+                        @endforeach
                     @else
-                        <p class="text-sm text-secondary-foreground py-4">Sem dados.</p>
+                        <div class="flex flex-col items-center justify-center py-10 text-center">
+                            <div class="flex items-center justify-center size-12 rounded-xl bg-secondary/50 mb-3">
+                                <i class="ki-filled ki-basket text-secondary-foreground text-xl"></i>
+                            </div>
+                            <p class="text-sm text-secondary-foreground">Sem dados de produtos.</p>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -415,12 +532,12 @@
     </div>
 
     <script>
-        window.pageConfig = {
-            monthlyExpenses: @json($monthlyExpenses),
-            spendingByCategory: @json($spendingByCategory),
+        window.pageConfig = Object.assign(window.pageConfig || {}, {
+            monthlyExpenses:     @json($monthlyExpenses),
+            spendingByCategory:  @json($spendingByCategory),
             paymentDistribution: @json($paymentDistribution),
-            paymentLabels: @json($paymentLabels),
-        };
+            paymentLabels:       @json($paymentLabels),
+        });
     </script>
-    @section('page-module', 'dashboard')
+
 @endsection
