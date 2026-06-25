@@ -94,20 +94,20 @@
             <div class="kt-card">
                 <div class="kt-card-content py-4 px-5">
                     <p class="text-xs text-secondary-foreground">Total de Notas</p>
-                    <p class="text-2xl font-bold text-foreground mt-1">{{ $record->invoices->count() }}</p>
+                    <p class="text-2xl font-bold text-foreground mt-1">{{ $stats->total_count }}</p>
                 </div>
             </div>
             <div class="kt-card">
                 <div class="kt-card-content py-4 px-5">
                     <p class="text-xs text-secondary-foreground">Valor Total</p>
-                    <p class="text-2xl font-bold text-primary mt-1">R$ {{ number_format($record->invoices->sum('total_amount'), 2, ',', '.') }}</p>
+                    <p class="text-2xl font-bold text-primary mt-1">R$ {{ number_format($stats->total_sum, 2, ',', '.') }}</p>
                 </div>
             </div>
             <div class="kt-card">
                 <div class="kt-card-content py-4 px-5">
                     <p class="text-xs text-secondary-foreground">Primeira Compra</p>
                     <p class="text-lg font-semibold text-foreground mt-1">
-                        {{ $record->invoices->min('issued_at') ? \Carbon\Carbon::parse($record->invoices->min('issued_at'))->format('d/m/Y') : '—' }}
+                        {{ $stats->first_at ? \Carbon\Carbon::parse($stats->first_at)->format('d/m/Y') : '—' }}
                     </p>
                 </div>
             </div>
@@ -115,7 +115,7 @@
                 <div class="kt-card-content py-4 px-5">
                     <p class="text-xs text-secondary-foreground">Última Compra</p>
                     <p class="text-lg font-semibold text-foreground mt-1">
-                        {{ $record->invoices->max('issued_at') ? \Carbon\Carbon::parse($record->invoices->max('issued_at'))->format('d/m/Y') : '—' }}
+                        {{ $stats->last_at ? \Carbon\Carbon::parse($stats->last_at)->format('d/m/Y') : '—' }}
                     </p>
                 </div>
             </div>
@@ -127,7 +127,7 @@
                 <h3 class="kt-card-title">
                     <i class="ki-filled ki-document text-primary me-1"></i> Notas Fiscais
                 </h3>
-                <span class="text-xs text-secondary-foreground">{{ $record->invoices->count() }} {{ $record->invoices->count() === 1 ? 'nota' : 'notas' }}</span>
+                <span class="text-xs text-secondary-foreground">{{ $stats->total_count }} {{ $stats->total_count === 1 ? 'nota' : 'notas' }}</span>
             </div>
             <div class="kt-card-content">
                 <div class="kt-scrollable-x-auto">
@@ -142,14 +142,14 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($record->invoices->sortByDesc('issued_at') as $invoice)
+                            @forelse($record->invoices as $invoice)
                                 <tr>
                                     <td class="font-mono text-sm">{{ $invoice->number }}/{{ $invoice->series }}</td>
                                     <td class="text-secondary-foreground text-sm">
-                                        {{ $invoice->issued_at ? \Carbon\Carbon::parse($invoice->issued_at)->format('d/m/Y H:i') : '—' }}
+                                        {{ $invoice->issued_at?->format('d/m/Y H:i') ?? '—' }}
                                     </td>
                                     <td class="text-right font-semibold font-mono text-sm">R$ {{ number_format($invoice->total_amount, 2, ',', '.') }}</td>
-                                    <td class="text-center text-secondary-foreground">{{ $invoice->items->count() }}</td>
+                                    <td class="text-center text-secondary-foreground">{{ $invoice->items_count }}</td>
                                     <td>
                                         <a href="{{ route('my-purchases.detail', ['invoice' => $invoice->id]) }}" class="kt-btn kt-btn-sm kt-btn-outline">
                                             <i class="ki-filled ki-eye"></i>

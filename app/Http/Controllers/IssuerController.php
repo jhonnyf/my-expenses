@@ -13,31 +13,47 @@ class IssuerController extends Controller
     {
         $favoriteIds = Auth::user()->favoriteIssuers()->pluck('issuers.id');
 
-        $issuers = Issuer::orderByRaw('FIELD(id, '.($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0').') DESC')
-            ->orderBy('name')
-            ->paginate(15);
+        $query = Issuer::query();
+
+        if ($favoriteIds->isNotEmpty()) {
+            $placeholders = implode(',', array_fill(0, $favoriteIds->count(), '?'));
+            $query->orderByRaw("FIELD(id, {$placeholders}) DESC", $favoriteIds->toArray());
+        }
+
+        $issuers = $query->orderBy('name')->paginate(15);
 
         return view('issuer.index', [
-            'records' => $issuers,
+            'records'     => $issuers,
             'favoriteIds' => $favoriteIds,
         ]);
     }
 
     public function detail(int $id): View
     {
-        $userId = Auth::id();
+        $user   = Auth::user();
+        $userId = $user->id;
         $issuer = Issuer::findOrFail($id);
 
         $issuer->load([
-            'invoices' => fn ($q) => $q->where('user_id', $userId)->latest('issued_at')->limit(50),
-            'invoices.items',
+            'invoices' => fn ($q) => $q
+                ->where('user_id', $userId)
+                ->select(['id', 'issuer_id', 'number', 'series', 'issued_at', 'total_amount'])
+                ->withCount('items')
+                ->latest('issued_at')
+                ->limit(50),
         ]);
 
-        $isFavorite = Auth::user()->favoriteIssuers()->where('issuers.id', $id)->exists();
+        $stats = $issuer->invoices()
+            ->where('user_id', $userId)
+            ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(total_amount), 0) as total_sum, MIN(issued_at) as first_at, MAX(issued_at) as last_at')
+            ->first();
+
+        $isFavorite = $user->favoriteIssuers()->where('issuers.id', $id)->exists();
 
         return view('issuer.detail', [
-            'record' => $issuer,
+            'record'     => $issuer,
             'isFavorite' => $isFavorite,
+            'stats'      => $stats,
         ]);
     }
 
