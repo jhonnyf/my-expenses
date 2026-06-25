@@ -161,7 +161,7 @@
     @stack('scripts')
 
     @auth
-    <script>window.pageConfig = window.pageConfig || {}; window.pageConfig.searchUrl = '{{ route("search") }}';</script>
+    <script>window.pageConfig = window.pageConfig || {}; window.pageConfig.globalSearchUrl = '{{ route("search") }}';
     @endauth
 </body>
 </html>

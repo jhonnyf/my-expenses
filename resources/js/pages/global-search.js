@@ -1,7 +1,7 @@
 import { http } from '../utils';
 
 export default function init() {
-    const searchUrl = window.pageConfig?.searchUrl || '';
+    const searchUrl = window.pageConfig?.globalSearchUrl || '';
     const searchInput = document.getElementById('globalSearchInput');
     const searchResults = document.getElementById('globalSearchResults');
     if (!searchInput || !searchResults) return;

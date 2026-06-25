@@ -126,7 +126,7 @@
                         <div id="savedLists" class="divide-y divide-border">
                             @forelse($lists as $list)
                                 <div class="flex items-center justify-between py-2.5 px-1 group" id="saved-list-{{ $list->id }}">
-                                    <button onclick="loadList({{ $list->id }})" class="flex-1 text-left min-w-0">
+                                    <button data-load-list="{{ $list->id }}" class="flex-1 text-left min-w-0">
                                         <p class="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
                                             {{ $list->name }}
                                         </p>
@@ -135,7 +135,7 @@
                                             &middot; {{ $list->updated_at->format('d/m/Y') }}
                                         </p>
                                     </button>
-                                    <button onclick="deleteList({{ $list->id }})"
+                                    <button data-delete-list="{{ $list->id }}"
                                             class="text-muted-foreground hover:text-destructive transition-colors ms-2 opacity-0 group-hover:opacity-100">
                                         <i class="ki-filled ki-trash text-sm"></i>
                                     </button>
