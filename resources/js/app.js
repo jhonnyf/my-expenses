@@ -2,6 +2,7 @@ import './bootstrap';
 
 import budgetInit from './pages/budget';
 import categoryInit from './pages/category';
+import dashboardInit from './pages/dashboard';
 import globalSearchInit from './pages/global-search';
 import invoiceDetailInit from './pages/invoice-detail';
 import issuerFavoriteInit from './pages/issuer-favorite';
@@ -14,6 +15,7 @@ import uploadInit from './pages/upload';
 const pages = {
     'budget': budgetInit,
     'category': categoryInit,
+    'dashboard': dashboardInit,
     'global-search': globalSearchInit,
     'invoice-detail': invoiceDetailInit,
     'issuer-favorite': issuerFavoriteInit,
