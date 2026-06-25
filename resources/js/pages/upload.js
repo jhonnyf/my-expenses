@@ -2,7 +2,7 @@ export default function init() {
     const { initialTab } = window.pageConfig || {};
 
     window.switchTab = (tab) => {
-        const tabs = ['xml', 'qrcode'];
+        const tabs = ['xml', 'qrcode', 'access_key'];
         tabs.forEach(t => {
             const tabEl = document.getElementById('tab-' + t);
             const panelEl = document.getElementById('panel-' + t);
@@ -16,7 +16,7 @@ export default function init() {
         });
     };
 
-    if (initialTab && initialTab !== 'xml') {
+    if (initialTab && initialTab !== 'qrcode') {
         window.switchTab(initialTab);
     }
 }

@@ -17,35 +17,22 @@
         <div class="kt-card max-w-lg">
             {{-- Abas --}}
             <div class="flex border-b border-border">
-                <button onclick="switchTab('xml')" id="tab-xml"
-                        class="flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-primary text-primary transition-colors">
-                    <i class="ki-filled ki-file-up me-1"></i> Arquivo XML
-                </button>
                 <button onclick="switchTab('qrcode')" id="tab-qrcode"
-                        class="flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-foreground hover:text-foreground transition-colors">
+                        class="flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-primary text-primary transition-colors">
                     <i class="ki-filled ki-scan-barcode me-1"></i> QR Code
                 </button>
-            </div>
-
-            {{-- Formulário XML --}}
-            <div class="kt-card-content pt-6" id="panel-xml">
-                <form action="{{ route('my-purchases.upload') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
-                    @csrf
-                    <div>
-                        <label for="xml" class="block text-sm font-medium mb-2">Arquivo XML da NFC-e</label>
-                        <input type="file" id="xml" name="xml" accept=".xml,text/xml" class="kt-input w-full" required>
-                        @error('xml')
-                            <p class="mt-2 text-sm text-destructive">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <button type="submit" class="kt-btn kt-btn-primary w-full">
-                        <i class="ki-filled ki-cloud-add"></i> Importar XML
-                    </button>
-                </form>
+                <button onclick="switchTab('xml')" id="tab-xml"
+                        class="flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-foreground hover:text-foreground transition-colors">
+                    <i class="ki-filled ki-file-up me-1"></i> Arquivo XML
+                </button>
+                <button onclick="switchTab('access_key')" id="tab-access_key"
+                        class="flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-foreground hover:text-foreground transition-colors">
+                    <i class="ki-filled ki-key me-1"></i> Chave de Acesso
+                </button>
             </div>
 
             {{-- Formulário QR Code --}}
-            <div class="kt-card-content pt-6" id="panel-qrcode" style="display:none;">
+            <div class="kt-card-content pt-6" id="panel-qrcode">
                 <form action="{{ route('my-purchases.import-qrcode') }}" method="POST" class="space-y-5">
                     @csrf
                     <div>
@@ -69,9 +56,53 @@
                     </button>
                 </form>
             </div>
+
+            {{-- Formulário XML --}}
+            <div class="kt-card-content pt-6" id="panel-xml" style="display:none;">
+                <form action="{{ route('my-purchases.upload') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
+                    @csrf
+                    <div>
+                        <label for="xml" class="block text-sm font-medium mb-2">Arquivo XML da NFC-e</label>
+                        <input type="file" id="xml" name="xml" accept=".xml,text/xml" class="kt-input w-full" required>
+                        @error('xml')
+                            <p class="mt-2 text-sm text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <button type="submit" class="kt-btn kt-btn-primary w-full">
+                        <i class="ki-filled ki-cloud-add"></i> Importar XML
+                    </button>
+                </form>
+            </div>
+
+            {{-- Formulário Chave de Acesso --}}
+            <div class="kt-card-content pt-6" id="panel-access_key" style="display:none;">
+                <form action="{{ route('my-purchases.import-by-key') }}" method="POST" class="space-y-5">
+                    @csrf
+                    <div>
+                        <label for="access_key" class="block text-sm font-medium mb-2">Chave de Acesso da NFC-e (44 dígitos)</label>
+                        <input type="text" id="access_key" name="access_key" class="kt-input w-full font-mono"
+                               placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
+                               maxlength="55"
+                               value="{{ old('access_key') }}" required>
+                        @error('access_key')
+                            <p class="mt-2 text-sm text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="bg-accent/50 rounded-lg p-4">
+                        <p class="text-xs text-secondary-foreground">
+                            <i class="ki-filled ki-information-2 text-primary me-1"></i>
+                            Informe a chave de acesso de 44 dígitos impressa no cupom fiscal. Os dados serão
+                            baixados diretamente da SEFAZ via certificado digital.
+                        </p>
+                    </div>
+                    <button type="submit" class="kt-btn kt-btn-primary w-full">
+                        <i class="ki-filled ki-key"></i> Importar via Chave de Acesso
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
-    <script>window.pageConfig = { initialTab: '{{ $errors->has("qrcode_url") ? "qrcode" : "xml" }}' };</script>
+    <script>window.pageConfig = { initialTab: '{{ $errors->has("access_key") ? "access_key" : ($errors->has("xml") ? "xml" : "qrcode") }}' };</script>
     @section('page-module', 'upload')
 @endsection

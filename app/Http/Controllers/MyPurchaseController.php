@@ -82,6 +82,14 @@ class MyPurchaseController extends Controller
                 ->withInput();
         }
 
+        if ($nfceService->isCertificadoConfigurado()) {
+            try {
+                return $this->importViaXmlSefaz($nfceService, $chave, 'qrcode_url');
+            } catch (\Throwable) {
+                // fallback para scraping HTML
+            }
+        }
+
         try {
             $resultado = $nfceService->consultarPorQRCode($url);
             $dados = $nfceService->normalizarDadosPortal($resultado['dados'], $chave);
@@ -92,6 +100,42 @@ class MyPurchaseController extends Controller
         }
 
         return $this->processImport($dados, $resultado['html'], 'qrcode_url');
+    }
+
+    public function importByAccessKey(Request $request)
+    {
+        $request->merge([
+            'access_key' => preg_replace('/\D/', '', $request->input('access_key', '')),
+        ]);
+
+        $request->validate([
+            'access_key' => ['required', 'string', 'regex:/^\d{44}$/'],
+        ]);
+
+        $chave = $request->input('access_key');
+        $nfceService = app(NFCeService::class);
+
+        if (! $nfceService->isCertificadoConfigurado()) {
+            return back()
+                ->withErrors(['access_key' => 'Certificado digital não configurado. Configure as variáveis NFE_CERTIFICADO_PATH e NFE_CERTIFICADO_SENHA no arquivo .env.'])
+                ->withInput();
+        }
+
+        try {
+            return $this->importViaXmlSefaz($nfceService, $chave, 'access_key');
+        } catch (\RuntimeException|\InvalidArgumentException $e) {
+            return back()
+                ->withErrors(['access_key' => $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    private function importViaXmlSefaz(NFCeService $nfceService, string $chave, string $errorField)
+    {
+        $xml = $nfceService->downloadXml($chave);
+        $dados = $this->importer->fromString($xml);
+
+        return $this->processImport($dados, $xml, $errorField);
     }
 
     private function processImport(array $dados, string $xmlContent, string $errorField)

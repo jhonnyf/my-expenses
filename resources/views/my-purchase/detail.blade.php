@@ -53,9 +53,14 @@
                     </p>
                 </div>
             </div>
-            <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-outline">
-                <i class="ki-filled ki-arrow-left"></i> Voltar
-            </a>
+            <div class="flex items-center gap-2.5">
+                <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary">
+                    <i class="ki-filled ki-cloud-add"></i> Importar Nova NF
+                </a>
+                <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-outline">
+                    <i class="ki-filled ki-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
     </div>
 

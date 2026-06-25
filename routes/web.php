@@ -41,6 +41,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('upload', [MyPurchaseController::class, 'uploadForm'])->name('upload.form');
         Route::post('upload', [MyPurchaseController::class, 'upload'])->name('upload');
         Route::post('import-qrcode', [MyPurchaseController::class, 'importByQrCode'])->name('import-qrcode');
+        Route::post('import-by-key', [MyPurchaseController::class, 'importByAccessKey'])->name('import-by-key');
     });
 
     Route::group(['prefix' => 'categories', 'as' => 'categories.'], function () {

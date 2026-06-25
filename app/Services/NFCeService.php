@@ -11,6 +11,13 @@ class NFCeService
 {
     private ?Tools $tools = null;
 
+    public function isCertificadoConfigurado(): bool
+    {
+        $pfxPath = config('nfe.certificado_path');
+
+        return ! empty($pfxPath) && file_exists($pfxPath) && ! empty(config('nfe.certificado_senha'));
+    }
+
     private function getTools(): Tools
     {
         if ($this->tools !== null) {
@@ -370,7 +377,7 @@ class NFCeService
 
             $valorUnitario = '';
             if ($vlUnitNode) {
-                preg_match('/Vl\.\s*Unit\.?:\s*([\d.,]+)/', $vlUnitNode->textContent, $m);
+                preg_match('/Vl\.\s*Unit\.?:[\s\x{00a0}]*([\d.,]+)/u', $vlUnitNode->textContent, $m);
                 $valorUnitario = $m[1] ?? '';
             }
 
@@ -429,12 +436,12 @@ class NFCeService
         $linhas = $xpath->query("//*[@id='totalNota']//*[@id='linhaTotal']");
 
         foreach ($linhas as $linha) {
-            $label = $xpath->query(".//label[contains(@class,'tx')]", $linha)->item(0);
+            $label = $xpath->query(".//label[@class='tx']", $linha)->item(0);
             $valor = $xpath->query(".//span[contains(@class,'totalNumb')]", $linha)->item(0);
 
             if ($label && $valor) {
                 $formaTexto = mb_strtolower(trim($label->textContent));
-                if ($formaTexto === 'troco' || str_contains($formaTexto, 'troco')) {
+                if (str_contains($formaTexto, 'troco') || str_contains($formaTexto, 'tribut')) {
                     continue;
                 }
 
