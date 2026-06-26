@@ -119,6 +119,7 @@ class ShoppingListController extends Controller
     public function updateItem(UpdateShoppingListItemRequest $request, ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
     {
         $this->authorize('interact', $shoppingList);
+        abort_if($item->shopping_list_id !== $shoppingList->id, 404);
 
         $item->update(['quantity' => $request->input('quantity')]);
         $shoppingList->touch();
@@ -129,6 +130,7 @@ class ShoppingListController extends Controller
     public function removeItem(ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
     {
         $this->authorize('interact', $shoppingList);
+        abort_if($item->shopping_list_id !== $shoppingList->id, 404);
 
         $item->delete();
         $shoppingList->touch();
@@ -139,6 +141,7 @@ class ShoppingListController extends Controller
     public function togglePurchased(ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
     {
         $this->authorize('interact', $shoppingList);
+        abort_if($item->shopping_list_id !== $shoppingList->id, 404);
 
         $item->purchased_at = $item->purchased_at ? null : Carbon::now();
         $item->save();

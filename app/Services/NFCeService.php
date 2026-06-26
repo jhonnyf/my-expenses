@@ -224,33 +224,18 @@ class NFCeService
 
     /**
      * Valida que a URL pertence a um domínio SEFAZ oficial para prevenir SSRF.
+     * Usa verificação de sufixo estrito para evitar bypass via subdomínios maliciosos.
      */
     private function validarUrlSefaz(string $url): void
     {
-        $dominiosPermitidos = [
-            'sefaz.', 'sefaznet.', 'sefin.', 'sefa.', 'set.',
-            'fazenda.', 'fazenda.sp.gov.br', 'fazenda.rj.gov.br',
-            'fazenda.pr.gov.br', 'fazenda.df.gov.br', 'fazenda.mg.gov.br',
-            'nfce.fazenda.sp.gov.br', 'homologacao.nfce.fazenda.sp.gov.br',
-            'nfce.se.gov.br', 'hom.nfe.se.gov.br',
-            'sat.sef.sc.gov.br', 'hom.sat.sef.sc.gov.br',
-            'portalsped.fazenda.mg.gov.br', 'hportalsped.fazenda.mg.gov.br',
-            'dfe.ms.gov.br', 'nfce.sefaz.pe.gov.br',
-        ];
+        $scheme = strtolower(parse_url($url, PHP_URL_SCHEME) ?? '');
+        $host   = parse_url($url, PHP_URL_HOST);
 
-        $host = parse_url($url, PHP_URL_HOST);
-
-        if (! $host) {
+        if (! $host || ! in_array($scheme, ['http', 'https'], true)) {
             throw new \InvalidArgumentException('URL inválida.');
         }
 
-        foreach ($dominiosPermitidos as $dominio) {
-            if (str_contains($host, $dominio)) {
-                return;
-            }
-        }
-
-        // Aceita qualquer subdomínio de *.gov.br como fallback
+        // Todos os portais SEFAZ estaduais brasileiros são subdomínios de .gov.br
         if (str_ends_with($host, '.gov.br')) {
             return;
         }

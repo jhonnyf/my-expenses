@@ -30,7 +30,7 @@ class NfceXmlImporter
         }
 
         libxml_use_internal_errors(true);
-        $root = simplexml_load_file($path);
+        $root = simplexml_load_file($path, 'SimpleXMLElement', LIBXML_NONET | LIBXML_DTDLOAD);
 
         return $this->parseRoot($root);
     }
@@ -38,7 +38,7 @@ class NfceXmlImporter
     public function fromString(string $xml): array
     {
         libxml_use_internal_errors(true);
-        $root = simplexml_load_string($xml);
+        $root = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NONET | LIBXML_DTDLOAD);
 
         return $this->parseRoot($root);
     }

@@ -16,7 +16,7 @@ class NfceImportController extends Controller
 
     public function importar(Request $request): JsonResponse
     {
-        $path = public_path('/import/nfc-e.xml');
+        $path = storage_path('app/private/import/nfc-e.xml');
 
         try {
             $dados = $this->importer->fromFile($path);
