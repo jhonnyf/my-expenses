@@ -20,15 +20,17 @@ class RecurringPurchaseService
                 DB::raw('MIN(invoices_items.unit_price) as min_price'),
                 DB::raw('MAX(invoices_items.unit_price) as max_price'),
                 DB::raw('MAX(invoices.issued_at) as last_purchased_at'),
-                DB::raw('MIN(invoices.issued_at) as first_purchased_at'),
-                DB::raw('DATEDIFF(MAX(invoices.issued_at), MIN(invoices.issued_at)) as date_span_days')
+                DB::raw('MIN(invoices.issued_at) as first_purchased_at')
             )
             ->groupBy('invoices_items.description')
             ->havingRaw('COUNT(DISTINCT invoices.id) >= 3')
             ->orderByDesc('purchase_count')
             ->get()
             ->map(function ($item) {
-                $spanDays = max($item->date_span_days, 1);
+                $spanDays = max(
+                    \Carbon\Carbon::parse($item->first_purchased_at)->diffInDays(\Carbon\Carbon::parse($item->last_purchased_at)),
+                    1
+                );
                 $item->avg_interval_days = round($spanDays / max($item->purchase_count - 1, 1));
                 $item->purchases_per_month = round(($item->purchase_count / $spanDays) * 30, 1);
 

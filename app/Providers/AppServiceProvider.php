@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\InvoiceImported;
 use App\Listeners\AutoCategorizeListener;
 use Dedoc\Scramble\Scramble;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -22,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
 
         Scramble::routes(fn () => app()->environment('local', 'staging'));
+
+        ResetPassword::createUrlUsing(
+            fn ($user, $token) => url("/reset-password?token={$token}&email=" . urlencode($user->email))
+        );
     }
 
     private function configureRateLimiting(): void

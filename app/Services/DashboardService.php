@@ -143,7 +143,7 @@ class DashboardService
         return Cache::remember("dashboard.monthly_expenses.{$userId}", 300, function () use ($userId, $now) {
             return Invoice::where('user_id', $userId)
                 ->where('issued_at', '>=', $now->copy()->subMonths(11)->startOfMonth())
-                ->select(DB::raw("DATE_FORMAT(issued_at, '%Y-%m') as month"), DB::raw('SUM(total_amount) as total'))
+                ->select(DB::raw("substr(issued_at, 1, 7) as month"), DB::raw('SUM(total_amount) as total'))
                 ->groupBy('month')
                 ->orderBy('month')
                 ->get();

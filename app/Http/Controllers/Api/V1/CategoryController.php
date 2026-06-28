@@ -22,6 +22,13 @@ class CategoryController extends Controller
         return $this->success(CategoryResource::collection($categories));
     }
 
+    public function show(Category $category): JsonResponse
+    {
+        $this->authorize('update', $category);
+
+        return $this->success(new CategoryResource($category));
+    }
+
     public function store(SaveCategoryRequest $request): JsonResponse
     {
         $category = Category::create([
