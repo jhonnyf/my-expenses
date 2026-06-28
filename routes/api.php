@@ -25,14 +25,14 @@ Route::middleware(['web', 'auth'])->group(function () {
 // ─── API v1 ──────────────────────────────────────────────────────────────────
 Route::prefix('v1')->name('api.v1.')->group(function () {
 
-    // Públicas: autenticação
-    Route::prefix('auth')->name('auth.')->group(function () {
+    // Públicas: autenticação (limitado a 10 req/min por IP)
+    Route::middleware('throttle:api-auth')->prefix('auth')->name('auth.')->group(function () {
         Route::post('login',    [AuthController::class, 'login'])->name('login');
         Route::post('register', [AuthController::class, 'register'])->name('register');
     });
 
-    // Protegidas: todas requerem token Sanctum
-    Route::middleware('auth:sanctum')->group(function () {
+    // Protegidas: todas requerem token Sanctum (limitado a 60 req/min por usuário)
+    Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
         // Auth
         Route::prefix('auth')->name('auth.')->group(function () {
