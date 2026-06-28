@@ -3,6 +3,7 @@
 use App\Http\Controllers\MyPurchaseController;
 use App\Http\Controllers\NfceImportController;
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
@@ -27,8 +28,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     // Públicas: autenticação (limitado a 10 req/min por IP)
     Route::middleware('throttle:api-auth')->prefix('auth')->name('auth.')->group(function () {
-        Route::post('login',    [AuthController::class, 'login'])->name('login');
-        Route::post('register', [AuthController::class, 'register'])->name('register');
+        Route::post('login',           [AuthController::class,       'login'])->name('login');
+        Route::post('register',        [AuthController::class,       'register'])->name('register');
+        Route::post('forgot-password', [PasswordResetController::class, 'forgotPassword'])->name('forgot-password');
+        Route::post('reset-password',  [PasswordResetController::class, 'resetPassword'])->name('reset-password');
     });
 
     // Protegidas: todas requerem token Sanctum (limitado a 60 req/min por usuário)
