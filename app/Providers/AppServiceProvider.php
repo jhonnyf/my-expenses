@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Events\InvoiceImported;
 use App\Listeners\AutoCategorizeListener;
+use Dedoc\Scramble\Scramble;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -19,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(InvoiceImported::class, AutoCategorizeListener::class);
 
         $this->configureRateLimiting();
+
+        Scramble::routes(fn () => app()->environment('local', 'staging'));
     }
 
     private function configureRateLimiting(): void
