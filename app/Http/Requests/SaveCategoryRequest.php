@@ -16,14 +16,22 @@ class SaveCategoryRequest extends FormRequest
         return [
             'name'     => ['required', 'string', 'max:255'],
             'color'    => ['nullable', 'string', 'max:7'],
-            'keywords' => ['nullable', 'string'],
+            'keywords' => ['nullable'],
         ];
     }
 
     public function parsedKeywords(): array
     {
-        return $this->input('keywords')
-            ? array_map('trim', explode(',', $this->input('keywords')))
-            : [];
+        $raw = $this->input('keywords');
+
+        if (!$raw) {
+            return [];
+        }
+
+        if (is_array($raw)) {
+            return array_map('trim', $raw);
+        }
+
+        return array_map('trim', explode(',', (string) $raw));
     }
 }
