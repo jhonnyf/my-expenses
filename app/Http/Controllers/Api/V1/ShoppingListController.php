@@ -71,7 +71,7 @@ class ShoppingListController extends Controller
         return $this->success(new ShoppingListResource($list), 201);
     }
 
-    public function show(Request $request, ShoppingList $shoppingList): JsonResponse
+    public function show(ShoppingList $shoppingList): JsonResponse
     {
         $this->authorize('interact', $shoppingList);
 
