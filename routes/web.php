@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -90,6 +91,12 @@ Route::group(['middleware' => 'auth'], function () {
         Route::patch('{shoppingList}/items/{item}', [ShoppingListController::class, 'updateItem'])->name('items.update');
         Route::delete('{shoppingList}/items/{item}', [ShoppingListController::class, 'removeItem'])->name('items.remove');
         Route::post('{shoppingList}/items/{item}/toggle-purchased', [ShoppingListController::class, 'togglePurchased'])->name('items.toggle-purchased');
+    });
+
+    Route::group(['prefix' => 'account', 'as' => 'account.'], function () {
+        Route::get('/', [AccountController::class, 'index'])->name('index');
+        Route::patch('/', [AccountController::class, 'update'])->name('update');
+        Route::patch('password', [AccountController::class, 'updatePassword'])->name('password');
     });
 
 });

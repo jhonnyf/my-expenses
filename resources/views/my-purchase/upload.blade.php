@@ -1,55 +1,70 @@
 @extends('layout.main')
+@section('page-module', 'upload')
 
 @section('content')
+
+    {{-- PAGE HEADER --}}
     <div class="kt-container-fixed">
         <div class="flex flex-wrap items-center lg:items-end justify-between gap-5 pb-7.5">
-            <div>
-                <h1 class="text-xl font-medium leading-none text-mono">Importar NFC-e</h1>
-                <p class="text-sm text-secondary-foreground mt-1">Importe sua nota fiscal via arquivo XML ou QR Code.</p>
+            <div class="flex flex-col justify-center gap-2">
+                <h1 class="text-xl font-medium leading-none text-mono">Importar NF-e</h1>
+                <div class="flex items-center gap-2 text-sm font-normal text-secondary-foreground">
+                    Importe sua nota via QR Code, arquivo XML ou chave de acesso
+                </div>
             </div>
-            <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-outline">
-                <i class="ki-filled ki-arrow-left"></i> Voltar
-            </a>
+            <div class="flex items-center gap-2.5">
+                <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-outline">
+                    <i class="ki-filled ki-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
     </div>
 
+    {{-- CONTENT --}}
     <div class="kt-container-fixed">
-        <div class="kt-card max-w-lg">
-            {{-- Abas --}}
-            <div class="flex border-b border-border">
-                <button onclick="switchTab('qrcode')" id="tab-qrcode"
-                        class="flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-primary text-primary transition-colors">
-                    <i class="ki-filled ki-scan-barcode me-1"></i> QR Code
+
+        <div class="kt-card max-w-xl mx-auto">
+
+            {{-- TAB NAV --}}
+            <div class="flex items-center gap-0 border-b border-border px-5" data-kt-tabs="true">
+                <button class="kt-tab-toggle active border-b-2 border-b-transparent kt-tab-active:border-b-primary pb-3 pt-4 px-3 text-sm font-medium text-secondary-foreground kt-tab-active:text-foreground transition-colors"
+                        data-kt-tab-toggle="#panel-qrcode">
+                    <i class="ki-filled ki-scan-barcode me-1.5"></i> QR Code
                 </button>
-                <button onclick="switchTab('xml')" id="tab-xml"
-                        class="flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-foreground hover:text-foreground transition-colors">
-                    <i class="ki-filled ki-file-up me-1"></i> Arquivo XML
+                <button class="kt-tab-toggle border-b-2 border-b-transparent kt-tab-active:border-b-primary pb-3 pt-4 px-3 text-sm font-medium text-secondary-foreground kt-tab-active:text-foreground transition-colors"
+                        data-kt-tab-toggle="#panel-xml">
+                    <i class="ki-filled ki-file-up me-1.5"></i> Arquivo XML
                 </button>
-                <button onclick="switchTab('access_key')" id="tab-access_key"
-                        class="flex-1 py-3 px-4 text-sm font-medium text-center border-b-2 border-transparent text-secondary-foreground hover:text-foreground transition-colors">
-                    <i class="ki-filled ki-key me-1"></i> Chave de Acesso
+                <button class="kt-tab-toggle border-b-2 border-b-transparent kt-tab-active:border-b-primary pb-3 pt-4 px-3 text-sm font-medium text-secondary-foreground kt-tab-active:text-foreground transition-colors"
+                        data-kt-tab-toggle="#panel-access_key">
+                    <i class="ki-filled ki-key me-1.5"></i> Chave de Acesso
                 </button>
             </div>
 
-            {{-- Formulário QR Code --}}
-            <div class="kt-card-content pt-6" id="panel-qrcode">
+            {{-- PANEL: QR Code --}}
+            <div id="panel-qrcode" class="kt-card-content p-6 pt-5">
                 <form action="{{ route('my-purchases.import-qrcode') }}" method="POST" class="space-y-5">
                     @csrf
-                    <div>
-                        <label for="qrcode_url" class="block text-sm font-medium mb-2">URL do QR Code da NFC-e</label>
-                        <input type="url" id="qrcode_url" name="qrcode_url" class="kt-input w-full"
-                               placeholder="https://www.nfce.fazenda.sp.gov.br/...?p=... ou https://www.sefaz.rs.gov.br/...?chNFe=..."
-                               value="{{ old('qrcode_url') }}" required>
+                    <div class="kt-form-item">
+                        <label class="kt-form-label" for="qrcode_url">URL do QR Code</label>
+                        <div class="kt-form-control">
+                            <label class="kt-input w-full">
+                                <i class="ki-filled ki-scan-barcode"></i>
+                                <input type="url"
+                                       id="qrcode_url"
+                                       name="qrcode_url"
+                                       placeholder="https://www.nfce.fazenda.sp.gov.br/...?p=..."
+                                       value="{{ old('qrcode_url') }}" />
+                            </label>
+                        </div>
                         @error('qrcode_url')
-                            <p class="mt-2 text-sm text-destructive">{{ $message }}</p>
+                            <div class="kt-form-message text-destructive">{{ $message }}</div>
                         @enderror
                     </div>
-                    <div class="bg-accent/50 rounded-lg p-4">
-                        <p class="text-xs text-secondary-foreground">
-                            <i class="ki-filled ki-information-2 text-primary me-1"></i>
-                            Cole a URL que aparece no QR Code impresso no cupom fiscal. Os dados da nota serão
-                            buscados diretamente no portal da SEFAZ.
-                        </p>
+                    <div class="rounded-xl bg-accent/50 p-4 text-xs text-secondary-foreground">
+                        <i class="ki-filled ki-information-2 text-primary me-1.5"></i>
+                        Cole a URL que aparece no QR Code impresso no cupom fiscal. Os dados da nota serão
+                        buscados diretamente no portal da SEFAZ.
                     </div>
                     <button type="submit" class="kt-btn kt-btn-primary w-full">
                         <i class="ki-filled ki-scan-barcode"></i> Importar via QR Code
@@ -57,16 +72,27 @@
                 </form>
             </div>
 
-            {{-- Formulário XML --}}
-            <div class="kt-card-content pt-6" id="panel-xml" style="display:none;">
+            {{-- PANEL: XML --}}
+            <div id="panel-xml" class="hidden kt-card-content p-6 pt-5">
                 <form action="{{ route('my-purchases.upload') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
                     @csrf
-                    <div>
-                        <label for="xml" class="block text-sm font-medium mb-2">Arquivo XML da NFC-e</label>
-                        <input type="file" id="xml" name="xml" accept=".xml,text/xml" class="kt-input w-full" required>
+                    <div class="kt-form-item">
+                        <label class="kt-form-label" for="xml">Arquivo XML da NF-e</label>
+                        <div class="kt-form-control">
+                            <input type="file"
+                                   id="xml"
+                                   name="xml"
+                                   accept=".xml,text/xml"
+                                   class="kt-input w-full" />
+                        </div>
                         @error('xml')
-                            <p class="mt-2 text-sm text-destructive">{{ $message }}</p>
+                            <div class="kt-form-message text-destructive">{{ $message }}</div>
                         @enderror
+                    </div>
+                    <div class="rounded-xl bg-accent/50 p-4 text-xs text-secondary-foreground">
+                        <i class="ki-filled ki-information-2 text-primary me-1.5"></i>
+                        Selecione o arquivo XML da NF-e salvo no seu dispositivo. O arquivo deve ser um XML
+                        válido no padrão SEFAZ (extensão .xml).
                     </div>
                     <button type="submit" class="kt-btn kt-btn-primary w-full">
                         <i class="ki-filled ki-cloud-add"></i> Importar XML
@@ -74,35 +100,54 @@
                 </form>
             </div>
 
-            {{-- Formulário Chave de Acesso --}}
-            <div class="kt-card-content pt-6" id="panel-access_key" style="display:none;">
+            {{-- PANEL: Chave de Acesso --}}
+            <div id="panel-access_key" class="hidden kt-card-content p-6 pt-5">
                 <form action="{{ route('my-purchases.import-by-key') }}" method="POST" class="space-y-5">
                     @csrf
-                    <div>
-                        <label for="access_key" class="block text-sm font-medium mb-2">Chave de Acesso da NFC-e (44 dígitos)</label>
-                        <input type="text" id="access_key" name="access_key" class="kt-input w-full font-mono"
-                               placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
-                               maxlength="55"
-                               value="{{ old('access_key') }}" required>
+                    <div class="kt-form-item">
+                        <label class="kt-form-label" for="access_key">Chave de Acesso (44 dígitos)</label>
+                        <div class="kt-form-control">
+                            <label class="kt-input w-full">
+                                <i class="ki-filled ki-key"></i>
+                                <input type="text"
+                                       id="access_key"
+                                       name="access_key"
+                                       class="font-mono tabular-nums"
+                                       placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
+                                       maxlength="55"
+                                       value="{{ old('access_key') }}" />
+                            </label>
+                        </div>
                         @error('access_key')
-                            <p class="mt-2 text-sm text-destructive">{{ $message }}</p>
+                            <div class="kt-form-message text-destructive">{{ $message }}</div>
                         @enderror
                     </div>
-                    <div class="bg-accent/50 rounded-lg p-4">
-                        <p class="text-xs text-secondary-foreground">
-                            <i class="ki-filled ki-information-2 text-primary me-1"></i>
-                            Informe a chave de acesso de 44 dígitos impressa no cupom fiscal. Os dados serão
-                            baixados diretamente da SEFAZ via certificado digital.
-                        </p>
+                    <div class="rounded-xl bg-accent/50 p-4 text-xs text-secondary-foreground">
+                        <i class="ki-filled ki-information-2 text-primary me-1.5"></i>
+                        Informe a chave de acesso de 44 dígitos impressa no cupom fiscal. Os dados serão
+                        baixados diretamente da SEFAZ via certificado digital.
                     </div>
                     <button type="submit" class="kt-btn kt-btn-primary w-full">
                         <i class="ki-filled ki-key"></i> Importar via Chave de Acesso
                     </button>
                 </form>
             </div>
+
         </div>
+
     </div>
 
-    <script>window.pageConfig = { initialTab: '{{ $errors->has("access_key") ? "access_key" : ($errors->has("xml") ? "xml" : "qrcode") }}' };</script>
-    @section('page-module', 'upload')
+    <script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        initialTab: '{{ $errors->has("access_key") ? "access_key" : ($errors->has("xml") ? "xml" : "qrcode") }}',
+    });
+    // Ativar aba correta ao carregar (caso tenha erro de validação)
+    document.addEventListener('DOMContentLoaded', () => {
+        const tab = window.pageConfig.initialTab;
+        if (tab !== 'qrcode') {
+            document.querySelector(`[data-kt-tab-toggle="#panel-${tab}"]`)?.click();
+        }
+    });
+    </script>
+
 @endsection

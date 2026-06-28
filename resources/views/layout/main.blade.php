@@ -114,7 +114,7 @@
                                         <div class="kt-dropdown-menu-separator"></div>
                                     </li>
                                     <li>
-                                        <a class="kt-dropdown-menu-link" href="#">
+                                        <a class="kt-dropdown-menu-link" href="{{ route('account.index') }}">
                                             <i class="ki-filled ki-profile-circle"></i> Meu perfil
                                         </a>
                                     </li>
