@@ -5,7 +5,10 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssuerController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\MyPurchaseController;
 use App\Http\Controllers\PriceHistoryController;
@@ -17,6 +20,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('dashboard.index');
+});
+
+Route::group(['prefix' => 'forgot-password', 'as' => 'password.'], function () {
+    Route::get('/', [ForgotPasswordController::class, 'index'])->name('request');
+    Route::post('/', [ForgotPasswordController::class, 'send'])->name('email')->middleware('throttle:5,1');
+});
+
+Route::get('/reset-password', [ResetPasswordController::class, 'index'])->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update')->middleware('throttle:5,1');
+
+Route::group(['prefix' => 'register', 'as' => 'register.'], function () {
+    Route::get('/', [RegisterController::class, 'index'])->name('index');
+    Route::post('/', [RegisterController::class, 'store'])->name('store')->middleware('throttle:5,1');
 });
 
 Route::group(['prefix' => 'login', 'as' => 'login.'], function () {

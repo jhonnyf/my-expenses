@@ -62,7 +62,7 @@
                 <div class="kt-container-fixed flex justify-between items-stretch lg:gap-4" id="headerContainer">
                     <!-- Mobile Logo -->
                     <div class="flex gap-2.5 lg:hidden items-center -ms-1">
-                        <a class="shrink-0" href="html/demo1.html">
+                        <a class="shrink-0" href="{{ route('dashboard.index') }}">
                             <img class="max-h-[25px] w-full" src="assets/media/app/mini-logo.svg" />
                         </a>
                         <div class="flex items-center">
@@ -103,7 +103,7 @@
                                         <img alt="" class="size-9 shrink-0 rounded-full border-2 border-green-500" src="{{ asset('assets/media/avatars/300-2.png') }}" />
                                         <div class="flex flex-col gap-1.5">
                                             <span class="text-sm text-foreground font-semibold leading-none">{{ Auth::user()->name }}</span>
-                                            <a class="text-xs text-secondary-foreground hover:text-primary font-medium leading-none" href="html/demo1/account/home/get-started.html">
+                                            <a class="text-xs text-secondary-foreground hover:text-primary font-medium leading-none" href="{{ route('account.index') }}">
                                                 {{ Auth::user()->email }}
                                             </a>
                                         </div>
@@ -116,11 +116,6 @@
                                     <li>
                                         <a class="kt-dropdown-menu-link" href="{{ route('account.index') }}">
                                             <i class="ki-filled ki-profile-circle"></i> Meu perfil
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="kt-dropdown-menu-link" href="#">
-                                            <i class="ki-filled ki-icon"></i> Billing                                                        
                                         </a>
                                     </li>
                                     <li>

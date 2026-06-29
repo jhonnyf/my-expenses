@@ -5,7 +5,7 @@
     <title>{{ env('APP_NAME') }}</title>
     <meta charset="utf-8" />
     <meta content="follow, index" name="robots" />
-    <link href="https://127.0.0.1:8001/metronic-tailwind-html/demo1/authentication/branded/sign-in/index.html" rel="canonical" />
+    <link href="{{ url()->current() }}" rel="canonical" />
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
     <meta content="Sign in page, using Tailwind CSS" name="description" />
     <meta content="@keenthemes" name="twitter:site" />
@@ -14,7 +14,7 @@
     <meta content="Metronic - Tailwind CSS Sign In" name="twitter:title" />
     <meta content="Sign in page, using Tailwind CSS" name="twitter:description" />
     <meta content="assets/media/app/og-image.png" name="twitter:image" />
-    <meta content="https://127.0.0.1:8001/metronic-tailwind-html/demo1/authentication/branded/sign-in/index.html" property="og:url" />
+    <meta content="{{ url()->current() }}" property="og:url" />
     <meta content="en_US" property="og:locale" />
     <meta content="website" property="og:type" />
     <meta content="@keenthemes" property="og:site_name" />
