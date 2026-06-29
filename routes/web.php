@@ -6,6 +6,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\MyPurchaseController;
 use App\Http\Controllers\PriceHistoryController;
 use App\Http\Controllers\RecurringPurchaseController;
@@ -22,6 +23,8 @@ Route::group(['prefix' => 'login', 'as' => 'login.'], function () {
     Route::get('/', [LoginController::class, 'index'])->name('index');
     Route::post('execute', [LoginController::class, 'execute'])->name('execute')->middleware('throttle:5,1');
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('social/{provider}', [SocialAuthController::class, 'redirect'])->name('social.redirect')->middleware('throttle:10,1');
+    Route::get('social/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback')->middleware('throttle:10,1');
 });
 
 Route::group(['middleware' => 'auth'], function () {

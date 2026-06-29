@@ -14,12 +14,16 @@
                         <a class="text-sm link" href="html/demo1/authentication/branded/sign-up.html">Sign up</a>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2.5">
-                    <a class="kt-btn kt-btn-outline justify-center" href="#">
+                <div class="flex flex-col gap-2.5">
+                    <a class="kt-btn kt-btn-outline justify-center" href="{{ route('login.social.redirect', 'google') }}">
                         <img alt="" class="size-3.5 shrink-0" src="assets/media/brand-logos/google.svg" />
                         Use Google
                     </a>
-                    <a class="kt-btn kt-btn-outline justify-center" href="#">
+                    <a class="kt-btn kt-btn-outline justify-center" href="{{ route('login.social.redirect', 'facebook') }}">
+                        <img alt="" class="size-3.5 shrink-0" src="assets/media/brand-logos/facebook.svg" />
+                        Use Facebook
+                    </a>
+                    <a class="kt-btn kt-btn-outline justify-center" href="{{ route('login.social.redirect', 'apple') }}">
                         <img alt="" class="size-3.5 shrink-0 dark:hidden" src="assets/media/brand-logos/apple-black.svg" />
                         <img alt="" class="size-3.5 shrink-0 light:hidden" src="assets/media/brand-logos/apple-white.svg" />
                         Use Apple
