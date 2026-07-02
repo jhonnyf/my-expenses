@@ -128,12 +128,14 @@
         </div>
     </div>
 
+@endsection
+
+@push('scripts')
     <script>
         window.pageConfig = Object.assign(window.pageConfig || {}, {
             issuerBaseUrl: '{{ url("issuers") }}',
         });
 
-        // Filtro client-side por nome enquanto digita
         document.getElementById('issuerSearchInput')?.addEventListener('input', function () {
             const term = this.value.toLowerCase();
             document.querySelectorAll('#issuersTable tbody .issuer-row').forEach(row => {
@@ -142,5 +144,4 @@
             });
         });
     </script>
-
-@endsection
+@endpush

@@ -339,6 +339,14 @@
 
     </div>
 
-    <script>window.pageConfig = { assignCategoryUrl: '{{ route("categories.assign-item") }}', issuerBaseUrl: '{{ url("issuers") }}' };</script>
     @section('page-module', 'issuer-favorite,invoice-detail')
 @endsection
+
+@push('scripts')
+<script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        assignCategoryUrl: '{{ route("categories.assign-item") }}',
+        issuerBaseUrl: '{{ url("issuers") }}',
+    });
+</script>
+@endpush

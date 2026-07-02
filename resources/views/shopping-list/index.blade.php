@@ -161,13 +161,13 @@
         </div>
     </div>
 
-    @push('scripts')
-    <script>
-        window.pageConfig = Object.assign(window.pageConfig || {}, {
-            baseUrl: '{{ url("shopping-list") }}',
-            searchUrl: '{{ route("shopping-list.search") }}',
-        });
-    </script>
-    @endpush
-
 @endsection
+
+@push('scripts')
+<script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        baseUrl: '{{ url("shopping-list") }}',
+        searchUrl: '{{ route("shopping-list.search") }}',
+    });
+</script>
+@endpush

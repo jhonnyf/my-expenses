@@ -137,17 +137,19 @@
 
     </div>
 
-    <script>
+@endsection
+
+@push('scripts')
+<script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         initialTab: '{{ $errors->has("access_key") ? "access_key" : ($errors->has("xml") ? "xml" : "qrcode") }}',
     });
-    // Ativar aba correta ao carregar (caso tenha erro de validação)
+
     document.addEventListener('DOMContentLoaded', () => {
         const tab = window.pageConfig.initialTab;
         if (tab !== 'qrcode') {
             document.querySelector(`[data-kt-tab-toggle="#panel-${tab}"]`)?.click();
         }
     });
-    </script>
-
-@endsection
+</script>
+@endpush

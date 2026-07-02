@@ -235,17 +235,17 @@
         </div>
     </div>
 
-    @push('scripts')
-    <script>
-        window.pageConfig = Object.assign(window.pageConfig || {}, {
-            generateUrl: '{{ route("reports.generate") }}',
-        });
-
-        function submitTo(url) {
-            document.getElementById('reportForm').action = url;
-            document.getElementById('reportForm').submit();
-        }
-    </script>
-    @endpush
-
 @endsection
+
+@push('scripts')
+<script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        generateUrl: '{{ route("reports.generate") }}',
+    });
+
+    function submitTo(url) {
+        document.getElementById('reportForm').action = url;
+        document.getElementById('reportForm').submit();
+    }
+</script>
+@endpush

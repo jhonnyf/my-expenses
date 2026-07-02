@@ -35,7 +35,7 @@ class IssuerController extends Controller
         $issuer = Issuer::findOrFail($id);
 
         $issuer->load([
-            'invoices' => fn ($q) => $q
+            'invoices' => fn($q) => $q
                 ->where('user_id', $userId)
                 ->select(['id', 'issuer_id', 'number', 'series', 'issued_at', 'total_amount'])
                 ->withCount('items')
@@ -60,9 +60,9 @@ class IssuerController extends Controller
     public function toggleFavorite(int $id): JsonResponse
     {
         $issuer = Issuer::findOrFail($id);
-        $user = Auth::user();
+        $user   = Auth::user();
 
-        $result = $user->favoriteIssuers()->toggle($issuer->id);
+        $result     = $user->favoriteIssuers()->toggle($issuer->id);
         $isFavorite = !empty($result['attached']);
 
         return response()->json(['is_favorite' => $isFavorite]);

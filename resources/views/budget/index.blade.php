@@ -127,11 +127,13 @@
         </div>
     </div>
 
-    <script>
-        window.pageConfig = Object.assign(window.pageConfig || {}, {
-            storeUrl: '{{ route("budgets.store") }}',
-            baseUrl: '{{ url("budgets") }}',
-        });
-    </script>
-
 @endsection
+
+@push('scripts')
+<script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        storeUrl: '{{ route("budgets.store") }}',
+        baseUrl: '{{ url("budgets") }}',
+    });
+</script>
+@endpush

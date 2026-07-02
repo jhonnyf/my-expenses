@@ -406,13 +406,15 @@
         </div>
     </div>
 
-    <script>
-        window.pageConfig = Object.assign(window.pageConfig || {}, {
-            monthlyExpenses:     @json($monthlyExpenses),
-            spendingByCategory:  @json($spendingByCategory),
-            paymentDistribution: @json($paymentDistribution),
-            paymentLabels:       @json($paymentLabels),
-        });
-    </script>
-
 @endsection
+
+@push('scripts')
+<script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        monthlyExpenses:     @json($monthlyExpenses),
+        spendingByCategory:  @json($spendingByCategory),
+        paymentDistribution: @json($paymentDistribution),
+        paymentLabels:       @json($paymentLabels),
+    });
+</script>
+@endpush

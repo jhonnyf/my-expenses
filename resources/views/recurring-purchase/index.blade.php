@@ -148,10 +148,12 @@
         </div>
     </div>
 
-    <script>
-        window.pageConfig = Object.assign(window.pageConfig || {}, {
-            addToListUrl: '{{ route("recurring-purchases.add-to-list") }}',
-        });
-    </script>
-
 @endsection
+
+@push('scripts')
+<script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        addToListUrl: '{{ route("recurring-purchases.add-to-list") }}',
+    });
+</script>
+@endpush

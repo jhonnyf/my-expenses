@@ -146,10 +146,12 @@
         </div>
     </div>
 
-    <script>
-        window.pageConfig = Object.assign(window.pageConfig || {}, {
-            baseUrl: '{{ url("categories") }}',
-        });
-    </script>
-
 @endsection
+
+@push('scripts')
+<script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        baseUrl: '{{ url("categories") }}',
+    });
+</script>
+@endpush

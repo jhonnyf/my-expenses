@@ -102,13 +102,13 @@
         </div>
     </div>
 
-    @push('scripts')
-    <script>
-        window.pageConfig = Object.assign(window.pageConfig || {}, {
-            searchUrl: '{{ route("price-history.search") }}',
-            showUrl: '{{ route("price-history.show") }}',
-        });
-    </script>
-    @endpush
-
 @endsection
+
+@push('scripts')
+<script>
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        searchUrl: '{{ route("price-history.search") }}',
+        showUrl: '{{ route("price-history.show") }}',
+    });
+</script>
+@endpush
