@@ -22,13 +22,20 @@ class BudgetController extends Controller
     {
         $budget = Budget::updateOrCreate(
             [
-                'user_id'     => Auth::id(),
+                'user_id' => Auth::id(),
                 'category_id' => $request->input('category_id'),
             ],
             ['amount' => $request->input('amount')]
-        );
+        )->load('category');
 
-        return response()->json($budget->load('category'));
+        $budget = $this->service->attachSpending($budget);
+
+        return response()->json([
+            ...$budget->toArray(),
+            'spent' => $budget->spent,
+            'percentage' => $budget->percentage,
+            'remaining' => $budget->remaining,
+        ]);
     }
 
     public function destroy(Budget $budget): JsonResponse

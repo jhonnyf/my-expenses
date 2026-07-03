@@ -4,6 +4,84 @@ const Budget = (() => {
     let initialized = false;
     let storeUrl, baseUrl;
 
+    const resolveStatus = (percentage) => {
+        if (percentage < 75) return { colorStatus: 'success', textStatus: 'text-success' };
+        if (percentage < 100) return { colorStatus: 'warning', textStatus: 'text-warning' };
+        return { colorStatus: 'destructive', textStatus: 'text-destructive' };
+    };
+
+    const buildBudgetCardHtml = (budget) => {
+        const pct = Math.min(budget.percentage, 100);
+        const { colorStatus, textStatus } = resolveStatus(budget.percentage);
+
+        const headerHtml = budget.category
+            ? `<span class="size-3 rounded-full shrink-0" style="background-color: ${budget.category.color || '#94A3B8'}"></span> ${Utils.escapeHtml(budget.category.name)}`
+            : `<i class="ki-filled ki-wallet text-primary"></i> Geral`;
+
+        const exceededHtml = budget.percentage >= 100 ? `
+            <div class="bg-destructive/10 rounded-xl px-3 py-2 text-xs text-destructive flex items-center gap-1.5">
+                <i class="ki-filled ki-information-2 shrink-0"></i>
+                Orçamento excedido em R$ ${Utils.formatCurrency(budget.spent - budget.amount)}
+            </div>` : '';
+
+        return `
+            <div class="kt-card" id="budget-${budget.id}">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title gap-2">${headerHtml}</h3>
+                    <div class="kt-card-toolbar">
+                        <button data-action="delete-budget" data-budget-id="${budget.id}" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Excluir">
+                            <i class="ki-filled ki-trash text-muted-foreground"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="kt-card-content pb-5">
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-sm text-secondary-foreground">Limite</span>
+                            <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ ${Utils.formatCurrency(budget.amount)}</span>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-sm text-secondary-foreground">Gasto</span>
+                            <span class="text-sm font-semibold font-mono ${textStatus} tabular-nums">R$ ${Utils.formatCurrency(budget.spent)}</span>
+                        </div>
+                        <div class="kt-progress h-2">
+                            <div class="kt-progress-indicator kt-progress-${colorStatus}" style="width: ${pct}%"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs ${textStatus} font-medium tabular-nums">${Math.round(budget.percentage)}%</span>
+                            <span class="text-xs text-secondary-foreground tabular-nums">
+                                R$ ${Utils.formatCurrency(budget.spent)} / R$ ${Utils.formatCurrency(budget.amount)}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-sm text-secondary-foreground">Restante</span>
+                            <span class="text-sm font-semibold font-mono ${budget.remaining > 0 ? 'text-success' : 'text-destructive'} tabular-nums">
+                                R$ ${Utils.formatCurrency(budget.remaining)}
+                            </span>
+                        </div>
+                        ${exceededHtml}
+                    </div>
+                </div>
+            </div>`;
+    };
+
+    const upsertBudgetCard = (budget) => {
+        let grid = document.getElementById('budgetsGrid');
+        if (grid.classList.contains('kt-card')) {
+            grid.outerHTML = '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5" id="budgetsGrid"></div>';
+            grid = document.getElementById('budgetsGrid');
+        }
+
+        const cardHtml = buildBudgetCardHtml(budget);
+        const existing = document.getElementById(`budget-${budget.id}`);
+
+        if (existing) {
+            existing.outerHTML = cardHtml;
+        } else {
+            grid.insertAdjacentHTML('beforeend', cardHtml);
+        }
+    };
+
     const saveBudget = () => {
         const categoryId = document.getElementById('budgetCategory').value || null;
         const amount = parseFloat(document.getElementById('budgetAmount').value);
@@ -12,7 +90,11 @@ const Budget = (() => {
         Utils.http(storeUrl, {
             method: 'POST',
             body: { category_id: categoryId, amount },
-        }).then(() => location.reload());
+        }).then(budget => {
+            upsertBudgetCard(budget);
+            document.getElementById('budgetCategory').value = '';
+            document.getElementById('budgetAmount').value = '';
+        });
     };
 
     const deleteBudget = (id) => {

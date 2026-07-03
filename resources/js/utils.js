@@ -9,7 +9,11 @@ const Utils = (() => {
         return parseFloat(value).toFixed(2).replace('.', ',');
     };
 
-    return { http, formatCurrency };
+    const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+
+    return { http, formatCurrency, escapeHtml };
 })();
 
 export default Utils;

@@ -82,8 +82,8 @@
                         <div class="kt-card" id="category-{{ $category->id }}">
                             <div class="kt-card-header">
                                 <h3 class="kt-card-title gap-2">
-                                    <span class="size-3 rounded-full shrink-0" style="background-color: {{ $category->color ?? '#94A3B8' }}"></span>
-                                    {{ $category->name }}
+                                    <span class="size-3 rounded-full shrink-0" data-color-dot style="background-color: {{ $category->color ?? '#94A3B8' }}"></span>
+                                    <span data-category-name>{{ $category->name }}</span>
                                 </h3>
                                 @if($category->user_id)
                                     <div class="kt-card-toolbar gap-1">
@@ -112,19 +112,21 @@
                                         <span class="text-sm text-secondary-foreground">Total gasto</span>
                                         <span class="text-sm font-semibold font-mono text-primary tabular-nums">R$ {{ number_format($category->total_spent, 2, ',', '.') }}</span>
                                     </div>
-                                    @if($category->keywords && count($category->keywords) > 0)
-                                        <div>
-                                            <p class="text-xs text-secondary-foreground mb-1.5">Keywords</p>
-                                            <div class="flex flex-wrap gap-1">
-                                                @foreach(array_slice($category->keywords, 0, 8) as $kw)
-                                                    <span class="text-xs bg-accent px-1.5 py-0.5 rounded">{{ $kw }}</span>
-                                                @endforeach
-                                                @if(count($category->keywords) > 8)
-                                                    <span class="text-xs text-secondary-foreground">+{{ count($category->keywords) - 8 }}</span>
-                                                @endif
+                                    <div data-keywords-section>
+                                        @if($category->keywords && count($category->keywords) > 0)
+                                            <div>
+                                                <p class="text-xs text-secondary-foreground mb-1.5">Keywords</p>
+                                                <div class="flex flex-wrap gap-1">
+                                                    @foreach(array_slice($category->keywords, 0, 8) as $kw)
+                                                        <span class="text-xs bg-accent px-1.5 py-0.5 rounded">{{ $kw }}</span>
+                                                    @endforeach
+                                                    @if(count($category->keywords) > 8)
+                                                        <span class="text-xs text-secondary-foreground">+{{ count($category->keywords) - 8 }}</span>
+                                                    @endif
+                                                </div>
                                             </div>
-                                        </div>
-                                    @endif
+                                        @endif
+                                    </div>
                                     @if(!$category->user_id)
                                         <div>
                                             <span class="kt-badge kt-badge-secondary kt-badge-sm">Sistema</span>

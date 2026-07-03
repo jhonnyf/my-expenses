@@ -36,16 +36,16 @@ class BudgetServiceTest extends TestCase
 
     public function test_get_budgets_calculates_spent_from_invoice_items(): void
     {
-        $user     = User::factory()->create();
-        $issuer   = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $category = Category::factory()->for($user)->create();
-        $budget   = Budget::factory()->for($user)->for($category)->create(['amount' => 100.00]);
+        $budget = Budget::factory()->for($user)->for($category)->create(['amount' => 100.00]);
 
         $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
         InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id, 'total_price' => 30.00]);
 
         $result = $this->service->getBudgetsWithSpending($user->id);
-        $found  = collect($result['budgets'])->firstWhere('id', $budget->id);
+        $found = collect($result['budgets'])->firstWhere('id', $budget->id);
 
         $this->assertNotNull($found);
         $this->assertEquals(30.00, (float) $found->spent);
@@ -53,18 +53,67 @@ class BudgetServiceTest extends TestCase
 
     public function test_get_budgets_calculates_percentage_correctly(): void
     {
-        $user     = User::factory()->create();
-        $issuer   = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $category = Category::factory()->for($user)->create();
-        $budget   = Budget::factory()->for($user)->for($category)->create(['amount' => 200.00]);
+        $budget = Budget::factory()->for($user)->for($category)->create(['amount' => 200.00]);
 
         $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
         InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id, 'total_price' => 50.00]);
 
         $result = $this->service->getBudgetsWithSpending($user->id);
-        $found  = collect($result['budgets'])->firstWhere('id', $budget->id);
+        $found = collect($result['budgets'])->firstWhere('id', $budget->id);
 
         $this->assertEquals(25.0, (float) $found->percentage);
         $this->assertEquals(150.00, (float) $found->remaining);
+    }
+
+    public function test_attach_spending_calculates_spent_for_single_category_budget(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+        $budget = Budget::factory()->for($user)->for($category)->create(['amount' => 100.00]);
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id, 'total_price' => 40.00]);
+
+        $result = $this->service->attachSpending($budget);
+
+        $this->assertEquals(40.00, (float) $result->spent);
+        $this->assertEquals(40.0, (float) $result->percentage);
+        $this->assertEquals(60.00, (float) $result->remaining);
+    }
+
+    public function test_attach_spending_ignores_other_categories(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+        $otherCat = Category::factory()->for($user)->create();
+        $budget = Budget::factory()->for($user)->for($category)->create(['amount' => 100.00]);
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $otherCat->id, 'total_price' => 40.00]);
+
+        $result = $this->service->attachSpending($budget);
+
+        $this->assertEquals(0.0, (float) $result->spent);
+    }
+
+    public function test_attach_spending_sums_all_categories_for_general_budget(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+        $budget = Budget::factory()->for($user)->create(['category_id' => null, 'amount' => 100.00]);
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id, 'total_price' => 15.00]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => null, 'total_price' => 5.00]);
+
+        $result = $this->service->attachSpending($budget);
+
+        $this->assertEquals(20.00, (float) $result->spent);
     }
 }

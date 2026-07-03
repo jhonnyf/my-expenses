@@ -19,9 +19,30 @@ class BudgetService
         $monthlySpending = $this->getMonthlySpendingByCategory($userId, $startOfMonth);
 
         return [
-            'budgets'    => $this->applySpendingToBudgets($budgets, $monthlySpending, $monthlySpending->sum()),
+            'budgets' => $this->applySpendingToBudgets($budgets, $monthlySpending, $monthlySpending->sum()),
             'categories' => Category::forUser($userId)->orderBy('name')->get(),
         ];
+    }
+
+    public function attachSpending(Budget $budget): Budget
+    {
+        $startOfMonth = Carbon::now()->startOfMonth();
+
+        $query = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->where('invoices.user_id', $budget->user_id)
+            ->where('invoices.issued_at', '>=', $startOfMonth);
+
+        if ($budget->category_id) {
+            $query->where('invoices_items.category_id', $budget->category_id);
+        }
+
+        $spent = (float) $query->sum('invoices_items.total_price');
+
+        $budget->spent = $spent;
+        $budget->percentage = $budget->amount > 0 ? ($spent / $budget->amount) * 100 : 0.0;
+        $budget->remaining = max(0.0, (float) $budget->amount - $spent);
+
+        return $budget;
     }
 
     private function getMonthlySpendingByCategory(int $userId, Carbon $startOfMonth): Collection
@@ -40,11 +61,11 @@ class BudgetService
     private function applySpendingToBudgets(Collection $budgets, Collection $monthlySpending, float $totalMonthlySpending): Collection
     {
         return $budgets->map(function (Budget $budget) use ($monthlySpending, $totalMonthlySpending) {
-            $budget->spent      = $budget->category_id
+            $budget->spent = $budget->category_id
                 ? (float) ($monthlySpending[$budget->category_id] ?? 0)
                 : (float) $totalMonthlySpending;
             $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0.0;
-            $budget->remaining  = max(0.0, (float) $budget->amount - $budget->spent);
+            $budget->remaining = max(0.0, (float) $budget->amount - $budget->spent);
 
             return $budget;
         });
