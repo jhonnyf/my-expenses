@@ -29,6 +29,7 @@
     <link href="{{ asset('assets/vendors/apexcharts/apexcharts.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/vendors/keenicons/styles.bundle.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/css/styles.css') }}" rel="stylesheet" />
+    @vite(['resources/css/app.css'])
 </head>
 <body class="antialiased flex h-full text-base text-foreground bg-background">    
     <script>

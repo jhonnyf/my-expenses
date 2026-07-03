@@ -21,7 +21,14 @@
             <div class="kt-card kt-card-grid min-w-full">
 
                 <div class="kt-card-header flex-wrap gap-2">
-                    <h3 class="kt-card-title">Lista de Emissores</h3>
+                    <div class="flex items-center gap-2.5">
+                        <h3 class="kt-card-title">Lista de Emissores</h3>
+                        <span id="issuerFavoritesBadge" class="kt-badge kt-badge-warning kt-badge-outline kt-badge-sm {{ $favoriteIds->isEmpty() ? 'hidden' : '' }}">
+                            <i class="ki-filled ki-star text-2xs"></i>
+                            <span id="issuerFavoritesCount">{{ $favoriteIds->count() }}</span>
+                            <span id="issuerFavoritesLabel">{{ $favoriteIds->count() == 1 ? 'favorito' : 'favoritos' }}</span>
+                        </span>
+                    </div>
                     <div class="flex items-center gap-3">
                         <label class="kt-input max-w-56">
                             <i class="ki-filled ki-magnifier"></i>
@@ -35,7 +42,7 @@
                         <table class="kt-table kt-table-border table-fixed" id="issuersTable">
                             <thead>
                                 <tr>
-                                    <th class="w-[50px]"></th>
+                                    <th class="w-[70px]"></th>
                                     <th class="min-w-[260px]">Emissor</th>
                                     <th class="min-w-[150px]">CNPJ</th>
                                     <th class="min-w-[180px]">Localização</th>
@@ -44,19 +51,20 @@
                             </thead>
                             <tbody>
                                 @forelse ($records->items() as $item)
-                                    <tr class="issuer-row">
-                                        <td class="text-center">
+                                    @php $isFav = $favoriteIds->contains($item->id); @endphp
+                                    <tr class="issuer-row transition-colors duration-150 hover:bg-accent/40 {{ $isFav ? 'bg-yellow-500/5' : '' }}">
+                                        <td class="text-center py-2.5 {{ $isFav ? 'shadow-[inset_3px_0_0_0_#eab308]' : '' }}">
                                             <button
                                                 data-favorite-id="{{ $item->id }}"
-                                                title="{{ $favoriteIds->contains($item->id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
-                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm favorite-btn {{ $favoriteIds->contains($item->id) ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500' }}">
-                                                <i class="ki-filled ki-star text-base"></i>
+                                                title="{{ $isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
+                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm favorite-btn transition-transform duration-200 hover:scale-110">
+                                                <i class="ki-filled ki-star text-base transition-colors duration-200 {{ $isFav ? 'text-yellow-500' : 'hover:text-yellow-500' }}"></i>
                                             </button>
                                         </td>
-                                        <td>
+                                        <td class="py-2.5">
                                             <div class="flex items-center gap-3">
-                                                <div class="flex items-center justify-center size-9 rounded-lg shrink-0 font-semibold text-sm uppercase
-                                                    {{ $favoriteIds->contains($item->id) ? 'bg-yellow-500/10 text-yellow-600' : 'bg-primary/10 text-primary' }}">
+                                                <div class="issuer-avatar flex items-center justify-center size-9 rounded-lg shrink-0 font-semibold text-sm uppercase transition-all duration-200
+                                                    {{ $isFav ? 'bg-yellow-500/10 text-yellow-600 ring-2 ring-yellow-400/40' : 'bg-primary/10 text-primary' }}">
                                                     {{ strtoupper(substr($item->name, 0, 2)) }}
                                                 </div>
                                                 <div class="min-w-0">
@@ -67,12 +75,12 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td class="py-2.5">
                                             <span class="text-sm text-foreground font-mono">
                                                 {{ preg_replace('/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/', '$1.$2.$3/$4-$5', $item->cnpj) }}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td class="py-2.5">
                                             @if($item->city || $item->state)
                                                 <div class="flex items-center gap-1.5">
                                                     <i class="ki-filled ki-geolocation text-sm text-muted-foreground shrink-0"></i>
@@ -84,8 +92,8 @@
                                                 <span class="text-sm text-secondary-foreground">—</span>
                                             @endif
                                         </td>
-                                        <td class="text-center">
-                                            <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon" title="Ver detalhes">
+                                        <td class="text-center py-2.5">
+                                            <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Ver detalhes">
                                                 <i class="ki-filled ki-eye text-base"></i>
                                             </a>
                                         </td>
@@ -105,6 +113,16 @@
                                         </td>
                                     </tr>
                                 @endforelse
+                                @if($records->isNotEmpty())
+                                    <tr id="issuerNoSearchResults" class="hidden">
+                                        <td colspan="5">
+                                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                                <i class="ki-filled ki-magnifier text-4xl text-secondary-foreground/30 mb-3"></i>
+                                                <p class="text-sm text-secondary-foreground">Nenhum emissor corresponde à busca.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
                             </tbody>
                         </table>
                     </div>
@@ -136,10 +154,16 @@
 
         document.getElementById('issuerSearchInput')?.addEventListener('input', function () {
             const term = this.value.toLowerCase();
+            let visibleCount = 0;
+
             document.querySelectorAll('#issuersTable tbody .issuer-row').forEach(row => {
                 const name = row.querySelector('.issuer-name')?.textContent.toLowerCase() ?? '';
-                row.style.display = name.includes(term) ? '' : 'none';
+                const matches = name.includes(term);
+                row.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
             });
+
+            document.getElementById('issuerNoSearchResults')?.classList.toggle('hidden', visibleCount > 0);
         });
     </script>
 @endpush
