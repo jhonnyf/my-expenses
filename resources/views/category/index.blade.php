@@ -10,10 +10,10 @@
                 <p class="text-sm font-normal text-secondary-foreground">Organize e gerencie as categorias dos seus produtos</p>
             </div>
             <div class="flex items-center gap-2.5">
-                <button onclick="autoCategorize()" id="btnAuto" class="kt-btn kt-btn-outline">
+                <button data-action="auto-categorize" id="btnAuto" class="kt-btn kt-btn-outline">
                     <i class="ki-filled ki-setting-2"></i> Auto-categorizar
                 </button>
-                <button onclick="showNewForm()" class="kt-btn kt-btn-primary">
+                <button data-action="show-new-form" class="kt-btn kt-btn-primary">
                     <i class="ki-filled ki-plus"></i> Nova Categoria
                 </button>
             </div>
@@ -43,8 +43,8 @@
                         </div>
                     </div>
                     <div class="flex gap-2 mt-4">
-                        <button onclick="saveCategory()" class="kt-btn kt-btn-primary kt-btn-sm">Salvar</button>
-                        <button onclick="hideNewForm()" class="kt-btn kt-btn-outline kt-btn-sm">Cancelar</button>
+                        <button data-action="save-category" class="kt-btn kt-btn-primary kt-btn-sm">Salvar</button>
+                        <button data-action="hide-new-form" class="kt-btn kt-btn-outline kt-btn-sm">Cancelar</button>
                     </div>
                 </div>
             </div>
@@ -70,8 +70,8 @@
                         </div>
                     </div>
                     <div class="flex gap-2 mt-4">
-                        <button onclick="updateCategory()" class="kt-btn kt-btn-primary kt-btn-sm">Atualizar</button>
-                        <button onclick="hideEditForm()" class="kt-btn kt-btn-outline kt-btn-sm">Cancelar</button>
+                        <button data-action="update-category" class="kt-btn kt-btn-primary kt-btn-sm">Atualizar</button>
+                        <button data-action="hide-edit-form" class="kt-btn kt-btn-outline kt-btn-sm">Cancelar</button>
                     </div>
                 </div>
             </div>
@@ -87,11 +87,15 @@
                                 </h3>
                                 @if($category->user_id)
                                     <div class="kt-card-toolbar gap-1">
-                                        <button onclick="editCategory({{ $category->id }}, '{{ addslashes($category->name) }}', '{{ $category->color }}', '{{ implode(', ', $category->keywords ?? []) }}')"
+                                        <button data-action="edit-category"
+                                                data-category-id="{{ $category->id }}"
+                                                data-category-name="{{ $category->name }}"
+                                                data-category-color="{{ $category->color ?? '#94A3B8' }}"
+                                                data-category-keywords="{{ implode(', ', $category->keywords ?? []) }}"
                                                 class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Editar">
                                             <i class="ki-filled ki-pencil text-muted-foreground"></i>
                                         </button>
-                                        <button onclick="deleteCategory({{ $category->id }})"
+                                        <button data-action="delete-category" data-category-id="{{ $category->id }}"
                                                 class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Excluir">
                                             <i class="ki-filled ki-trash text-muted-foreground"></i>
                                         </button>

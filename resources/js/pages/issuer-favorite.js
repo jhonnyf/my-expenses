@@ -1,72 +1,93 @@
-import { http } from '../utils';
+import Utils from '../utils';
 
-export default function init() {
-    document.addEventListener('click', (e) => {
+const DETAIL_BUTTON_ID = 'btnFavorite';
+
+const DETAIL_FAVORITE_CLASSES = ['bg-yellow-500', 'hover:bg-yellow-600', 'text-white', 'border-yellow-500', 'shadow-md', 'shadow-yellow-500/30'];
+const DETAIL_OUTLINE_CLASSES = ['kt-btn-outline', 'hover:border-yellow-500', 'hover:text-yellow-500'];
+
+const AVATAR_FAVORITE_CLASSES = ['bg-yellow-500/15', 'text-yellow-600', 'ring-yellow-400', 'shadow-lg', 'shadow-yellow-500/20'];
+const AVATAR_DEFAULT_CLASSES = ['bg-primary/10', 'text-primary', 'ring-primary/30'];
+
+const IssuerFavorite = (() => {
+    let initialized = false;
+
+    const toggleClassList = (el, classes, force) => classes.forEach(c => el.classList.toggle(c, force));
+
+    const resolveButton = (e) => {
         const btn = e.target.closest('[data-favorite-id]');
-        if (!btn || btn.disabled) return;
+        return (!btn || btn.disabled) ? null : btn;
+    };
+
+    const toggleFavorite = async (btn) => {
         btn.disabled = true;
 
-        const baseUrl = window.pageConfig?.issuerBaseUrl || '';
+        const { issuerBaseUrl = '' } = window.pageConfig ?? {};
 
-        http(`${baseUrl}/${btn.dataset.favoriteId}/favorite`, { method: 'POST' })
-            .then(data => {
-                applyFavoriteState(btn, data.is_favorite);
-            })
-            .catch(() => {
-                alert('Erro ao atualizar favorito. Tente novamente.');
-            })
-            .finally(() => {
-                btn.disabled = false;
-            });
-    });
-}
-
-function applyFavoriteState(btn, isFavorite) {
-    const label = btn.querySelector('span') ?? document.getElementById('btnFavoriteLabel');
-    const icon  = btn.querySelector('i')   ?? document.getElementById('btnFavoriteIcon');
-
-    // Botão do header (tem id="btnFavorite")
-    if (btn.id === 'btnFavorite') {
-        if (isFavorite) {
-            btn.classList.remove('kt-btn-outline', 'hover:border-yellow-500', 'hover:text-yellow-500');
-            btn.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-white', 'border-yellow-500', 'shadow-md', 'shadow-yellow-500/30');
-            icon?.classList.add('scale-125');
-        } else {
-            btn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600', 'text-white', 'border-yellow-500', 'shadow-md', 'shadow-yellow-500/30');
-            btn.classList.add('kt-btn-outline', 'hover:border-yellow-500', 'hover:text-yellow-500');
-            icon?.classList.remove('scale-125');
+        try {
+            const { is_favorite: isFavorite } = await Utils.http(`${issuerBaseUrl}/${btn.dataset.favoriteId}/favorite`, { method: 'POST' });
+            applyFavoriteState(btn, isFavorite);
+        } catch {
+            alert('Erro ao atualizar favorito. Tente novamente.');
+        } finally {
+            btn.disabled = false;
         }
+    };
+
+    const handleClick = (e) => {
+        const btn = resolveButton(e);
+        if (btn) toggleFavorite(btn);
+    };
+
+    const applyIconButtonState = (btn, isFavorite) => {
+        const icon = btn.querySelector('i');
+
+        icon?.classList.toggle('text-yellow-500', isFavorite);
+        icon?.classList.toggle('text-muted-foreground', !isFavorite);
+
+        if (btn.hasAttribute('title')) {
+            btn.title = isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+        }
+    };
+
+    const applyProfileCardState = (isFavorite) => {
+        const avatar = document.getElementById('profileAvatar');
+
+        if (avatar) {
+            toggleClassList(avatar, AVATAR_FAVORITE_CLASSES, isFavorite);
+            toggleClassList(avatar, AVATAR_DEFAULT_CLASSES, !isFavorite);
+        }
+
+        document.getElementById('favoriteBadge')?.classList.toggle('hidden', !isFavorite);
+    };
+
+    const applyDetailButtonState = (btn, isFavorite) => {
+        const icon = btn.querySelector('i');
+        const label = btn.querySelector('span');
+
         if (label) label.textContent = isFavorite ? 'Favoritado' : 'Favoritar';
-        if (btn.hasAttribute('title')) btn.title = isFavorite ? 'Remover dos favoritos' : 'Favoritar emitente';
-    }
+        btn.title = isFavorite ? 'Remover dos favoritos' : 'Favoritar emitente';
+        icon?.classList.toggle('scale-125', isFavorite);
 
-    // Botão de listagem (ícone simples, sem id)
-    if (!btn.id || btn.id !== 'btnFavorite') {
-        if (isFavorite) {
-            btn.classList.remove('text-muted-foreground', 'hover:text-yellow-500');
-            btn.classList.add('text-yellow-500');
-        } else {
-            btn.classList.remove('text-yellow-500');
-            btn.classList.add('text-muted-foreground', 'hover:text-yellow-500');
+        toggleClassList(btn, DETAIL_FAVORITE_CLASSES, isFavorite);
+        toggleClassList(btn, DETAIL_OUTLINE_CLASSES, !isFavorite);
+
+        applyProfileCardState(isFavorite);
+    };
+
+    const applyFavoriteState = (btn, isFavorite) => {
+        btn.id === DETAIL_BUTTON_ID
+            ? applyDetailButtonState(btn, isFavorite)
+            : applyIconButtonState(btn, isFavorite);
+    };
+
+    return {
+        init: () => {
+            if (initialized) return;
+            initialized = true;
+
+            document.addEventListener('click', handleClick);
         }
-        if (btn.hasAttribute('title')) btn.title = isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
-    }
+    };
+})();
 
-    // Avatar do card de perfil (página de detalhe)
-    const avatar = document.getElementById('profileAvatar');
-    if (avatar) {
-        if (isFavorite) {
-            avatar.classList.remove('bg-primary/10', 'text-primary', 'ring-primary/30');
-            avatar.classList.add('bg-yellow-500/15', 'text-yellow-600', 'ring-yellow-400', 'shadow-lg', 'shadow-yellow-500/20');
-        } else {
-            avatar.classList.remove('bg-yellow-500/15', 'text-yellow-600', 'ring-yellow-400', 'shadow-lg', 'shadow-yellow-500/20');
-            avatar.classList.add('bg-primary/10', 'text-primary', 'ring-primary/30');
-        }
-    }
-
-    // Badge "Favorito" do card de perfil
-    const badge = document.getElementById('favoriteBadge');
-    if (badge) {
-        badge.classList.toggle('hidden', !isFavorite);
-    }
-}
+export default IssuerFavorite;

@@ -1,9 +1,15 @@
 import axios from 'axios';
 
-export function http(url, { method = 'GET', body } = {}) {
-    return axios({ url, method, data: body }).then(r => r.data);
-}
+const Utils = (() => {
+    const http = (url, { method = 'GET', body } = {}) => {
+        return axios({ url, method, data: body }).then(r => r.data);
+    };
 
-export function formatCurrency(value) {
-    return parseFloat(value).toFixed(2).replace('.', ',');
-}
+    const formatCurrency = (value) => {
+        return parseFloat(value).toFixed(2).replace('.', ',');
+    };
+
+    return { http, formatCurrency };
+})();
+
+export default Utils;

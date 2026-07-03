@@ -1,28 +1,12 @@
-import { http } from '../utils';
+import Utils from '../utils';
 
-export default function init() {
-    const searchUrl = window.pageConfig?.globalSearchUrl || '';
-    const searchInput = document.getElementById('globalSearchInput');
-    const searchResults = document.getElementById('globalSearchResults');
-    if (!searchInput || !searchResults) return;
-
+const GlobalSearch = (() => {
+    let initialized = false;
+    let searchUrl, searchInput, searchResults;
     let debounceTimer = null;
 
-    searchInput.addEventListener('input', () => {
-        clearTimeout(debounceTimer);
-        const query = searchInput.value.trim();
-
-        if (query.length < 2) {
-            searchResults.classList.add('hidden');
-            searchResults.innerHTML = '';
-            return;
-        }
-
-        debounceTimer = setTimeout(() => search(query), 300);
-    });
-
-    function search(query) {
-        http(`${searchUrl}?q=${encodeURIComponent(query)}`)
+    const search = (query) => {
+        Utils.http(`${searchUrl}?q=${encodeURIComponent(query)}`)
             .then(data => {
                 const sections = [
                     { key: 'emissores', label: 'Emissores', icon: 'ki-filled ki-shop' },
@@ -59,18 +43,50 @@ export default function init() {
                 searchResults.innerHTML = html;
                 searchResults.classList.remove('hidden');
             });
-    }
+    };
 
-    document.addEventListener('click', (e) => {
+    const handleInput = () => {
+        clearTimeout(debounceTimer);
+        const query = searchInput.value.trim();
+
+        if (query.length < 2) {
+            searchResults.classList.add('hidden');
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        debounceTimer = setTimeout(() => search(query), 300);
+    };
+
+    const handleDocumentClick = (e) => {
         if (!document.getElementById('globalSearchWrapper').contains(e.target)) {
             searchResults.classList.add('hidden');
         }
-    });
+    };
 
-    document.addEventListener('keydown', (e) => {
+    const handleKeydown = (e) => {
         if (e.key === 'Escape') {
             searchResults.classList.add('hidden');
             searchInput.blur();
         }
-    });
-}
+    };
+
+    return {
+        init: () => {
+            if (initialized) return;
+
+            searchUrl = window.pageConfig?.globalSearchUrl || '';
+            searchInput = document.getElementById('globalSearchInput');
+            searchResults = document.getElementById('globalSearchResults');
+            if (!searchInput || !searchResults) return;
+
+            initialized = true;
+
+            searchInput.addEventListener('input', handleInput);
+            document.addEventListener('click', handleDocumentClick);
+            document.addEventListener('keydown', handleKeydown);
+        }
+    };
+})();
+
+export default GlobalSearch;

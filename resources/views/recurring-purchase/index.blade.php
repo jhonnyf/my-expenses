@@ -115,7 +115,12 @@
                                                                 @foreach($shoppingLists as $list)
                                                                     <div class="kt-menu-item">
                                                                         <button class="kt-menu-link w-full text-left"
-                                                                                onclick="addToList({{ $list->id }}, '{{ addslashes($item->description) }}', {{ $best->avg_price ?? 0 }}, {{ $best->issuer_id ?? 'null' }}, '{{ addslashes($best->unit ?? '') }}', this)">
+                                                                                data-action="add-to-list"
+                                                                                data-list-id="{{ $list->id }}"
+                                                                                data-description="{{ $item->description }}"
+                                                                                data-unit-price="{{ $best->avg_price ?? 0 }}"
+                                                                                data-issuer-id="{{ $best->issuer_id ?? '' }}"
+                                                                                data-unit="{{ $best->unit ?? '' }}">
                                                                             <span class="kt-menu-title truncate">{{ $list->name }}</span>
                                                                         </button>
                                                                     </div>

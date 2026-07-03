@@ -1,9 +1,10 @@
-export default function init() {
-    const { initialTab } = window.pageConfig || {};
+const TABS = ['xml', 'qrcode', 'access_key'];
 
-    window.switchTab = (tab) => {
-        const tabs = ['xml', 'qrcode', 'access_key'];
-        tabs.forEach(t => {
+const Upload = (() => {
+    let initialized = false;
+
+    const switchTab = (tab) => {
+        TABS.forEach(t => {
             const tabEl = document.getElementById('tab-' + t);
             const panelEl = document.getElementById('panel-' + t);
             const isActive = t === tab;
@@ -16,7 +17,17 @@ export default function init() {
         });
     };
 
-    if (initialTab && initialTab !== 'qrcode') {
-        window.switchTab(initialTab);
-    }
-}
+    return {
+        init: () => {
+            if (initialized) return;
+            initialized = true;
+
+            const { initialTab } = window.pageConfig || {};
+            if (initialTab && initialTab !== 'qrcode') {
+                switchTab(initialTab);
+            }
+        }
+    };
+})();
+
+export default Upload;

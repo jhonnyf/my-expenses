@@ -1,21 +1,22 @@
-import { http } from '../utils';
+import Utils from '../utils';
 
-export default function init() {
-    const { baseUrl } = window.pageConfig;
+const Category = (() => {
+    let initialized = false;
+    let baseUrl;
 
-    window.showNewForm = () => {
+    const showNewForm = () => {
         document.getElementById('newCategoryForm').style.display = 'block';
     };
 
-    window.hideNewForm = () => {
+    const hideNewForm = () => {
         document.getElementById('newCategoryForm').style.display = 'none';
     };
 
-    window.saveCategory = () => {
+    const saveCategory = () => {
         const name = document.getElementById('newName').value.trim();
         if (!name) return;
 
-        http(baseUrl, {
+        Utils.http(baseUrl, {
             method: 'POST',
             body: {
                 name,
@@ -25,7 +26,7 @@ export default function init() {
         }).then(() => location.reload());
     };
 
-    window.editCategory = (id, name, color, keywords) => {
+    const editCategory = (id, name, color, keywords) => {
         document.getElementById('editId').value = id;
         document.getElementById('editName').value = name;
         document.getElementById('editColor').value = color || '#94A3B8';
@@ -36,16 +37,16 @@ export default function init() {
         form.scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.hideEditForm = () => {
+    const hideEditForm = () => {
         document.getElementById('editCategoryForm').style.display = 'none';
     };
 
-    window.updateCategory = () => {
+    const updateCategory = () => {
         const id = document.getElementById('editId').value;
         const name = document.getElementById('editName').value.trim();
         if (!name) return;
 
-        http(`${baseUrl}/${id}`, {
+        Utils.http(`${baseUrl}/${id}`, {
             method: 'PATCH',
             body: {
                 name,
@@ -55,25 +56,61 @@ export default function init() {
         }).then(() => location.reload());
     };
 
-    window.deleteCategory = (id) => {
+    const deleteCategory = (id) => {
         if (!confirm('Deseja excluir esta categoria?')) return;
 
-        http(`${baseUrl}/${id}`, { method: 'DELETE' })
+        Utils.http(`${baseUrl}/${id}`, { method: 'DELETE' })
             .then(() => {
                 const el = document.getElementById('category-' + id);
                 if (el) el.remove();
             });
     };
 
-    window.autoCategorize = () => {
+    const autoCategorize = () => {
         const btn = document.getElementById('btnAuto');
         btn.disabled = true;
         btn.innerHTML = '<i class="ki-filled ki-setting-2 animate-spin"></i> Processando...';
 
-        http(`${baseUrl}/auto-categorize`, { method: 'POST' })
+        Utils.http(`${baseUrl}/auto-categorize`, { method: 'POST' })
             .then(data => {
                 alert(data.categorized + ' itens categorizados!');
                 location.reload();
             });
     };
-}
+
+    const ACTIONS = {
+        'auto-categorize': () => autoCategorize(),
+        'show-new-form': () => showNewForm(),
+        'save-category': () => saveCategory(),
+        'hide-new-form': () => hideNewForm(),
+        'update-category': () => updateCategory(),
+        'hide-edit-form': () => hideEditForm(),
+        'edit-category': (btn) => editCategory(
+            btn.dataset.categoryId,
+            btn.dataset.categoryName,
+            btn.dataset.categoryColor,
+            btn.dataset.categoryKeywords,
+        ),
+        'delete-category': (btn) => deleteCategory(btn.dataset.categoryId),
+    };
+
+    const handleClick = (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        ACTIONS[btn.dataset.action]?.(btn);
+    };
+
+    return {
+        init: () => {
+            if (initialized) return;
+            initialized = true;
+
+            ({ baseUrl } = window.pageConfig);
+
+            document.addEventListener('click', handleClick);
+        }
+    };
+})();
+
+export default Category;

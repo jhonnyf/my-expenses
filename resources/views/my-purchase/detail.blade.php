@@ -308,7 +308,7 @@
                                     <td class="text-center text-secondary-foreground">{{ $item->item_number }}</td>
                                     <td class="font-medium text-foreground">{{ $item->description }}</td>
                                     <td>
-                                        <select onchange="assignCategory({{ $item->id }}, this.value)"
+                                        <select data-action="assign-category" data-item-id="{{ $item->id }}"
                                                 class="text-xs bg-accent border border-border rounded px-2 py-1 cursor-pointer">
                                             <option value="">—</option>
                                             @foreach($categories as $cat)

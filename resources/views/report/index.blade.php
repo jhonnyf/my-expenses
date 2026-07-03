@@ -69,11 +69,11 @@
                                 <i class="ki-filled ki-eye"></i>
                                 Visualizar
                             </button>
-                            <button type="button" onclick="submitTo('{{ route('reports.pdf') }}')" class="kt-btn kt-btn-outline">
+                            <button type="button" data-action="submit-report" data-url="{{ route('reports.pdf') }}" class="kt-btn kt-btn-outline">
                                 <i class="ki-filled ki-document"></i>
                                 Exportar PDF
                             </button>
-                            <button type="button" onclick="submitTo('{{ route('reports.csv') }}')" class="kt-btn kt-btn-outline">
+                            <button type="button" data-action="submit-report" data-url="{{ route('reports.csv') }}" class="kt-btn kt-btn-outline">
                                 <i class="ki-filled ki-file-down"></i>
                                 Exportar CSV
                             </button>

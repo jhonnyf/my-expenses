@@ -35,7 +35,7 @@
                             <input type="number" id="budgetAmount" class="kt-input w-full" step="0.01" min="0.01" placeholder="0,00" />
                         </div>
                         <div>
-                            <button onclick="saveBudget()" class="kt-btn kt-btn-primary w-full">
+                            <button data-action="save-budget" class="kt-btn kt-btn-primary w-full">
                                 <i class="ki-filled ki-check"></i> Salvar Orçamento
                             </button>
                         </div>
@@ -71,7 +71,7 @@
                                     @endif
                                 </h3>
                                 <div class="kt-card-toolbar">
-                                    <button onclick="deleteBudget({{ $budget->id }})" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Excluir">
+                                    <button data-action="delete-budget" data-budget-id="{{ $budget->id }}" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Excluir">
                                         <i class="ki-filled ki-trash text-muted-foreground"></i>
                                     </button>
                                 </div>

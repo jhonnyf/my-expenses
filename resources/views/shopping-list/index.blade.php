@@ -13,7 +13,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
-                <button class="kt-btn kt-btn-primary" id="btnNew" onclick="newList()" style="display:none;">
+                <button class="kt-btn kt-btn-primary" id="btnNew" data-action="new-list" style="display:none;">
                     <i class="ki-filled ki-plus"></i>
                     Nova Lista
                 </button>
@@ -40,7 +40,7 @@
                                            class="kt-input mt-1.5 w-full"
                                            placeholder="Lista de compras {{ now()->format('d/m/Y') }}" />
                                 </div>
-                                <button onclick="saveName()" class="kt-btn kt-btn-sm kt-btn-outline mt-5 shrink-0">
+                                <button data-action="save-name" class="kt-btn kt-btn-sm kt-btn-outline mt-5 shrink-0">
                                     <i class="ki-filled ki-check"></i>
                                     Salvar
                                 </button>
@@ -125,7 +125,7 @@
                         <div class="kt-card-header">
                             <h3 class="kt-card-title">Listas Salvas</h3>
                             <div class="kt-card-toolbar">
-                                <button onclick="newList()" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Nova lista">
+                                <button data-action="new-list" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Nova lista">
                                     <i class="ki-filled ki-plus"></i>
                                 </button>
                             </div>

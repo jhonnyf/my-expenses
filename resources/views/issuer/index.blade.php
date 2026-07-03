@@ -84,10 +84,8 @@
                                                 <span class="text-sm text-secondary-foreground">—</span>
                                             @endif
                                         </td>
-                                        <td class="text-end">
-                                            <a href="{{ route('issuers.detail', ['id' => $item->id]) }}"
-                                               class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon"
-                                               title="Ver detalhes">
+                                        <td class="text-center">
+                                            <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon" title="Ver detalhes">
                                                 <i class="ki-filled ki-eye text-base"></i>
                                             </a>
                                         </td>

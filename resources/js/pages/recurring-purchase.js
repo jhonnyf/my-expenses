@@ -1,43 +1,48 @@
-import { http } from '../utils';
+import Utils from '../utils';
 
-export default function init() {
-    const { addToListUrl } = window.pageConfig;
+const RecurringPurchase = (() => {
+    let initialized = false;
+    let addToListUrl;
 
-    window.toggleDropdown = (btn) => {
-        const dropdown = btn.nextElementSibling;
-        document.querySelectorAll('.absolute.end-0').forEach(d => {
-            if (d !== dropdown) d.classList.add('hidden');
-        });
-        dropdown.classList.toggle('hidden');
-    };
+    const addToList = (btn) => {
+        const { listId, description, unitPrice, issuerId, unit } = btn.dataset;
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.relative')) {
-            document.querySelectorAll('.absolute.end-0').forEach(d => d.classList.add('hidden'));
-        }
-    });
-
-    window.addToList = (listId, description, unitPrice, issuerId, unit, btn) => {
-        http(addToListUrl, {
+        Utils.http(addToListUrl, {
             method: 'POST',
             body: {
                 shopping_list_id: listId,
                 description,
                 unit_price: unitPrice,
-                issuer_id: issuerId,
+                issuer_id: issuerId || null,
                 unit: unit || null,
             },
         }).then(data => {
             if (!data.success) return;
 
-            const wrapper = btn.closest('.relative');
-            const dd = wrapper.querySelector('div:not(.hidden)');
-            if (dd) dd.classList.add('hidden');
-
             const check = document.createElement('span');
             check.className = 'text-green-500 text-sm';
             check.innerHTML = '<i class="ki-filled ki-check"></i>';
-            wrapper.parentElement.appendChild(check);
+            btn.closest('td').appendChild(check);
         });
     };
-}
+
+    const handleDocumentClick = (e) => {
+        const addToListBtn = e.target.closest('[data-action="add-to-list"]');
+        if (addToListBtn) {
+            addToList(addToListBtn);
+        }
+    };
+
+    return {
+        init: () => {
+            if (initialized) return;
+            initialized = true;
+
+            ({ addToListUrl } = window.pageConfig);
+
+            document.addEventListener('click', handleDocumentClick);
+        }
+    };
+})();
+
+export default RecurringPurchase;
