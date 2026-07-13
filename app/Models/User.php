@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -38,6 +40,16 @@ class User extends Authenticatable
     public function favoriteIssuers(): BelongsToMany
     {
         return $this->belongsToMany(Issuer::class, 'favorite_issuers')->withTimestamps();
+    }
+
+    public function files(): MorphMany
+    {
+        return $this->morphMany(File::class, 'fileable');
+    }
+
+    public function avatar(): MorphOne
+    {
+        return $this->morphOne(File::class, 'fileable')->where('collection', 'avatar');
     }
 
     /**

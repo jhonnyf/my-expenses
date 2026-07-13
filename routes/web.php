@@ -4,18 +4,18 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\LoginController;
-use App\Http\Controllers\RegisterController;
-use App\Http\Controllers\ResetPasswordController;
-use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\MyPurchaseController;
 use App\Http\Controllers\PriceHistoryController;
 use App\Http\Controllers\RecurringPurchaseController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShoppingListController;
+use App\Http\Controllers\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -116,6 +116,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/', [AccountController::class, 'index'])->name('index');
         Route::patch('/', [AccountController::class, 'update'])->name('update');
         Route::patch('password', [AccountController::class, 'updatePassword'])->name('password');
+        Route::post('avatar', [AccountController::class, 'updateAvatar'])->name('avatar');
     });
 
 });

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\UpdateUserAvatarAction;
 use App\Http\Requests\UpdateAccountRequest;
+use App\Http\Requests\UpdateAvatarRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Models\InvoiceItem;
 use Illuminate\Http\RedirectResponse;
@@ -33,11 +35,11 @@ class AccountController extends Controller
             ->get();
 
         return view('account.index', [
-            'user'           => $user,
-            'totalInvoices'  => $totalInvoices,
-            'totalItems'     => $totalItems,
-            'totalSpent'     => (float) $totalSpent,
-            'memberSince'    => $memberSince,
+            'user' => $user,
+            'totalInvoices' => $totalInvoices,
+            'totalItems' => $totalItems,
+            'totalSpent' => (float) $totalSpent,
+            'memberSince' => $memberSince,
             'recentInvoices' => $recentInvoices,
         ]);
     }
@@ -64,5 +66,14 @@ class AccountController extends Controller
         return redirect()
             ->route('account.index')
             ->with('success_password', 'Senha alterada com sucesso.');
+    }
+
+    public function updateAvatar(UpdateAvatarRequest $request, UpdateUserAvatarAction $action): RedirectResponse
+    {
+        $action->execute(Auth::user(), $request->file('avatar'));
+
+        return redirect()
+            ->route('account.index')
+            ->with('success_avatar', 'Foto de perfil atualizada com sucesso.');
     }
 }

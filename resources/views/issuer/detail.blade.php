@@ -1,5 +1,5 @@
 @extends('layout.main')
-@section('page-module', 'issuer-favorite')
+@section('page-module', 'issuer-favorite,issuer-detail')
 
 @section('content')
 
@@ -277,13 +277,6 @@
 <script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         issuerBaseUrl: '{{ url("issuers") }}',
-    });
-
-    document.getElementById('invoiceSearchInput')?.addEventListener('input', function () {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('#invoicesTable tbody .invoice-row').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
-        });
     });
 </script>
 @endpush

@@ -15,8 +15,12 @@
 <div class="bg-center bg-cover bg-no-repeat hero-bg mb-0">
   <div class="kt-container-fixed">
     <div class="flex flex-col items-center gap-2 lg:gap-3.5 py-4 lg:pt-5 lg:pb-10">
-      <div class="rounded-full border-4 border-green-500 size-[100px] shrink-0 flex items-center justify-center bg-primary text-primary-foreground shadow-lg">
-        <span class="text-3xl font-bold leading-none select-none">{{ strtoupper(substr($user->name, 0, 2)) }}</span>
+      <div class="rounded-full border-4 border-green-500 size-[100px] shrink-0 flex items-center justify-center bg-primary text-primary-foreground shadow-lg overflow-hidden">
+        @if($user->avatar)
+          <img src="{{ $user->avatar->url() }}" alt="{{ $user->name }}" class="size-full object-cover" />
+        @else
+          <span class="text-3xl font-bold leading-none select-none">{{ strtoupper(substr($user->name, 0, 2)) }}</span>
+        @endif
       </div>
       <div class="flex items-center gap-1.5">
         <div class="text-lg leading-5 font-semibold text-mono">{{ $user->name }}</div>
@@ -256,6 +260,53 @@
           </div>
         @endif
 
+        @if(session('success_avatar'))
+          <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5">
+            <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+            <span class="text-sm text-green-600 font-medium">{{ session('success_avatar') }}</span>
+          </div>
+        @endif
+
+        {{-- Card: Foto de Perfil --}}
+        <div class="kt-card mb-5 lg:mb-7.5">
+          <div class="kt-card-header">
+            <h3 class="kt-card-title">Foto de Perfil</h3>
+          </div>
+          <div class="kt-card-content p-6">
+            <form method="POST" action="{{ route('account.avatar') }}" enctype="multipart/form-data" class="kt-form max-w-lg">
+              @csrf
+              <div class="flex items-center gap-5">
+                <div class="rounded-full size-16 shrink-0 flex items-center justify-center bg-primary text-primary-foreground overflow-hidden border border-border" id="avatar_preview_wrapper">
+                  @if($user->avatar)
+                    <img src="{{ $user->avatar->url() }}" alt="{{ $user->name }}" class="size-full object-cover" id="avatar_preview_img" />
+                  @else
+                    <span class="text-lg font-bold select-none" id="avatar_preview_initials">{{ strtoupper(substr($user->name, 0, 2)) }}</span>
+                  @endif
+                </div>
+                <div class="flex flex-col gap-2 grow">
+                  <input
+                    type="file"
+                    id="avatar"
+                    name="avatar"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    class="kt-input @error('avatar') border-destructive @enderror"
+                  />
+                  <span class="text-xs text-secondary-foreground">JPG, PNG ou WEBP. Máximo 2MB.</span>
+                  @error('avatar')
+                    <div class="kt-form-message text-destructive">{{ $message }}</div>
+                  @enderror
+                </div>
+              </div>
+              <div class="pt-4">
+                <button type="submit" class="kt-btn kt-btn-primary">
+                  <i class="ki-filled ki-cloud-add text-base"></i>
+                  Enviar foto
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
         <div class="kt-card">
           <div class="kt-card-header">
             <h3 class="kt-card-title">Informações Pessoais</h3>
@@ -398,25 +449,11 @@
 
 @push('scripts')
 <script>
-(function () {
-  // Botão "Editar Perfil" abre a aba de configurações
-  document.getElementById('btn_edit_profile')?.addEventListener('click', function () {
-    document.querySelector('[data-kt-tab-toggle="#tab_settings"]')?.click();
-  });
-
-  // Redirecionar para aba segurança se houver erros de senha
-  @if($errors->has('current_password') || $errors->has('password') || session('success_password'))
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelector('[data-kt-tab-toggle="#tab_security"]')?.click();
-  });
-  @endif
-
-  // Redirecionar para aba configurações se houver erros de nome/email
-  @if($errors->has('name') || $errors->has('email') || session('success'))
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelector('[data-kt-tab-toggle="#tab_settings"]')?.click();
-  });
-  @endif
-}());
+    window.pageConfig = Object.assign(window.pageConfig || {}, {
+        openTab: @if($errors->has('current_password') || $errors->has('password') || session('success_password')) 'security'
+                 @elseif($errors->has('name') || $errors->has('email') || $errors->has('avatar') || session('success') || session('success_avatar')) 'settings'
+                 @else null
+                 @endif,
+    });
 </script>
 @endpush

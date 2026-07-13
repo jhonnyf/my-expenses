@@ -1,5 +1,5 @@
 @extends('layout.main')
-@section('page-module', 'issuer-favorite')
+@section('page-module', 'issuer-favorite,issuer-list')
 
 @section('content')
 
@@ -202,20 +202,6 @@
     <script>
         window.pageConfig = Object.assign(window.pageConfig || {}, {
             issuerBaseUrl: '{{ url("issuers") }}',
-        });
-
-        document.getElementById('issuerSearchInput')?.addEventListener('input', function () {
-            const term = this.value.toLowerCase();
-            let visibleCount = 0;
-
-            document.querySelectorAll('#issuersTable tbody .issuer-row').forEach(row => {
-                const name = row.querySelector('.issuer-name')?.textContent.toLowerCase() ?? '';
-                const matches = name.includes(term);
-                row.style.display = matches ? '' : 'none';
-                if (matches) visibleCount++;
-            });
-
-            document.getElementById('issuerNoSearchResults')?.classList.toggle('hidden', visibleCount > 0);
         });
     </script>
 @endpush

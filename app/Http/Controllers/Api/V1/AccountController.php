@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\UpdateUserAvatarAction;
 use App\Http\Requests\UpdateAccountRequest;
+use App\Http\Requests\UpdateAvatarRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Resources\Api\V1\InvoiceResource;
 use App\Http\Resources\Api\V1\UserResource;
@@ -21,7 +23,7 @@ class AccountController extends Controller
 
         $totalItems = InvoiceItem::whereHas('invoice', static fn ($q) => $q->where('user_id', $user->id))->count();
 
-        $totalSpent  = (float) $user->invoices()->sum('total_amount');
+        $totalSpent = (float) $user->invoices()->sum('total_amount');
         $memberSince = $user->invoices()->min('issued_at');
 
         $recentInvoices = $user->invoices()
@@ -31,12 +33,12 @@ class AccountController extends Controller
             ->get();
 
         return $this->success([
-            'user'            => new UserResource($user),
-            'stats'           => [
+            'user' => new UserResource($user),
+            'stats' => [
                 'total_invoices' => $totalInvoices,
-                'total_items'    => $totalItems,
-                'total_spent'    => $totalSpent,
-                'member_since'   => $memberSince,
+                'total_items' => $totalItems,
+                'total_spent' => $totalSpent,
+                'member_since' => $memberSince,
             ],
             'recent_invoices' => InvoiceResource::collection($recentInvoices),
         ]);
@@ -60,5 +62,14 @@ class AccountController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Senha alterada com sucesso.']);
+    }
+
+    public function updateAvatar(UpdateAvatarRequest $request, UpdateUserAvatarAction $action): JsonResponse
+    {
+        $user = $request->user();
+
+        $action->execute($user, $request->file('avatar'));
+
+        return $this->success(new UserResource($user->fresh()));
     }
 }
