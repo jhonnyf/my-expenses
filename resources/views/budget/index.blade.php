@@ -86,9 +86,12 @@
                             <label class="text-xs text-secondary-foreground mb-1 block">Limite mensal (R$)</label>
                             <input type="number" id="budgetAmount" class="kt-input w-full" step="0.01" min="0.01" placeholder="0,00" />
                         </div>
-                        <div>
-                            <button data-action="save-budget" class="kt-btn kt-btn-primary w-full">
-                                <i class="ki-filled ki-check"></i> Salvar Orçamento
+                        <div class="flex gap-2 min-w-0">
+                            <button data-action="save-budget" class="kt-btn kt-btn-primary flex-1 min-w-0">
+                                <i class="ki-filled ki-check"></i> <span id="btnSaveBudgetLabel">Salvar Orçamento</span>
+                            </button>
+                            <button data-action="cancel-edit-budget" id="btnCancelEditBudget" class="kt-btn kt-btn-outline kt-btn-icon shrink-0 hidden" title="Cancelar edição">
+                                <i class="ki-filled ki-cross"></i>
                             </button>
                         </div>
                     </div>
@@ -122,7 +125,14 @@
                                         Geral
                                     @endif
                                 </h3>
-                                <div class="kt-card-toolbar">
+                                <div class="kt-card-toolbar gap-1">
+                                    <button data-action="edit-budget"
+                                            data-budget-id="{{ $budget->id }}"
+                                            data-budget-category-id="{{ $budget->category_id }}"
+                                            data-budget-amount="{{ $budget->amount }}"
+                                            class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Editar">
+                                        <i class="ki-filled ki-pencil text-muted-foreground"></i>
+                                    </button>
                                     <button data-action="delete-budget" data-budget-id="{{ $budget->id }}" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Excluir">
                                         <i class="ki-filled ki-trash text-muted-foreground"></i>
                                     </button>

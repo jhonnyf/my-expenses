@@ -3,6 +3,7 @@ import Utils from '../utils';
 const Budget = (() => {
     let initialized = false;
     let storeUrl, baseUrl;
+    let editingId = null;
 
     const resolveStatus = (percentage) => {
         if (percentage < 75) return { textStatus: 'text-green-600', accentColor: '#22c55e' };
@@ -28,7 +29,14 @@ const Budget = (() => {
             <div class="kt-card transition-shadow hover:shadow-md" style="box-shadow: inset 0 3px 0 0 ${accentColor}" id="budget-${budget.id}">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title gap-2">${headerHtml}</h3>
-                    <div class="kt-card-toolbar">
+                    <div class="kt-card-toolbar gap-1">
+                        <button data-action="edit-budget"
+                                data-budget-id="${budget.id}"
+                                data-budget-category-id="${budget.category_id ?? ''}"
+                                data-budget-amount="${budget.amount}"
+                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Editar">
+                            <i class="ki-filled ki-pencil text-muted-foreground"></i>
+                        </button>
                         <button data-action="delete-budget" data-budget-id="${budget.id}" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Excluir">
                             <i class="ki-filled ki-trash text-muted-foreground"></i>
                         </button>
@@ -82,9 +90,34 @@ const Budget = (() => {
         }
     };
 
+    const categorySelect = () => document.getElementById('budgetCategory');
+    const amountInput = () => document.getElementById('budgetAmount');
+    const saveLabel = () => document.getElementById('btnSaveBudgetLabel');
+    const cancelEditBtn = () => document.getElementById('btnCancelEditBudget');
+
+    const resetForm = () => {
+        editingId = null;
+        categorySelect().value = '';
+        categorySelect().disabled = false;
+        amountInput().value = '';
+        saveLabel().textContent = 'Salvar Orçamento';
+        cancelEditBtn().classList.add('hidden');
+    };
+
+    const editBudget = (id, categoryId, amount) => {
+        editingId = id;
+        categorySelect().value = categoryId || '';
+        categorySelect().disabled = true;
+        amountInput().value = amount;
+        amountInput().focus();
+        saveLabel().textContent = 'Atualizar Orçamento';
+        cancelEditBtn().classList.remove('hidden');
+        amountInput().scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
     const saveBudget = () => {
-        const categoryId = document.getElementById('budgetCategory').value || null;
-        const amount = parseFloat(document.getElementById('budgetAmount').value);
+        const categoryId = categorySelect().value || null;
+        const amount = parseFloat(amountInput().value);
         if (!amount || amount <= 0) return;
 
         Utils.http(storeUrl, {
@@ -92,8 +125,7 @@ const Budget = (() => {
             body: { category_id: categoryId, amount },
         }).then(budget => {
             upsertBudgetCard(budget);
-            document.getElementById('budgetCategory').value = '';
-            document.getElementById('budgetAmount').value = '';
+            resetForm();
         });
     };
 
@@ -104,12 +136,24 @@ const Budget = (() => {
             .then(() => {
                 const el = document.getElementById('budget-' + id);
                 if (el) el.remove();
+                if (String(editingId) === String(id)) resetForm();
             });
     };
 
     const handleClick = (e) => {
         if (e.target.closest('[data-action="save-budget"]')) {
             saveBudget();
+            return;
+        }
+
+        if (e.target.closest('[data-action="cancel-edit-budget"]')) {
+            resetForm();
+            return;
+        }
+
+        const editBtn = e.target.closest('[data-action="edit-budget"]');
+        if (editBtn) {
+            editBudget(editBtn.dataset.budgetId, editBtn.dataset.budgetCategoryId || null, editBtn.dataset.budgetAmount);
             return;
         }
 
