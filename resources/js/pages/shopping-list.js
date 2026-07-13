@@ -151,6 +151,7 @@ const ShoppingList = (() => {
 
         const total = shoppingItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
         document.getElementById('totalPrice').textContent = `R$ ${Utils.formatCurrency(total)}`;
+        updateSidebarCount();
     };
 
     const togglePurchased = async (index) => {
@@ -185,7 +186,7 @@ const ShoppingList = (() => {
         const textClass = isPurchased ? 'line-through text-secondary-foreground' : 'text-foreground';
 
         return `
-            <div class="flex items-center justify-between py-2.5 px-4" data-item-row="${item._index}">
+            <div class="flex items-center justify-between py-2.5 px-4 transition-colors hover:bg-accent/30" data-item-row="${item._index}">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <button data-toggle-purchased="${item._index}"
                             class="flex items-center justify-center size-5 rounded border ${checkedClass} shrink-0 transition-colors">
@@ -255,9 +256,19 @@ const ShoppingList = (() => {
         const el = document.querySelector(`#saved-list-${currentListId} .text-xs`);
         if (el) {
             const count = shoppingItems.length;
+            const total = shoppingItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
             const today = new Date().toLocaleDateString('pt-BR');
-            el.textContent = `${count} ${count === 1 ? 'item' : 'itens'} · ${today}`;
+            el.textContent = `${count} ${count === 1 ? 'item' : 'itens'} · R$ ${Utils.formatCurrency(total)} · ${today}`;
         }
+    };
+
+    const updateSummaryProgress = (pendingCount, purchasedCount) => {
+        const total = pendingCount + purchasedCount;
+        const pct = total > 0 ? Math.round((purchasedCount / total) * 100) : 0;
+
+        document.getElementById('summaryProgress').style.width = `${pct}%`;
+        document.getElementById('summaryProgressLabel').textContent = `${purchasedCount} de ${total} ${total === 1 ? 'item comprado' : 'itens comprados'}`;
+        document.getElementById('summaryProgressPct').textContent = `${pct}%`;
     };
 
     const renderList = () => {
@@ -295,6 +306,7 @@ const ShoppingList = (() => {
 
         const total = shoppingItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
         document.getElementById('totalPrice').textContent = 'R$ ' + Utils.formatCurrency(total);
+        updateSummaryProgress(pending.length, purchased.length);
         updateSidebarCount();
     };
 
@@ -325,12 +337,15 @@ const ShoppingList = (() => {
         const container = document.getElementById('savedLists');
         const today = new Date().toLocaleDateString('pt-BR');
         container.insertAdjacentHTML('afterbegin', `
-            <div class="flex items-center justify-between py-2.5 px-1 group" id="saved-list-${id}">
+            <div class="flex items-center gap-3 py-3 px-1 group rounded-lg transition-colors hover:bg-accent/40" id="saved-list-${id}">
+                <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary shrink-0">
+                    <i class="ki-filled ki-basket text-sm"></i>
+                </div>
                 <button data-load-list="${id}" class="flex-1 text-left min-w-0">
-                    <p class="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">${name}</p>
-                    <p class="text-xs text-secondary-foreground">${count} ${count === 1 ? 'item' : 'itens'} &middot; ${today}</p>
+                    <p class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">${name}</p>
+                    <p class="text-xs text-secondary-foreground">${count} ${count === 1 ? 'item' : 'itens'} &middot; R$ 0,00 &middot; ${today}</p>
                 </button>
-                <button data-delete-list="${id}" class="text-muted-foreground hover:text-destructive transition-colors ms-2 opacity-0 group-hover:opacity-100">
+                <button data-delete-list="${id}" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive shrink-0">
                     <i class="ki-filled ki-trash text-sm"></i>
                 </button>
             </div>`);

@@ -9,7 +9,7 @@
             <div class="flex flex-col justify-center gap-2">
                 <h1 class="text-xl font-medium leading-none text-mono">Minhas Compras</h1>
                 <div class="flex items-center gap-2 text-sm font-normal text-secondary-foreground">
-                    {{ $records->total() }} {{ $records->total() == 1 ? 'nota importada' : 'notas importadas' }}
+                    {{ $totalCount }} {{ $totalCount == 1 ? 'nota importada' : 'notas importadas' }}
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
@@ -24,10 +24,77 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            {{-- STAT CARDS --}}
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 shrink-0">
+                        <i class="ki-filled ki-dollar text-primary text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                            R$ {{ number_format($totalAmount, 2, ',', '.') }}
+                        </span>
+                        <span class="text-xs font-normal text-secondary-foreground">Total Gasto</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-info/10 shrink-0">
+                        <i class="ki-filled ki-calendar text-info text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                            R$ {{ number_format($monthAmount, 2, ',', '.') }}
+                        </span>
+                        <span class="text-xs font-normal text-secondary-foreground capitalize">{{ now()->translatedFormat('F') }}</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-success/10 shrink-0">
+                        <i class="ki-filled ki-basket text-success text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                            R$ {{ number_format($averageTicket, 2, ',', '.') }}
+                        </span>
+                        <span class="text-xs font-normal text-secondary-foreground">Ticket Médio</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-warning/10 shrink-0">
+                        <i class="ki-filled ki-document text-warning text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">
+                            {{ number_format($totalCount) }}
+                        </span>
+                        <span class="text-xs font-normal text-secondary-foreground">NF-e Importadas</span>
+                    </div>
+                </div>
+
+            </div>
+
             <div class="kt-card kt-card-grid min-w-full">
 
-                <div class="kt-card-header">
+                <div class="kt-card-header flex-wrap gap-2">
                     <h3 class="kt-card-title">Lista de Compras</h3>
+                    <div class="flex items-center gap-3">
+                        <form id="myPurchasesSearchForm" method="GET" action="{{ route('my-purchases.index') }}">
+                            <label class="kt-input max-w-56">
+                                <i class="ki-filled ki-magnifier"></i>
+                                <input type="text" name="search" id="myPurchasesSearchInput" value="{{ $search }}"
+                                       placeholder="Buscar por emissor..." autocomplete="off" />
+                                @if($search !== '')
+                                    <button type="button" id="myPurchasesSearchClear" class="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                                        <i class="ki-filled ki-cross text-xs"></i>
+                                    </button>
+                                @endif
+                            </label>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="kt-card-table">
@@ -43,10 +110,10 @@
                             </thead>
                             <tbody>
                                 @forelse ($records->items() as $item)
-                                    <tr>
-                                        <td>
+                                    <tr class="transition-colors duration-150 hover:bg-accent/40">
+                                        <td class="py-2.5">
                                             <div class="flex items-center gap-3">
-                                                <div class="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary font-semibold text-xs shrink-0 uppercase">
+                                                <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary font-semibold text-xs shrink-0 uppercase">
                                                     {{ strtoupper(substr($item->issuer->name ?? '??', 0, 2)) }}
                                                 </div>
                                                 <div class="min-w-0">
@@ -57,18 +124,18 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td class="py-2.5">
                                             <p class="text-sm text-foreground">{{ $item->issued_at->format('d/m/Y') }}</p>
                                             <p class="text-xs text-secondary-foreground">{{ $item->issued_at->format('H:i') }}</p>
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end py-2.5">
                                             <span class="text-sm font-semibold font-mono tabular-nums text-foreground">
                                                 R$ {{ number_format($item->total_amount, 2, ',', '.') }}
                                             </span>
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end py-2.5">
                                             <a href="{{ route('my-purchases.detail', $item->id) }}"
-                                               class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm"
+                                               class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform duration-200 hover:scale-110"
                                                title="Ver detalhes">
                                                 <i class="ki-filled ki-eye text-base"></i>
                                             </a>
@@ -78,12 +145,21 @@
                                     <tr>
                                         <td colspan="4">
                                             <div class="flex flex-col items-center justify-center py-16 text-center">
-                                                <i class="ki-filled ki-document text-5xl text-secondary-foreground/30 mb-4"></i>
-                                                <p class="text-sm font-medium text-foreground mb-1">Nenhuma compra encontrada</p>
-                                                <p class="text-xs text-secondary-foreground">Importe sua primeira NF-e para começar.</p>
-                                                <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm mt-4">
-                                                    <i class="ki-filled ki-file-up"></i> Importar NF-e
-                                                </a>
+                                                @if($search !== '')
+                                                    <i class="ki-filled ki-magnifier text-5xl text-secondary-foreground/30 mb-4"></i>
+                                                    <p class="text-sm font-medium text-foreground mb-1">Nenhuma compra encontrada</p>
+                                                    <p class="text-xs text-secondary-foreground">Nenhum resultado para "{{ $search }}".</p>
+                                                    <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-secondary kt-btn-sm mt-4">
+                                                        Limpar busca
+                                                    </a>
+                                                @else
+                                                    <i class="ki-filled ki-document text-5xl text-secondary-foreground/30 mb-4"></i>
+                                                    <p class="text-sm font-medium text-foreground mb-1">Nenhuma compra encontrada</p>
+                                                    <p class="text-xs text-secondary-foreground">Importe sua primeira NF-e para começar.</p>
+                                                    <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm mt-4">
+                                                        <i class="ki-filled ki-file-up"></i> Importar NF-e
+                                                    </a>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
@@ -110,3 +186,11 @@
     </div>
 
 @endsection
+
+@push('scripts')
+    <script>
+        window.pageConfig = Object.assign(window.pageConfig || {}, {
+            myPurchasesIndexUrl: '{{ route('my-purchases.index') }}',
+        });
+    </script>
+@endpush

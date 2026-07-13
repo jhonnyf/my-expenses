@@ -11,9 +11,18 @@ const InvoiceDetail = (() => {
         });
     };
 
+    const updateCategoryDot = (select) => {
+        const dot = select.closest('td')?.querySelector('.category-dot');
+        const color = select.options[select.selectedIndex]?.dataset.color;
+        if (dot && color) dot.style.backgroundColor = color;
+    };
+
     const handleChange = (e) => {
         const select = e.target.closest('[data-action="assign-category"]');
-        if (select) assignCategory(select.dataset.itemId, select.value);
+        if (!select) return;
+
+        updateCategoryDot(select);
+        assignCategory(select.dataset.itemId, select.value);
     };
 
     return {

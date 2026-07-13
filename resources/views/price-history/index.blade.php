@@ -60,7 +60,7 @@
                         <h3 class="kt-card-title">Evolução de Preço</h3>
                     </div>
                     <div class="kt-card-content pb-4">
-                        <div id="priceChart" style="height: 220px;"></div>
+                        <div id="priceChart" style="height: 260px;"></div>
                     </div>
                 </div>
 

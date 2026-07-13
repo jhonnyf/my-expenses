@@ -7,10 +7,10 @@
         <div class="kt-card max-w-[370px] w-full">
             <div class="kt-card-content flex flex-col gap-5 p-10">
                 <div class="text-center mb-2.5">
-                    <h3 class="text-lg font-medium text-mono leading-none mb-2.5">Forgot Password?</h3>
+                    <h3 class="text-lg font-medium text-mono leading-none mb-2.5">Esqueceu a senha?</h3>
                     <div class="flex items-center justify-center font-medium">
-                        <span class="text-sm text-secondary-foreground me-1.5">Remembered it?</span>
-                        <a class="text-sm link" href="{{ route('login.index') }}">Sign in</a>
+                        <span class="text-sm text-secondary-foreground me-1.5">Lembrou a senha?</span>
+                        <a class="text-sm link" href="{{ route('login.index') }}">Entrar</a>
                     </div>
                 </div>
 
@@ -24,7 +24,7 @@
                 <form action="{{ route('password.email') }}" class="flex flex-col gap-5" method="post">
                     @csrf
                     <p class="text-sm text-secondary-foreground text-center">
-                        Enter your email address and we'll send you a link to reset your password.
+                        Informe seu e-mail e enviaremos um link para redefinir sua senha.
                     </p>
                     <div class="flex flex-col gap-1">
                         <label class="kt-form-label font-normal text-mono">Email</label>
@@ -33,7 +33,7 @@
                             <span class="text-xs text-destructive">{{ $message }}</span>
                         @enderror
                     </div>
-                    <button class="kt-btn kt-btn-primary flex justify-center grow">Send Reset Link</button>
+                    <button class="kt-btn kt-btn-primary flex justify-center grow">Enviar Link de Redefinição</button>
                 </form>
             </div>
         </div>
@@ -44,13 +44,13 @@
                 <img class="h-[28px] max-w-none" src="assets/media/app/mini-logo.svg" />
             </a>
             <div class="flex flex-col gap-3">
-                <h3 class="text-2xl font-semibold text-mono">Password Recovery</h3>
+                <h3 class="text-2xl font-semibold text-mono">Recuperação de Senha</h3>
                 <div class="text-base font-medium text-secondary-foreground">
-                    No worries — enter your e-mail and we'll <br />
-                    send you a
-                    <span class="text-mono font-semibold">secure reset link</span>
-                    to get <br />
-                    back into your account.
+                    Sem problemas — informe seu e-mail e <br />
+                    enviaremos um
+                    <span class="text-mono font-semibold">link seguro</span>
+                    para você <br />
+                    voltar a acessar sua conta.
                 </div>
             </div>
         </div>

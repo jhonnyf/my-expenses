@@ -45,10 +45,10 @@ class CategoryServiceTest extends TestCase
 
     public function test_get_categories_includes_spending_totals(): void
     {
-        $user     = User::factory()->create();
-        $issuer   = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $category = Category::factory()->for($user)->create();
-        $invoice  = Invoice::factory()->for($user)->for($issuer)->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
 
         InvoiceItem::factory()->for($invoice)->create([
             'category_id' => $category->id,
@@ -56,19 +56,54 @@ class CategoryServiceTest extends TestCase
         ]);
 
         $result = $this->service->getCategoriesWithSpending($user->id);
-        $found  = $result->firstWhere('id', $category->id);
+        $found = $result->firstWhere('id', $category->id);
 
         $this->assertNotNull($found);
         $this->assertEquals(50.00, (float) $found->total_spent);
     }
 
+    public function test_get_categories_orders_by_total_spent_descending(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+
+        $low = Category::factory()->for($user)->create(['name' => 'Baixo']);
+        $high = Category::factory()->for($user)->create(['name' => 'Alto']);
+
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $low->id, 'total_price' => 10.00]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $high->id, 'total_price' => 90.00]);
+
+        $result = $this->service->getCategoriesWithSpending($user->id);
+
+        $this->assertSame($high->id, $result->first()->id);
+        $this->assertSame($low->id, $result->last()->id);
+    }
+
+    public function test_count_uncategorized_items_returns_only_current_user_items_without_category(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        $otherInvoice = Invoice::factory()->for($other)->for($issuer)->create();
+
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
+        InvoiceItem::factory()->for($otherInvoice)->create(['category_id' => null]);
+
+        $count = $this->service->countUncategorizedItems($user->id);
+
+        $this->assertEquals(2, $count);
+    }
+
     public function test_auto_categorize_matches_items_by_keyword(): void
     {
-        $user     = User::factory()->create();
-        $issuer   = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $category = Category::factory()->for($user)->create(['keywords' => ['leite', 'integral']]);
-        $invoice  = Invoice::factory()->for($user)->for($issuer)->create();
-        $item     = InvoiceItem::factory()->for($invoice)->create([
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        $item = InvoiceItem::factory()->for($invoice)->create([
             'description' => 'LEITE INTEGRAL 1L',
             'category_id' => null,
         ]);
@@ -80,10 +115,10 @@ class CategoryServiceTest extends TestCase
 
     public function test_auto_categorize_returns_count_of_categorized_items(): void
     {
-        $user     = User::factory()->create();
-        $issuer   = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $category = Category::factory()->for($user)->create(['keywords' => ['arroz']]);
-        $invoice  = Invoice::factory()->for($user)->for($issuer)->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
 
         InvoiceItem::factory()->for($invoice)->create(['description' => 'ARROZ TIPO 1', 'category_id' => null]);
         InvoiceItem::factory()->for($invoice)->create(['description' => 'ARROZ PARBOILIZADO', 'category_id' => null]);

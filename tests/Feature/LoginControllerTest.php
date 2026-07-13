@@ -29,7 +29,7 @@ class LoginControllerTest extends TestCase
         $user = User::factory()->create(['password' => 'secret123']);
 
         $this->post('/login/execute', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'secret123',
         ])->assertRedirect(route('dashboard.index'));
 
@@ -43,9 +43,21 @@ class LoginControllerTest extends TestCase
         $this->get('/dashboard');
 
         $this->post('/login/execute', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'secret123',
         ])->assertRedirect(route('dashboard.index'));
+    }
+
+    public function test_execute_displays_error_message_on_invalid_credentials(): void
+    {
+        $user = User::factory()->create(['password' => 'correct-password']);
+
+        $response = $this->from('/login')->post('/login/execute', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        $this->followRedirects($response)->assertSee(__('auth.failed'));
     }
 
     public function test_execute_returns_error_with_invalid_password(): void
@@ -53,7 +65,7 @@ class LoginControllerTest extends TestCase
         $user = User::factory()->create(['password' => 'correct-password']);
 
         $this->post('/login/execute', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'wrong-password',
         ])->assertSessionHasErrors(['email']);
 
@@ -63,7 +75,7 @@ class LoginControllerTest extends TestCase
     public function test_execute_returns_error_with_unregistered_email(): void
     {
         $this->post('/login/execute', [
-            'email'    => 'nobody@example.com',
+            'email' => 'nobody@example.com',
             'password' => 'password123',
         ])->assertSessionHasErrors(['email']);
 
@@ -79,7 +91,7 @@ class LoginControllerTest extends TestCase
     public function test_execute_validates_email_format(): void
     {
         $this->post('/login/execute', [
-            'email'    => 'not-an-email',
+            'email' => 'not-an-email',
             'password' => 'password123',
         ])->assertSessionHasErrors(['email']);
     }

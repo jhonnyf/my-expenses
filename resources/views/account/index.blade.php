@@ -135,8 +135,8 @@
               </div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                  <div class="flex items-center justify-center size-9 rounded-lg bg-info/10 shrink-0">
-                    <i class="ki-filled ki-basket text-info text-sm"></i>
+                  <div class="flex items-center justify-center size-9 rounded-lg bg-violet-500/10 shrink-0">
+                    <i class="ki-filled ki-basket text-violet-600 text-sm"></i>
                   </div>
                   <span class="text-sm text-secondary-foreground">Itens Comprados</span>
                 </div>
@@ -144,8 +144,8 @@
               </div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                  <div class="flex items-center justify-center size-9 rounded-lg bg-success/10 shrink-0">
-                    <i class="ki-filled ki-dollar text-success text-sm"></i>
+                  <div class="flex items-center justify-center size-9 rounded-lg bg-green-500/10 shrink-0">
+                    <i class="ki-filled ki-dollar text-green-600 text-sm"></i>
                   </div>
                   <span class="text-sm text-secondary-foreground">Total Gasto</span>
                 </div>
@@ -250,9 +250,9 @@
       <div id="tab_settings" class="hidden">
 
         @if(session('success'))
-          <div class="flex items-center gap-3 rounded-lg border border-success/30 bg-success/10 px-4 py-3 mb-5">
-            <i class="ki-filled ki-check-circle text-success text-lg shrink-0"></i>
-            <span class="text-sm text-success font-medium">{{ session('success') }}</span>
+          <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5">
+            <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+            <span class="text-sm text-green-600 font-medium">{{ session('success') }}</span>
           </div>
         @endif
 
@@ -316,9 +316,9 @@
       <div id="tab_security" class="hidden">
 
         @if(session('success_password'))
-          <div class="flex items-center gap-3 rounded-lg border border-success/30 bg-success/10 px-4 py-3 mb-5">
-            <i class="ki-filled ki-check-circle text-success text-lg shrink-0"></i>
-            <span class="text-sm text-success font-medium">{{ session('success_password') }}</span>
+          <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5">
+            <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+            <span class="text-sm text-green-600 font-medium">{{ session('success_password') }}</span>
           </div>
         @endif
 

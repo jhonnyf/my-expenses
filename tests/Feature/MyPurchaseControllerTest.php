@@ -31,7 +31,7 @@ class MyPurchaseControllerTest extends TestCase
 
     public function test_index_lists_only_current_user_invoices(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $other = User::factory()->create();
         $issuer = Issuer::factory()->create();
 
@@ -42,6 +42,49 @@ class MyPurchaseControllerTest extends TestCase
             ->get('/my-purchases')
             ->assertStatus(200)
             ->assertViewHas('records', fn ($records) => $records->total() === 1);
+    }
+
+    public function test_index_filters_invoices_by_issuer_name(): void
+    {
+        $user = User::factory()->create();
+        $market = Issuer::factory()->create(['name' => 'Mercado Bom Preço']);
+        $pharmacy = Issuer::factory()->create(['name' => 'Farmácia Saúde']);
+
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $market->id]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $pharmacy->id]);
+
+        $this->actingAs($user)
+            ->get('/my-purchases?search=Mercado')
+            ->assertStatus(200)
+            ->assertViewHas('records', fn ($records) => $records->total() === 1)
+            ->assertViewHas('search', 'Mercado');
+    }
+
+    public function test_index_returns_spending_stats(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        Invoice::factory()->create([
+            'user_id' => $user->id,
+            'issuer_id' => $issuer->id,
+            'total_amount' => 100,
+            'issued_at' => now(),
+        ]);
+        Invoice::factory()->create([
+            'user_id' => $user->id,
+            'issuer_id' => $issuer->id,
+            'total_amount' => 50,
+            'issued_at' => now()->subYear(),
+        ]);
+
+        $this->actingAs($user)
+            ->get('/my-purchases')
+            ->assertStatus(200)
+            ->assertViewHas('totalCount', 2)
+            ->assertViewHas('totalAmount', 150.0)
+            ->assertViewHas('monthAmount', 100.0)
+            ->assertViewHas('averageTicket', 75.0);
     }
 
     // ─── uploadForm ──────────────────────────────────────────────────────────
@@ -64,7 +107,7 @@ class MyPurchaseControllerTest extends TestCase
 
     public function test_detail_redirects_unauthenticated_user(): void
     {
-        $issuer  = Issuer::factory()->create();
+        $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->create(['issuer_id' => $issuer->id]);
 
         $this->get("/my-purchases/detail/{$invoice->id}")->assertRedirect('/login');
@@ -72,9 +115,9 @@ class MyPurchaseControllerTest extends TestCase
 
     public function test_detail_returns_403_for_invoice_belonging_to_another_user(): void
     {
-        $user    = User::factory()->create();
-        $other   = User::factory()->create();
-        $issuer  = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->create(['user_id' => $other->id, 'issuer_id' => $issuer->id]);
 
         $this->actingAs($user)
@@ -84,8 +127,8 @@ class MyPurchaseControllerTest extends TestCase
 
     public function test_detail_returns_200_for_own_invoice(): void
     {
-        $user    = User::factory()->create();
-        $issuer  = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
 
         $this->actingAs($user)
@@ -130,12 +173,12 @@ class MyPurchaseControllerTest extends TestCase
 
     public function test_upload_xml_rejects_duplicate_invoice(): void
     {
-        $user   = User::factory()->create();
+        $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
 
         Invoice::factory()->create([
-            'user_id'    => $user->id,
-            'issuer_id'  => $issuer->id,
+            'user_id' => $user->id,
+            'issuer_id' => $issuer->id,
             'access_key' => '35260600000000000191650010000012341234567890',
         ]);
 

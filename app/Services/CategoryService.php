@@ -26,9 +26,15 @@ class CategoryService
             $cat->total_spent = (float) ($spendingByCategory[$cat->id] ?? 0);
 
             return $cat;
-        });
+        })->sortByDesc('total_spent')->values();
     }
 
+    public function countUncategorizedItems(int $userId): int
+    {
+        return InvoiceItem::whereNull('category_id')
+            ->whereHas('invoice', fn ($q) => $q->where('user_id', $userId))
+            ->count();
+    }
 
     public function autoCategorize(int $userId): int
     {

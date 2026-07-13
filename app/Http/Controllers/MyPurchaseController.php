@@ -15,6 +15,7 @@ use App\Models\Category;
 use App\Models\Invoice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -27,10 +28,37 @@ class MyPurchaseController extends Controller
         private readonly AccessKeyImportStrategy $accessKeyStrategy,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $userId = Auth::id();
+        $search = trim((string) $request->input('search', ''));
+
+        $records = Invoice::where('user_id', $userId)
+            ->with('issuer')
+            ->when($search !== '', fn ($query) => $query->whereHas(
+                'issuer',
+                fn ($query) => $query->where('name', 'like', "%{$search}%")
+            ))
+            ->orderByDesc('issued_at')
+            ->paginate()
+            ->withQueryString();
+
+        $stats = Invoice::where('user_id', $userId)
+            ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(total_amount), 0) as total_amount')
+            ->first();
+
+        $monthAmount = Invoice::where('user_id', $userId)
+            ->whereMonth('issued_at', now()->month)
+            ->whereYear('issued_at', now()->year)
+            ->sum('total_amount');
+
         return view('my-purchase.index', [
-            'records' => Invoice::where('user_id', Auth::id())->orderByDesc('issued_at')->paginate(),
+            'records' => $records,
+            'search' => $search,
+            'totalAmount' => (float) $stats->total_amount,
+            'totalCount' => (int) $stats->total_count,
+            'monthAmount' => (float) $monthAmount,
+            'averageTicket' => $stats->total_count > 0 ? $stats->total_amount / $stats->total_count : 0,
         ]);
     }
 
@@ -53,9 +81,9 @@ class MyPurchaseController extends Controller
         $categories = Category::forUser($user->id)->orderBy('name')->get();
 
         return view('my-purchase.detail', [
-            'invoice'          => $invoice,
+            'invoice' => $invoice,
             'isIssuerFavorite' => $isIssuerFavorite,
-            'categories'       => $categories,
+            'categories' => $categories,
         ]);
     }
 

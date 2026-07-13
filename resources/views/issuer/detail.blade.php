@@ -215,7 +215,7 @@
                                 </thead>
                                 <tbody>
                                     @forelse($record->invoices as $invoice)
-                                        <tr class="invoice-row">
+                                        <tr class="invoice-row transition-colors hover:bg-accent/40">
                                             <td>
                                                 <span class="text-sm font-mono text-foreground">
                                                     {{ $invoice->number }}<span class="text-secondary-foreground">/{{ $invoice->series }}</span>

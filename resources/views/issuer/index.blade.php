@@ -18,6 +18,42 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 shrink-0">
+                        <i class="ki-filled ki-shop text-primary text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">{{ $records->total() }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground">Emissores</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-yellow-500/10 shrink-0">
+                        <i class="ki-filled ki-star text-yellow-500 text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">{{ $favoriteIds->count() }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground">Favoritos</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-green-500/10 shrink-0">
+                        <i class="ki-filled ki-dollar text-green-600 text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                            R$ {{ number_format($totalSpent, 2, ',', '.') }}
+                        </span>
+                        <span class="text-xs font-normal text-secondary-foreground">Total Gasto</span>
+                    </div>
+                </div>
+
+            </div>
+
             <div class="kt-card kt-card-grid min-w-full">
 
                 <div class="kt-card-header flex-wrap gap-2">
@@ -46,6 +82,8 @@
                                     <th class="min-w-[260px]">Emissor</th>
                                     <th class="min-w-[150px]">CNPJ</th>
                                     <th class="min-w-[180px]">Localização</th>
+                                    <th class="min-w-[90px] text-center">Compras</th>
+                                    <th class="min-w-[130px] text-end">Total Gasto</th>
                                     <th class="w-[80px] text-end">Ações</th>
                                 </tr>
                             </thead>
@@ -93,6 +131,20 @@
                                             @endif
                                         </td>
                                         <td class="text-center py-2.5">
+                                            @if($item->purchase_count > 0)
+                                                <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm tabular-nums">{{ $item->purchase_count }}</span>
+                                            @else
+                                                <span class="text-sm text-secondary-foreground">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-end py-2.5">
+                                            @if($item->total_spent)
+                                                <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($item->total_spent, 2, ',', '.') }}</span>
+                                            @else
+                                                <span class="text-sm text-secondary-foreground">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center py-2.5">
                                             <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Ver detalhes">
                                                 <i class="ki-filled ki-eye text-base"></i>
                                             </a>
@@ -100,7 +152,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5">
+                                        <td colspan="7">
                                             <div class="flex flex-col items-center justify-center py-16 text-center">
                                                 <i class="ki-filled ki-shop text-5xl text-secondary-foreground/30 mb-4"></i>
                                                 <p class="text-sm font-medium text-foreground mb-1">Nenhum emissor encontrado</p>
@@ -115,7 +167,7 @@
                                 @endforelse
                                 @if($records->isNotEmpty())
                                     <tr id="issuerNoSearchResults" class="hidden">
-                                        <td colspan="5">
+                                        <td colspan="7">
                                             <div class="flex flex-col items-center justify-center py-12 text-center">
                                                 <i class="ki-filled ki-magnifier text-4xl text-secondary-foreground/30 mb-3"></i>
                                                 <p class="text-sm text-secondary-foreground">Nenhum emissor corresponde à busca.</p>

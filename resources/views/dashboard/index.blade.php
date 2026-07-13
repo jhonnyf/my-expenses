@@ -48,8 +48,8 @@
                 </div>
 
                 <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
-                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-warning/10">
-                        <i class="ki-filled ki-chart text-warning text-xl"></i>
+                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-yellow-500/10">
+                        <i class="ki-filled ki-chart text-yellow-600 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-1 pb-4 px-5">
                         <span class="text-xl lg:text-2xl font-semibold text-mono tabular-nums truncate">
@@ -60,8 +60,8 @@
                 </div>
 
                 <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
-                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-info/10">
-                        <i class="ki-filled ki-purchase text-info text-xl"></i>
+                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-violet-500/10">
+                        <i class="ki-filled ki-purchase text-violet-600 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-1 pb-4 px-5">
                         <span class="text-xl lg:text-2xl font-semibold text-mono tabular-nums">
@@ -72,8 +72,8 @@
                 </div>
 
                 <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
-                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-success/10">
-                        <i class="ki-filled ki-basket text-success text-xl"></i>
+                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-green-500/10">
+                        <i class="ki-filled ki-basket text-green-600 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-1 pb-4 px-5">
                         <span class="text-xl lg:text-2xl font-semibold text-mono tabular-nums truncate">
@@ -295,6 +295,8 @@
                                     $warn   = $budget->percentage >= 75 && !$over;
                                     $status = $over ? 'destructive' : ($warn ? 'warning' : 'success');
                                     $label  = $over ? 'Estourado' : ($warn ? 'Atenção' : 'OK');
+                                    $textStatus  = $over ? 'text-destructive' : ($warn ? 'text-yellow-600' : 'text-green-600');
+                                    $accentColor = $over ? '#ef4444' : ($warn ? '#eab308' : '#22c55e');
                                 @endphp
                                 <div class="rounded-xl border border-border p-4 space-y-3">
                                     <div class="flex items-start justify-between gap-2">
@@ -307,13 +309,13 @@
                                         <span class="kt-badge kt-badge-{{ $status }} kt-badge-outline kt-badge-sm shrink-0">{{ $label }}</span>
                                     </div>
                                     <div class="kt-progress h-2">
-                                        <div class="kt-progress-indicator kt-progress-{{ $status }}" style="width: {{ $pct }}%"></div>
+                                        <div class="kt-progress-indicator" style="width: {{ $pct }}%; background-color: {{ $accentColor }}"></div>
                                     </div>
                                     <div class="flex items-center justify-between">
                                         <span class="text-xs text-secondary-foreground tabular-nums">
                                             Restante: R$ {{ number_format(max($budget->remaining, 0), 2, ',', '.') }}
                                         </span>
-                                        <span class="text-xs font-bold tabular-nums {{ $over ? 'text-destructive' : ($warn ? 'text-warning' : 'text-success') }}">
+                                        <span class="text-xs font-bold tabular-nums {{ $textStatus }}">
                                             {{ number_format($budget->percentage, 0) }}%
                                         </span>
                                     </div>
@@ -377,7 +379,7 @@
                             @foreach($topProducts->take(5) as $i => $product)
                                 <div class="flex items-center justify-between gap-3 px-2 py-3 rounded-lg hover:bg-accent/40 transition-colors {{ !$loop->last ? 'border-b border-border/40' : '' }}">
                                     <div class="flex items-center gap-3 min-w-0">
-                                        <span class="flex items-center justify-center size-8 rounded-lg shrink-0 font-bold text-xs {{ $i === 0 ? 'bg-info/10 text-info' : 'bg-secondary/60 text-secondary-foreground' }}">
+                                        <span class="flex items-center justify-center size-8 rounded-lg shrink-0 font-bold text-xs {{ $i === 0 ? 'bg-violet-500/10 text-violet-600' : 'bg-secondary/60 text-secondary-foreground' }}">
                                             {{ $i + 1 }}º
                                         </span>
                                         <div class="min-w-0">

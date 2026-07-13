@@ -5,27 +5,27 @@ const Budget = (() => {
     let storeUrl, baseUrl;
 
     const resolveStatus = (percentage) => {
-        if (percentage < 75) return { colorStatus: 'success', textStatus: 'text-success' };
-        if (percentage < 100) return { colorStatus: 'warning', textStatus: 'text-warning' };
-        return { colorStatus: 'destructive', textStatus: 'text-destructive' };
+        if (percentage < 75) return { textStatus: 'text-green-600', accentColor: '#22c55e' };
+        if (percentage < 100) return { textStatus: 'text-yellow-600', accentColor: '#eab308' };
+        return { textStatus: 'text-destructive', accentColor: '#ef4444' };
     };
 
     const buildBudgetCardHtml = (budget) => {
         const pct = Math.min(budget.percentage, 100);
-        const { colorStatus, textStatus } = resolveStatus(budget.percentage);
+        const { textStatus, accentColor } = resolveStatus(budget.percentage);
 
         const headerHtml = budget.category
             ? `<span class="size-3 rounded-full shrink-0" style="background-color: ${budget.category.color || '#94A3B8'}"></span> ${Utils.escapeHtml(budget.category.name)}`
             : `<i class="ki-filled ki-wallet text-primary"></i> Geral`;
 
         const exceededHtml = budget.percentage >= 100 ? `
-            <div class="bg-destructive/10 rounded-xl px-3 py-2 text-xs text-destructive flex items-center gap-1.5">
+            <div class="bg-red-500/10 rounded-xl px-3 py-2 text-xs text-destructive flex items-center gap-1.5">
                 <i class="ki-filled ki-information-2 shrink-0"></i>
                 Orçamento excedido em R$ ${Utils.formatCurrency(budget.spent - budget.amount)}
             </div>` : '';
 
         return `
-            <div class="kt-card" id="budget-${budget.id}">
+            <div class="kt-card transition-shadow hover:shadow-md" style="box-shadow: inset 0 3px 0 0 ${accentColor}" id="budget-${budget.id}">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title gap-2">${headerHtml}</h3>
                     <div class="kt-card-toolbar">
@@ -45,7 +45,7 @@ const Budget = (() => {
                             <span class="text-sm font-semibold font-mono ${textStatus} tabular-nums">R$ ${Utils.formatCurrency(budget.spent)}</span>
                         </div>
                         <div class="kt-progress h-2">
-                            <div class="kt-progress-indicator kt-progress-${colorStatus}" style="width: ${pct}%"></div>
+                            <div class="kt-progress-indicator" style="width: ${pct}%; background-color: ${accentColor}"></div>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-xs ${textStatus} font-medium tabular-nums">${Math.round(budget.percentage)}%</span>
@@ -55,7 +55,7 @@ const Budget = (() => {
                         </div>
                         <div class="flex justify-between items-baseline">
                             <span class="text-sm text-secondary-foreground">Restante</span>
-                            <span class="text-sm font-semibold font-mono ${budget.remaining > 0 ? 'text-success' : 'text-destructive'} tabular-nums">
+                            <span class="text-sm font-semibold font-mono ${budget.remaining > 0 ? 'text-green-600' : 'text-destructive'} tabular-nums">
                                 R$ ${Utils.formatCurrency(budget.remaining)}
                             </span>
                         </div>

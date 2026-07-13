@@ -6,6 +6,7 @@ import Dashboard from './pages/dashboard';
 import GlobalSearch from './pages/global-search';
 import InvoiceDetail from './pages/invoice-detail';
 import IssuerFavorite from './pages/issuer-favorite';
+import MyPurchases from './pages/my-purchases';
 import PriceHistory from './pages/price-history';
 import RecurringPurchase from './pages/recurring-purchase';
 import Report from './pages/report';
@@ -19,6 +20,7 @@ const pages = {
     'global-search': GlobalSearch,
     'invoice-detail': InvoiceDetail,
     'issuer-favorite': IssuerFavorite,
+    'my-purchases': MyPurchases,
     'price-history': PriceHistory,
     'recurring-purchase': RecurringPurchase,
     'report': Report,

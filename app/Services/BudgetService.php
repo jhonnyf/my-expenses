@@ -17,10 +17,17 @@ class BudgetService
 
         $budgets = Budget::where('user_id', $userId)->with('category')->get();
         $monthlySpending = $this->getMonthlySpendingByCategory($userId, $startOfMonth);
+        $budgets = $this->applySpendingToBudgets($budgets, $monthlySpending, $monthlySpending->sum());
 
         return [
-            'budgets' => $this->applySpendingToBudgets($budgets, $monthlySpending, $monthlySpending->sum()),
+            'budgets' => $budgets,
             'categories' => Category::forUser($userId)->orderBy('name')->get(),
+            'summary' => [
+                'total_budgeted' => (float) $budgets->sum('amount'),
+                'total_spent' => (float) $budgets->sum('spent'),
+                'total_remaining' => (float) $budgets->sum('remaining'),
+                'over_budget_count' => $budgets->where('percentage', '>=', 100)->count(),
+            ],
         ];
     }
 
@@ -68,6 +75,6 @@ class BudgetService
             $budget->remaining = max(0.0, (float) $budget->amount - $budget->spent);
 
             return $budget;
-        });
+        })->sortByDesc('percentage')->values();
     }
 }

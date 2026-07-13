@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Invoice;
 use App\Models\Issuer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -11,9 +12,12 @@ class IssuerController extends Controller
 {
     public function index(): View
     {
+        $userId = Auth::id();
         $favoriteIds = Auth::user()->favoriteIssuers()->pluck('issuers.id');
 
-        $query = Issuer::query();
+        $query = Issuer::query()
+            ->withCount(['invoices as purchase_count' => fn ($q) => $q->where('user_id', $userId)])
+            ->withSum(['invoices as total_spent' => fn ($q) => $q->where('user_id', $userId)], 'total_amount');
 
         if ($favoriteIds->isNotEmpty()) {
             $placeholders = implode(',', array_fill(0, $favoriteIds->count(), '?'));
@@ -23,19 +27,20 @@ class IssuerController extends Controller
         $issuers = $query->orderBy('name')->paginate(15);
 
         return view('issuer.index', [
-            'records'     => $issuers,
+            'records' => $issuers,
             'favoriteIds' => $favoriteIds,
+            'totalSpent' => (float) Invoice::where('user_id', $userId)->sum('total_amount'),
         ]);
     }
 
     public function detail(int $id): View
     {
-        $user   = Auth::user();
+        $user = Auth::user();
         $userId = $user->id;
         $issuer = Issuer::findOrFail($id);
 
         $issuer->load([
-            'invoices' => fn($q) => $q
+            'invoices' => fn ($q) => $q
                 ->where('user_id', $userId)
                 ->select(['id', 'issuer_id', 'number', 'series', 'issued_at', 'total_amount'])
                 ->withCount('items')
@@ -51,19 +56,19 @@ class IssuerController extends Controller
         $isFavorite = $user->favoriteIssuers()->where('issuers.id', $id)->exists();
 
         return view('issuer.detail', [
-            'record'     => $issuer,
+            'record' => $issuer,
             'isFavorite' => $isFavorite,
-            'stats'      => $stats,
+            'stats' => $stats,
         ]);
     }
 
     public function toggleFavorite(int $id): JsonResponse
     {
         $issuer = Issuer::findOrFail($id);
-        $user   = Auth::user();
+        $user = Auth::user();
 
-        $result     = $user->favoriteIssuers()->toggle($issuer->id);
-        $isFavorite = !empty($result['attached']);
+        $result = $user->favoriteIssuers()->toggle($issuer->id);
+        $isFavorite = ! empty($result['attached']);
 
         return response()->json(['is_favorite' => $isFavorite]);
     }

@@ -30,7 +30,7 @@ const Category = (() => {
         const color = category.color || '#94A3B8';
 
         return `
-            <div class="kt-card" id="category-${category.id}">
+            <div class="kt-card transition-shadow hover:shadow-md" style="box-shadow: inset 0 3px 0 0 ${color}" id="category-${category.id}">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title gap-2">
                         <span class="size-3 rounded-full shrink-0" data-color-dot style="background-color: ${color}"></span>
@@ -42,11 +42,11 @@ const Category = (() => {
                                 data-category-name="${Utils.escapeHtml(category.name)}"
                                 data-category-color="${color}"
                                 data-category-keywords="${Utils.escapeHtml(keywords.join(', '))}"
-                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Editar">
+                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform hover:scale-110" title="Editar">
                             <i class="ki-filled ki-pencil text-muted-foreground"></i>
                         </button>
                         <button data-action="delete-category" data-category-id="${category.id}"
-                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Excluir">
+                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform hover:scale-110" title="Excluir">
                             <i class="ki-filled ki-trash text-muted-foreground"></i>
                         </button>
                     </div>
@@ -85,6 +85,7 @@ const Category = (() => {
         const keywords = category.keywords || [];
         const color = category.color || '#94A3B8';
 
+        card.style.boxShadow = `inset 0 3px 0 0 ${color}`;
         card.querySelector('[data-color-dot]').style.backgroundColor = color;
         card.querySelector('[data-category-name]').textContent = category.name;
         card.querySelector('[data-keywords-section]').innerHTML = buildKeywordsHtml(keywords);

@@ -101,6 +101,48 @@ class BudgetServiceTest extends TestCase
         $this->assertEquals(0.0, (float) $result->spent);
     }
 
+    public function test_get_budgets_orders_by_percentage_descending(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        $lowCategory = Category::factory()->for($user)->create();
+        $highCategory = Category::factory()->for($user)->create();
+        $lowBudget = Budget::factory()->for($user)->for($lowCategory)->create(['amount' => 200.00]);
+        $highBudget = Budget::factory()->for($user)->for($highCategory)->create(['amount' => 100.00]);
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $lowCategory->id, 'total_price' => 20.00]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $highCategory->id, 'total_price' => 90.00]);
+
+        $result = $this->service->getBudgetsWithSpending($user->id);
+
+        $this->assertSame($highBudget->id, $result['budgets']->first()->id);
+        $this->assertSame($lowBudget->id, $result['budgets']->last()->id);
+    }
+
+    public function test_get_budgets_returns_summary_totals(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        $overCategory = Category::factory()->for($user)->create();
+        $okCategory = Category::factory()->for($user)->create();
+        Budget::factory()->for($user)->for($overCategory)->create(['amount' => 50.00]);
+        Budget::factory()->for($user)->for($okCategory)->create(['amount' => 100.00]);
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $overCategory->id, 'total_price' => 80.00]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $okCategory->id, 'total_price' => 30.00]);
+
+        $result = $this->service->getBudgetsWithSpending($user->id);
+
+        $this->assertEquals(150.00, $result['summary']['total_budgeted']);
+        $this->assertEquals(110.00, $result['summary']['total_spent']);
+        $this->assertEquals(70.00, $result['summary']['total_remaining']);
+        $this->assertEquals(1, $result['summary']['over_budget_count']);
+    }
+
     public function test_attach_spending_sums_all_categories_for_general_budget(): void
     {
         $user = User::factory()->create();

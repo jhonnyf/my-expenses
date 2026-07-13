@@ -5,6 +5,7 @@
 
     @php
         $monthlyTotal = $recurring->sum(fn($i) => $i->avg_price * $i->purchases_per_month);
+        $potentialSavings = $recurring->sum(fn($i) => max($i->avg_price - $i->min_price, 0) * $i->purchases_per_month);
     @endphp
 
     <div class="kt-container-fixed">
@@ -28,7 +29,7 @@
                 }
             </style>
 
-            <div class="grid grid-cols-2 gap-5">
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-5">
 
                 <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
                     <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-primary/10">
@@ -41,14 +42,26 @@
                 </div>
 
                 <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
-                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-success/10">
-                        <i class="ki-filled ki-dollar text-success text-xl"></i>
+                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-green-500/10">
+                        <i class="ki-filled ki-dollar text-green-600 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-1 pb-4 px-5">
                         <span class="text-2xl font-semibold text-mono tabular-nums truncate">
                             R$ {{ number_format($monthlyTotal, 2, ',', '.') }}
                         </span>
                         <span class="text-sm font-normal text-secondary-foreground">Gasto Mensal Estimado</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
+                    <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-violet-500/10">
+                        <i class="ki-filled ki-medal-star text-violet-600 text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-1 pb-4 px-5">
+                        <span class="text-2xl font-semibold text-mono tabular-nums truncate">
+                            R$ {{ number_format($potentialSavings, 2, ',', '.') }}
+                        </span>
+                        <span class="text-sm font-normal text-secondary-foreground">Economia Potencial/Mês</span>
                     </div>
                 </div>
 
@@ -82,25 +95,41 @@
                                     @foreach($recurring as $item)
                                         @php
                                             $best = $bestIssuers[$item->description] ?? null;
+                                            $range = max($item->max_price - $item->min_price, 0.01);
+                                            $avgPos = min(max((($item->avg_price - $item->min_price) / $range) * 100, 0), 100);
+                                            $daysSinceLast = $item->last_purchased_at ? \Carbon\Carbon::parse($item->last_purchased_at)->diffInDays(now()) : null;
+                                            $isDue = $daysSinceLast !== null && $daysSinceLast >= $item->avg_interval_days;
                                         @endphp
-                                        <tr>
-                                            <td class="font-medium text-foreground truncate">{{ $item->description }}</td>
-                                            <td class="text-center">
+                                        <tr class="transition-colors hover:bg-accent/40">
+                                            <td class="font-medium text-foreground truncate py-2.5">{{ $item->description }}</td>
+                                            <td class="text-center py-2.5">
                                                 <span class="kt-badge kt-badge-primary kt-badge-sm">{{ $item->purchase_count }}×</span>
                                             </td>
-                                            <td class="text-end font-mono text-sm tabular-nums">R$ {{ number_format($item->avg_price, 2, ',', '.') }}</td>
-                                            <td class="text-sm">
-                                                <span class="text-success font-mono tabular-nums">R$ {{ number_format($item->min_price, 2, ',', '.') }}</span>
-                                                <span class="text-secondary-foreground mx-0.5">—</span>
-                                                <span class="text-destructive font-mono tabular-nums">R$ {{ number_format($item->max_price, 2, ',', '.') }}</span>
+                                            <td class="text-end font-mono text-sm tabular-nums py-2.5">R$ {{ number_format($item->avg_price, 2, ',', '.') }}</td>
+                                            <td class="text-sm py-2.5">
+                                                <div class="flex items-center justify-between text-xs mb-1">
+                                                    <span class="text-green-600 font-mono tabular-nums">R$ {{ number_format($item->min_price, 2, ',', '.') }}</span>
+                                                    <span class="text-destructive font-mono tabular-nums">R$ {{ number_format($item->max_price, 2, ',', '.') }}</span>
+                                                </div>
+                                                <div class="relative h-1.5 rounded-full bg-gradient-to-r from-green-500 to-red-500">
+                                                    <span class="absolute top-1/2 -translate-y-1/2 size-2.5 rounded-full bg-mono ring-2 ring-background"
+                                                          style="left: calc({{ $avgPos }}% - 5px)"
+                                                          title="Preço médio: R$ {{ number_format($item->avg_price, 2, ',', '.') }}"></span>
+                                                </div>
                                             </td>
-                                            <td class="text-sm text-secondary-foreground">
-                                                {{ $item->last_purchased_at ? \Carbon\Carbon::parse($item->last_purchased_at)->format('d/m/Y') : '—' }}
+                                            <td class="text-sm text-secondary-foreground py-2.5">
+                                                <p>{{ $item->last_purchased_at ? \Carbon\Carbon::parse($item->last_purchased_at)->format('d/m/Y') : '—' }}</p>
+                                                @if($isDue)
+                                                    <span class="kt-badge kt-badge-warning kt-badge-outline kt-badge-sm mt-1">
+                                                        <i class="ki-filled ki-time text-2xs"></i> Hora de comprar
+                                                    </span>
+                                                @endif
                                             </td>
-                                            <td class="text-sm text-secondary-foreground">
+                                            <td class="text-sm text-secondary-foreground py-2.5">
                                                 ~{{ $item->avg_interval_days }} dias
+                                                <p class="text-xs">{{ $item->purchases_per_month }}×/mês</p>
                                             </td>
-                                            <td class="text-sm text-foreground truncate">
+                                            <td class="text-sm text-foreground truncate py-2.5">
                                                 {{ $best->issuer_name ?? '—' }}
                                             </td>
                                             <td>

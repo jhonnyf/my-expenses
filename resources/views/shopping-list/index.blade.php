@@ -9,7 +9,7 @@
             <div class="flex flex-col justify-center gap-2">
                 <h1 class="text-xl font-medium leading-none text-mono">Lista de Compras</h1>
                 <div class="flex items-center gap-2 text-sm font-normal text-secondary-foreground">
-                    Monte sua lista com os melhores preços
+                    {{ $lists->count() }} {{ $lists->count() == 1 ? 'lista salva' : 'listas salvas' }} &middot; Monte sua lista com os melhores preços
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
@@ -108,9 +108,16 @@
                         {{-- Resumo --}}
                         <div class="kt-card">
                             <div class="kt-card-content py-4 px-5">
-                                <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center justify-between gap-3 mb-3">
                                     <span class="text-sm font-semibold text-foreground">Total estimado</span>
                                     <span id="totalPrice" class="text-xl font-bold text-primary tabular-nums">R$ 0,00</span>
+                                </div>
+                                <div class="kt-progress h-1.5">
+                                    <div id="summaryProgress" class="kt-progress-indicator" style="width: 0%"></div>
+                                </div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <span id="summaryProgressLabel" class="text-xs text-secondary-foreground">0 de 0 itens comprados</span>
+                                    <span id="summaryProgressPct" class="text-xs font-semibold text-secondary-foreground tabular-nums">0%</span>
                                 </div>
                             </div>
                         </div>
@@ -133,23 +140,31 @@
                         <div class="kt-card-content pb-2">
                             <div id="savedLists" class="divide-y divide-border">
                                 @forelse($lists as $list)
-                                    <div class="flex items-center justify-between py-3 px-1 group" id="saved-list-{{ $list->id }}">
+                                    <div class="flex items-center gap-3 py-3 px-1 group rounded-lg transition-colors hover:bg-accent/40" id="saved-list-{{ $list->id }}">
+                                        <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary shrink-0">
+                                            <i class="ki-filled ki-basket text-sm"></i>
+                                        </div>
                                         <button data-load-list="{{ $list->id }}" class="flex-1 text-left min-w-0">
                                             <p class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                                                 {{ $list->name }}
                                             </p>
                                             <p class="text-xs text-secondary-foreground">
                                                 {{ $list->items_count }} {{ $list->items_count === 1 ? 'item' : 'itens' }}
+                                                &middot; R$ {{ number_format($list->items_total ?? 0, 2, ',', '.') }}
                                                 &middot; {{ $list->updated_at->format('d/m/Y') }}
                                             </p>
                                         </button>
                                         <button data-delete-list="{{ $list->id }}"
-                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
+                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive shrink-0">
                                             <i class="ki-filled ki-trash text-sm"></i>
                                         </button>
                                     </div>
                                 @empty
-                                    <p class="text-sm text-secondary-foreground py-4 text-center" id="noListsMsg">Nenhuma lista salva.</p>
+                                    <div class="flex flex-col items-center justify-center py-10 text-center" id="noListsMsg">
+                                        <i class="ki-filled ki-basket text-4xl text-secondary-foreground/30 mb-3"></i>
+                                        <p class="text-sm text-secondary-foreground">Nenhuma lista salva.</p>
+                                        <p class="text-xs text-secondary-foreground/70 mt-1">Busque um produto para começar.</p>
+                                    </div>
                                 @endforelse
                             </div>
                         </div>

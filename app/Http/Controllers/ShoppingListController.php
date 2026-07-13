@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ShoppingListController extends Controller
@@ -20,6 +21,7 @@ class ShoppingListController extends Controller
     {
         $lists = ShoppingList::where('user_id', Auth::id())
             ->withCount('items')
+            ->withSum(['items as items_total' => fn ($query) => $query], DB::raw('unit_price * quantity'))
             ->orderByDesc('updated_at')
             ->get();
 
@@ -65,7 +67,7 @@ class ShoppingListController extends Controller
 
         $list = ShoppingList::create([
             'user_id' => Auth::id(),
-            'name'    => $name,
+            'name' => $name,
         ]);
 
         return response()->json(['id' => $list->id, 'name' => $list->name]);
@@ -103,11 +105,11 @@ class ShoppingListController extends Controller
         $this->authorize('interact', $shoppingList);
 
         $item = $shoppingList->items()->create([
-            'issuer_id'   => $request->input('issuer_id'),
+            'issuer_id' => $request->input('issuer_id'),
             'description' => $request->input('description'),
-            'unit'        => $request->input('unit'),
-            'unit_price'  => $request->input('unit_price'),
-            'quantity'    => $request->input('quantity'),
+            'unit' => $request->input('unit'),
+            'unit_price' => $request->input('unit_price'),
+            'quantity' => $request->input('quantity'),
         ]);
 
         $item->load('issuer');

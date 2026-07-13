@@ -23,6 +23,55 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            {{-- STAT CARDS --}}
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 shrink-0">
+                        <i class="ki-filled ki-category text-primary text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">{{ $categories->count() }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground">Categorias</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-success/10 shrink-0">
+                        <i class="ki-filled ki-dollar text-success text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                            R$ {{ number_format($totalSpent, 2, ',', '.') }}
+                        </span>
+                        <span class="text-xs font-normal text-secondary-foreground">Total Categorizado</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-info/10 shrink-0">
+                        <i class="ki-filled ki-medal-star text-info text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono truncate">
+                            {{ $topCategory->name ?? '—' }}
+                        </span>
+                        <span class="text-xs font-normal text-secondary-foreground">Maior Gasto</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-warning/10 shrink-0">
+                        <i class="ki-filled ki-question text-warning text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">{{ number_format($uncategorizedCount) }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground">Itens Sem Categoria</span>
+                    </div>
+                </div>
+
+            </div>
+
             <div class="kt-card hidden" id="newCategoryForm">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Nova Categoria</h3>
@@ -77,9 +126,13 @@
             </div>
 
             @if($categories->isNotEmpty())
+                @php $categoriesTotal = $totalSpent ?: 1; @endphp
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5" id="categoriesGrid">
                     @foreach($categories as $category)
-                        <div class="kt-card" id="category-{{ $category->id }}">
+                        @php $share = ($category->total_spent / $categoriesTotal) * 100; @endphp
+                        <div class="kt-card transition-shadow hover:shadow-md"
+                             style="box-shadow: inset 0 3px 0 0 {{ $category->color ?? '#94A3B8' }}"
+                             id="category-{{ $category->id }}">
                             <div class="kt-card-header">
                                 <h3 class="kt-card-title gap-2">
                                     <span class="size-3 rounded-full shrink-0" data-color-dot style="background-color: {{ $category->color ?? '#94A3B8' }}"></span>
@@ -92,11 +145,11 @@
                                                 data-category-name="{{ $category->name }}"
                                                 data-category-color="{{ $category->color ?? '#94A3B8' }}"
                                                 data-category-keywords="{{ implode(', ', $category->keywords ?? []) }}"
-                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Editar">
+                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform hover:scale-110" title="Editar">
                                             <i class="ki-filled ki-pencil text-muted-foreground"></i>
                                         </button>
                                         <button data-action="delete-category" data-category-id="{{ $category->id }}"
-                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Excluir">
+                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform hover:scale-110" title="Excluir">
                                             <i class="ki-filled ki-trash text-muted-foreground"></i>
                                         </button>
                                     </div>
@@ -112,6 +165,14 @@
                                         <span class="text-sm text-secondary-foreground">Total gasto</span>
                                         <span class="text-sm font-semibold font-mono text-primary tabular-nums">R$ {{ number_format($category->total_spent, 2, ',', '.') }}</span>
                                     </div>
+                                    @if($category->total_spent > 0)
+                                        <div>
+                                            <div class="kt-progress h-1">
+                                                <div class="kt-progress-indicator" style="width: {{ min($share, 100) }}%; background-color: {{ $category->color ?? '#94A3B8' }}"></div>
+                                            </div>
+                                            <p class="text-xs text-secondary-foreground mt-1">{{ number_format($share, 1) }}% do total categorizado</p>
+                                        </div>
+                                    @endif
                                     <div data-keywords-section>
                                         @if($category->keywords && count($category->keywords) > 0)
                                             <div>

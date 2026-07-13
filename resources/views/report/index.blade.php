@@ -20,8 +20,14 @@
 
             {{-- FILTROS --}}
             <div class="kt-card">
-                <div class="kt-card-header">
+                <div class="kt-card-header flex-wrap gap-2">
                     <h3 class="kt-card-title">Filtros</h3>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button type="button" data-action="quick-range" data-range="this-month" class="kt-btn kt-btn-outline kt-btn-sm">Este mês</button>
+                        <button type="button" data-action="quick-range" data-range="last-month" class="kt-btn kt-btn-outline kt-btn-sm">Mês passado</button>
+                        <button type="button" data-action="quick-range" data-range="last-3-months" class="kt-btn kt-btn-outline kt-btn-sm">Últimos 3 meses</button>
+                        <button type="button" data-action="quick-range" data-range="this-year" class="kt-btn kt-btn-outline kt-btn-sm">Este ano</button>
+                    </div>
                 </div>
                 <div class="kt-card-content pb-5">
                     <form id="reportForm" method="POST" action="{{ route('reports.generate') }}">
@@ -29,13 +35,13 @@
                         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <label class="text-xs font-medium text-secondary-foreground mb-1.5 block">De</label>
-                                <input type="date" name="start_date"
+                                <input type="date" name="start_date" id="reportStartDate"
                                        class="kt-input w-full"
                                        value="{{ $filters['start_date'] ?? now()->startOfMonth()->format('Y-m-d') }}" />
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-secondary-foreground mb-1.5 block">Até</label>
-                                <input type="date" name="end_date"
+                                <input type="date" name="end_date" id="reportEndDate"
                                        class="kt-input w-full"
                                        value="{{ $filters['end_date'] ?? now()->format('Y-m-d') }}" />
                             </div>
@@ -93,7 +99,7 @@
                         background-image: url('{{ asset('assets/media/images/2600x1600/bg-3-dark.png') }}');
                     }
                 </style>
-                <div class="grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
 
                     <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
                         <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-primary/10">
@@ -108,8 +114,8 @@
                     </div>
 
                     <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
-                        <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-info/10">
-                            <i class="ki-filled ki-basket text-info text-xl"></i>
+                        <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-violet-500/10">
+                            <i class="ki-filled ki-basket text-violet-600 text-xl"></i>
                         </div>
                         <div class="flex flex-col gap-1 pb-4 px-5">
                             <span class="text-2xl font-semibold text-mono tabular-nums">
@@ -120,14 +126,26 @@
                     </div>
 
                     <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
-                        <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-success/10">
-                            <i class="ki-filled ki-document text-success text-xl"></i>
+                        <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-green-500/10">
+                            <i class="ki-filled ki-document text-green-600 text-xl"></i>
                         </div>
                         <div class="flex flex-col gap-1 pb-4 px-5">
                             <span class="text-2xl font-semibold text-mono tabular-nums">
                                 {{ $summary->total_invoices ?? 0 }}
                             </span>
                             <span class="text-sm font-normal text-secondary-foreground">Total de Notas</span>
+                        </div>
+                    </div>
+
+                    <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
+                        <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-yellow-500/10">
+                            <i class="ki-filled ki-chart text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="flex flex-col gap-1 pb-4 px-5">
+                            <span class="text-2xl font-semibold text-mono tabular-nums truncate">
+                                R$ {{ number_format($summary->total_invoices ? ($summary->total_amount / $summary->total_invoices) : 0, 2, ',', '.') }}
+                            </span>
+                            <span class="text-sm font-normal text-secondary-foreground">Ticket Médio</span>
                         </div>
                     </div>
 
@@ -140,26 +158,24 @@
                             <h3 class="kt-card-title">Gastos por Categoria</h3>
                         </div>
                         <div class="kt-card-content pb-5">
-                            @php $catTotal = $categoryBreakdown->sum('total') ?: 1; @endphp
-                            <div class="space-y-1">
-                                @foreach($categoryBreakdown as $cat)
-                                    @php $catPct = ($cat->total / $catTotal) * 100; @endphp
-                                    <div>
-                                        <div class="flex justify-between items-center mb-1.5">
-                                            <div class="flex items-center gap-2">
-                                                <span class="size-2.5 rounded-full" style="background-color: {{ $cat->category_color }}"></span>
-                                                <span class="text-sm text-foreground">{{ $cat->category_name }}</span>
+                            <div class="grid lg:grid-cols-2 gap-4 items-center">
+                                <div id="reportCategoryChart" style="height: 220px;"></div>
+                                <div class="grid gap-2">
+                                    @php $catTotal = $categoryBreakdown->sum('total') ?: 1; @endphp
+                                    @foreach($categoryBreakdown as $cat)
+                                        @php $catPct = ($cat->total / $catTotal) * 100; @endphp
+                                        <div class="flex items-center justify-between gap-2">
+                                            <div class="flex items-center gap-1.5 min-w-0">
+                                                <span class="size-2.5 rounded-full shrink-0" style="background-color: {{ $cat->category_color }}"></span>
+                                                <span class="text-sm text-foreground truncate">{{ $cat->category_name }}</span>
                                             </div>
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-xs text-secondary-foreground">{{ number_format($catPct, 0) }}%</span>
-                                                <span class="font-semibold font-mono text-sm">R$ {{ number_format($cat->total, 2, ',', '.') }}</span>
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                <span class="text-xs text-secondary-foreground tabular-nums">{{ number_format($catPct, 0) }}%</span>
+                                                <span class="text-sm font-semibold text-foreground tabular-nums">R$ {{ number_format($cat->total, 2, ',', '.') }}</span>
                                             </div>
                                         </div>
-                                        <div class="w-full bg-accent rounded-full h-2 mb-3">
-                                            <div class="rounded-full h-2" style="width: {{ $catPct }}%; background-color: {{ $cat->category_color }}"></div>
-                                        </div>
-                                    </div>
-                                @endforeach
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -191,7 +207,7 @@
                                 </thead>
                                 <tbody>
                                     @forelse($items as $item)
-                                        <tr>
+                                        <tr class="transition-colors hover:bg-accent/40">
                                             <td class="text-sm text-secondary-foreground">
                                                 {{ \Carbon\Carbon::parse($item->issued_at)->format('d/m/Y') }}
                                             </td>
@@ -241,11 +257,7 @@
 <script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         generateUrl: '{{ route("reports.generate") }}',
+        categoryBreakdown: @json($categoryBreakdown ?? []),
     });
-
-    function submitTo(url) {
-        document.getElementById('reportForm').action = url;
-        document.getElementById('reportForm').submit();
-    }
 </script>
 @endpush

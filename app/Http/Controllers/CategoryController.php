@@ -17,17 +17,23 @@ class CategoryController extends Controller
 
     public function index(): View
     {
+        $userId = Auth::id();
+        $categories = $this->service->getCategoriesWithSpending($userId);
+
         return view('category.index', [
-            'categories' => $this->service->getCategoriesWithSpending(Auth::id()),
+            'categories' => $categories,
+            'totalSpent' => $categories->sum('total_spent'),
+            'topCategory' => $categories->firstWhere('total_spent', '>', 0),
+            'uncategorizedCount' => $this->service->countUncategorizedItems($userId),
         ]);
     }
 
     public function store(SaveCategoryRequest $request): JsonResponse
     {
         $category = Category::create([
-            'user_id'  => Auth::id(),
-            'name'     => $request->input('name'),
-            'color'    => $request->input('color', '#94A3B8'),
+            'user_id' => Auth::id(),
+            'name' => $request->input('name'),
+            'color' => $request->input('color', '#94A3B8'),
             'keywords' => $request->parsedKeywords(),
         ]);
 
@@ -39,8 +45,8 @@ class CategoryController extends Controller
         $this->authorize('update', $category);
 
         $category->update([
-            'name'     => $request->input('name'),
-            'color'    => $request->input('color'),
+            'name' => $request->input('name'),
+            'color' => $request->input('color'),
             'keywords' => $request->parsedKeywords(),
         ]);
 

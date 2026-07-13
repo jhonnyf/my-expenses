@@ -15,6 +15,58 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            @if($budgets->isNotEmpty())
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+
+                    <div class="kt-card flex-row items-center gap-4 p-5">
+                        <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 shrink-0">
+                            <i class="ki-filled ki-wallet text-primary text-xl"></i>
+                        </div>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                                R$ {{ number_format($summary['total_budgeted'], 2, ',', '.') }}
+                            </span>
+                            <span class="text-xs font-normal text-secondary-foreground">Total Orçado</span>
+                        </div>
+                    </div>
+
+                    <div class="kt-card flex-row items-center gap-4 p-5">
+                        <div class="flex items-center justify-center size-10 rounded-xl bg-violet-500/10 shrink-0">
+                            <i class="ki-filled ki-dollar text-violet-600 text-xl"></i>
+                        </div>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                                R$ {{ number_format($summary['total_spent'], 2, ',', '.') }}
+                            </span>
+                            <span class="text-xs font-normal text-secondary-foreground">Total Gasto</span>
+                        </div>
+                    </div>
+
+                    <div class="kt-card flex-row items-center gap-4 p-5">
+                        <div class="flex items-center justify-center size-10 rounded-xl bg-green-500/10 shrink-0">
+                            <i class="ki-filled ki-check-circle text-green-600 text-xl"></i>
+                        </div>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                                R$ {{ number_format($summary['total_remaining'], 2, ',', '.') }}
+                            </span>
+                            <span class="text-xs font-normal text-secondary-foreground">Total Restante</span>
+                        </div>
+                    </div>
+
+                    <div class="kt-card flex-row items-center gap-4 p-5">
+                        <div class="flex items-center justify-center size-10 rounded-xl bg-red-500/10 shrink-0">
+                            <i class="ki-filled ki-information-2 text-destructive text-xl"></i>
+                        </div>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">{{ $summary['over_budget_count'] }}</span>
+                            <span class="text-xs font-normal text-secondary-foreground">Orçamentos Estourados</span>
+                        </div>
+                    </div>
+
+                </div>
+            @endif
+
             <div class="kt-card">
                 <div class="kt-card-header">
                     <h3 class="kt-card-title">Definir Orçamento</h3>
@@ -49,17 +101,17 @@
                         @php
                             $pct = min($budget->percentage, 100);
                             if ($budget->percentage < 75) {
-                                $colorStatus = 'success';
-                                $textStatus  = 'text-success';
+                                $textStatus  = 'text-green-600';
+                                $accentColor = '#22c55e';
                             } elseif ($budget->percentage < 100) {
-                                $colorStatus = 'warning';
-                                $textStatus  = 'text-warning';
+                                $textStatus  = 'text-yellow-600';
+                                $accentColor = '#eab308';
                             } else {
-                                $colorStatus = 'destructive';
                                 $textStatus  = 'text-destructive';
+                                $accentColor = '#ef4444';
                             }
                         @endphp
-                        <div class="kt-card" id="budget-{{ $budget->id }}">
+                        <div class="kt-card transition-shadow hover:shadow-md" style="box-shadow: inset 0 3px 0 0 {{ $accentColor }}" id="budget-{{ $budget->id }}">
                             <div class="kt-card-header">
                                 <h3 class="kt-card-title gap-2">
                                     @if($budget->category)
@@ -87,7 +139,7 @@
                                         <span class="text-sm font-semibold font-mono {{ $textStatus }} tabular-nums">R$ {{ number_format($budget->spent, 2, ',', '.') }}</span>
                                     </div>
                                     <div class="kt-progress h-2">
-                                        <div class="kt-progress-indicator kt-progress-{{ $colorStatus }}" style="width: {{ $pct }}%"></div>
+                                        <div class="kt-progress-indicator" style="width: {{ $pct }}%; background-color: {{ $accentColor }}"></div>
                                     </div>
                                     <div class="flex justify-between items-center">
                                         <span class="text-xs {{ $textStatus }} font-medium tabular-nums">{{ number_format($budget->percentage, 0) }}%</span>
@@ -97,12 +149,12 @@
                                     </div>
                                     <div class="flex justify-between items-baseline">
                                         <span class="text-sm text-secondary-foreground">Restante</span>
-                                        <span class="text-sm font-semibold font-mono {{ $budget->remaining > 0 ? 'text-success' : 'text-destructive' }} tabular-nums">
+                                        <span class="text-sm font-semibold font-mono {{ $budget->remaining > 0 ? 'text-green-600' : 'text-destructive' }} tabular-nums">
                                             R$ {{ number_format($budget->remaining, 2, ',', '.') }}
                                         </span>
                                     </div>
                                     @if($budget->percentage >= 100)
-                                        <div class="bg-destructive/10 rounded-xl px-3 py-2 text-xs text-destructive flex items-center gap-1.5">
+                                        <div class="bg-red-500/10 rounded-xl px-3 py-2 text-xs text-destructive flex items-center gap-1.5">
                                             <i class="ki-filled ki-information-2 shrink-0"></i>
                                             Orçamento excedido em R$ {{ number_format($budget->spent - $budget->amount, 2, ',', '.') }}
                                         </div>
