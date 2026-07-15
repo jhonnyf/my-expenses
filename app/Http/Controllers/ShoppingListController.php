@@ -44,13 +44,17 @@ class ShoppingListController extends Controller
             'invoices_items.unit_price',
             'invoices_items.unit',
             'invoices_items.code',
-            'issuers.name as issuer_name',
             'issuers.id as issuer_id',
             'invoices.issued_at'
         )
+            ->selectRaw('COALESCE(issuer_nicknames.nickname, issuers.name) as issuer_name')
             ->selectRaw('IF(issuers.id IN ('.($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0').'), 1, 0) as is_favorite')
             ->join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
+            ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
+                $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
+                    ->where('issuer_nicknames.user_id', '=', $userId);
+            })
             ->where('invoices.user_id', $userId)
             ->where('invoices_items.description', 'like', "%{$query}%")
             ->orderByDesc('is_favorite')
@@ -77,7 +81,8 @@ class ShoppingListController extends Controller
     {
         $this->authorize('interact', $shoppingList);
 
-        $shoppingList->load('items.issuer');
+        $shoppingList->load('items.issuer.nicknameForUser');
+        $shoppingList->items->each(fn (ShoppingListItem $item) => $item->issuer?->append('display_name'));
 
         return response()->json($shoppingList);
     }
@@ -112,7 +117,8 @@ class ShoppingListController extends Controller
             'quantity' => $request->input('quantity'),
         ]);
 
-        $item->load('issuer');
+        $item->load('issuer.nicknameForUser');
+        $item->issuer?->append('display_name');
         $shoppingList->touch();
 
         return response()->json($item);

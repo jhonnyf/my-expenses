@@ -53,6 +53,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/', [IssuerController::class, 'index'])->name('index');
         Route::get('detail/{id?}', [IssuerController::class, 'detail'])->name('detail');
         Route::post('{id}/favorite', [IssuerController::class, 'toggleFavorite'])->name('favorite');
+        Route::put('{id}/nickname', [IssuerController::class, 'updateNickname'])->name('nickname.update');
     });
 
     Route::group(['prefix' => 'my-purchases', 'as' => 'my-purchases.'], function () {

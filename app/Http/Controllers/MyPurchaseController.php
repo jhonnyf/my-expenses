@@ -34,7 +34,7 @@ class MyPurchaseController extends Controller
         $search = trim((string) $request->input('search', ''));
 
         $records = Invoice::where('user_id', $userId)
-            ->with('issuer')
+            ->with('issuer.nicknameForUser')
             ->when($search !== '', fn ($query) => $query->whereHas(
                 'issuer',
                 fn ($query) => $query->where('name', 'like', "%{$search}%")
@@ -72,7 +72,7 @@ class MyPurchaseController extends Controller
         $user = Auth::user();
         abort_if($invoice->user_id !== $user->id, 403);
 
-        $invoice->load('issuer', 'items.category', 'payments');
+        $invoice->load('issuer.nicknameForUser', 'items.category', 'payments');
 
         $isIssuerFavorite = $invoice->issuer
             ? $user->favoriteIssuers()->where('issuers.id', $invoice->issuer_id)->exists()

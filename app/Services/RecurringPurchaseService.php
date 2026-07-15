@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\InvoiceItem;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -28,7 +29,7 @@ class RecurringPurchaseService
             ->get()
             ->map(function ($item) {
                 $spanDays = max(
-                    \Carbon\Carbon::parse($item->first_purchased_at)->diffInDays(\Carbon\Carbon::parse($item->last_purchased_at)),
+                    Carbon::parse($item->first_purchased_at)->diffInDays(Carbon::parse($item->last_purchased_at)),
                     1
                 );
                 $item->avg_interval_days = round($spanDays / max($item->purchase_count - 1, 1));
@@ -48,17 +49,21 @@ class RecurringPurchaseService
 
         return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
+            ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
+                $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
+                    ->where('issuer_nicknames.user_id', '=', $userId);
+            })
             ->where('invoices.user_id', $userId)
             ->whereIn('invoices_items.description', $topDescriptions)
             ->select(
                 'invoices_items.description',
                 'issuers.id as issuer_id',
-                'issuers.name as issuer_name',
+                DB::raw('COALESCE(issuer_nicknames.nickname, issuers.name) as issuer_name'),
                 DB::raw('AVG(invoices_items.unit_price) as avg_price'),
                 DB::raw('COUNT(*) as count'),
                 DB::raw('MAX(invoices_items.unit) as unit')
             )
-            ->groupBy('invoices_items.description', 'issuers.id', 'issuers.name')
+            ->groupBy('invoices_items.description', 'issuers.id', 'issuers.name', 'issuer_nicknames.nickname')
             ->get()
             ->groupBy('description')
             ->map(fn ($group) => $group->sortBy('avg_price')->first());

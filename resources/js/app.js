@@ -9,6 +9,7 @@ import InvoiceDetail from './pages/invoice-detail';
 import IssuerDetail from './pages/issuer-detail';
 import IssuerFavorite from './pages/issuer-favorite';
 import IssuerList from './pages/issuer-list';
+import IssuerNickname from './pages/issuer-nickname';
 import MyPurchases from './pages/my-purchases';
 import PriceHistory from './pages/price-history';
 import RecurringPurchase from './pages/recurring-purchase';
@@ -27,6 +28,7 @@ const pages = {
     'issuer-detail': IssuerDetail,
     'issuer-favorite': IssuerFavorite,
     'issuer-list': IssuerList,
+    'issuer-nickname': IssuerNickname,
     'my-purchases': MyPurchases,
     'price-history': PriceHistory,
     'recurring-purchase': RecurringPurchase,

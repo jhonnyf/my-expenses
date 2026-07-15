@@ -1,5 +1,5 @@
 @extends('layout.main')
-@section('page-module', 'issuer-favorite,issuer-detail')
+@section('page-module', 'issuer-favorite,issuer-detail,issuer-nickname')
 
 @section('content')
 
@@ -11,7 +11,7 @@
                 <div class="flex items-center gap-2 text-sm font-normal text-secondary-foreground">
                     <a href="{{ route('issuers.index') }}" class="hover:text-primary transition-colors">Emissores</a>
                     <i class="ki-filled ki-right text-xs"></i>
-                    <span class="truncate max-w-[200px]">{{ $record->name }}</span>
+                    <span class="truncate max-w-[200px]" id="issuerBreadcrumbName">{{ $nickname ?: $record->name }}</span>
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
@@ -44,12 +44,26 @@
                         <div id="profileAvatar"
                              class="flex items-center justify-center size-20 rounded-2xl font-bold text-2xl uppercase shrink-0 transition-all duration-300
                              {{ $isFavorite ? 'bg-yellow-500/15 text-yellow-600 ring-2 ring-yellow-400 shadow-lg shadow-yellow-500/20' : 'bg-primary/10 text-primary ring-2 ring-primary/30' }}">
-                            {{ strtoupper(substr($record->name, 0, 2)) }}
+                            <span id="profileAvatarInitials">{{ strtoupper(substr($nickname ?: $record->name, 0, 2)) }}</span>
                         </div>
 
                         {{-- Nome + CNPJ --}}
                         <div class="flex flex-col gap-1">
-                            <h2 class="text-base font-semibold text-foreground leading-snug">{{ $record->name }}</h2>
+                            <div class="flex items-center justify-center gap-1.5">
+                                <h2 class="text-base font-semibold text-foreground leading-snug" id="issuerDisplayName">{{ $nickname ?: $record->name }}</h2>
+                                <button
+                                    data-action="edit-nickname"
+                                    data-kt-modal-toggle="#nicknameModal"
+                                    data-issuer-id="{{ $record->id }}"
+                                    data-issuer-name="{{ $record->name }}"
+                                    data-issuer-nickname="{{ $nickname }}"
+                                    class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm shrink-0" title="Editar apelido">
+                                    <i class="ki-filled ki-pencil text-sm text-muted-foreground"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-secondary-foreground {{ $nickname ? '' : 'hidden' }}" id="issuerOriginalNameWrap">
+                                Nome oficial: <span id="issuerOriginalName">{{ $record->name }}</span>
+                            </p>
                             <p class="text-xs font-mono text-secondary-foreground">
                                 {{ preg_replace('/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/', '$1.$2.$3/$4-$5', $record->cnpj) }}
                             </p>
@@ -270,6 +284,8 @@
 
         </div>
     </div>
+
+    @include('issuer._nickname-modal')
 
 @endsection
 

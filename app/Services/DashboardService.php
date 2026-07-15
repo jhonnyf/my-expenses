@@ -24,20 +24,20 @@ class DashboardService
         $currentMonthExpenses = $monthComparison['currentMonthExpenses'];
 
         return [
-            'totalExpenses'       => $stats->totalExpenses,
-            'totalTaxes'          => $stats->totalTaxes,
-            'totalPurchases'      => $stats->totalPurchases,
-            'averageTicket'       => $this->calculateAverageTicket($stats),
+            'totalExpenses' => $stats->totalExpenses,
+            'totalTaxes' => $stats->totalTaxes,
+            'totalPurchases' => $stats->totalPurchases,
+            'averageTicket' => $this->calculateAverageTicket($stats),
             ...$monthComparison,
-            'lastPurchase'        => $this->getLastPurchase($userId),
+            'lastPurchase' => $this->getLastPurchase($userId),
             'paymentDistribution' => $this->getPaymentDistribution($userId),
-            'budgets'             => $this->getBudgets($userId, $startOfMonth, $currentMonthExpenses),
-            'monthlyExpenses'     => $this->getMonthlyExpenses($userId, $now),
-            'spendingByCategory'  => $this->getSpendingByCategory($userId),
-            'topIssuers'          => $this->getTopIssuers($userId),
-            'topProducts'         => $this->getTopProducts($userId),
-            'paymentLabels'       => $this->paymentLabels(),
-            'paymentIcons'        => $this->paymentIcons(),
+            'budgets' => $this->getBudgets($userId, $startOfMonth, $currentMonthExpenses),
+            'monthlyExpenses' => $this->getMonthlyExpenses($userId, $now),
+            'spendingByCategory' => $this->getSpendingByCategory($userId),
+            'topIssuers' => $this->getTopIssuers($userId),
+            'topProducts' => $this->getTopProducts($userId),
+            'paymentLabels' => $this->paymentLabels(),
+            'paymentIcons' => $this->paymentIcons(),
         ];
     }
 
@@ -66,7 +66,7 @@ class DashboardService
     private function getMonthComparison(int $userId, Carbon $now, Carbon $startOfMonth): array
     {
         $startOfLastMonth = $now->copy()->subMonth()->startOfMonth();
-        $endOfLastMonth   = $now->copy()->subMonth()->endOfMonth();
+        $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
 
         [$currentMonthExpenses, $lastMonthExpenses] = Cache::remember(
             "dashboard.month_comparison.{$userId}",
@@ -90,8 +90,8 @@ class DashboardService
 
         return [
             'currentMonthExpenses' => $currentMonthExpenses,
-            'lastMonthExpenses'    => $lastMonthExpenses,
-            'monthVariation'       => $monthVariation,
+            'lastMonthExpenses' => $lastMonthExpenses,
+            'monthVariation' => $monthVariation,
         ];
     }
 
@@ -99,7 +99,7 @@ class DashboardService
     {
         return Invoice::where('user_id', $userId)
             ->select(['id', 'issuer_id', 'issued_at', 'total_amount'])
-            ->with('issuer')
+            ->with('issuer.nicknameForUser')
             ->orderByDesc('issued_at')
             ->first();
     }
@@ -132,7 +132,7 @@ class DashboardService
                 ? (float) ($monthlySpending[$budget->category_id] ?? 0)
                 : (float) $currentMonthExpenses;
             $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0.0;
-            $budget->remaining  = (float) $budget->amount - $budget->spent;
+            $budget->remaining = (float) $budget->amount - $budget->spent;
 
             return $budget;
         });
@@ -143,7 +143,7 @@ class DashboardService
         return Cache::remember("dashboard.monthly_expenses.{$userId}", 300, function () use ($userId, $now) {
             return Invoice::where('user_id', $userId)
                 ->where('issued_at', '>=', $now->copy()->subMonths(11)->startOfMonth())
-                ->select(DB::raw("substr(issued_at, 1, 7) as month"), DB::raw('SUM(total_amount) as total'))
+                ->select(DB::raw('substr(issued_at, 1, 7) as month'), DB::raw('SUM(total_amount) as total'))
                 ->groupBy('month')
                 ->orderBy('month')
                 ->get();
@@ -173,8 +173,16 @@ class DashboardService
         return Cache::remember("dashboard.top_issuers.{$userId}", 300, function () use ($userId) {
             return Invoice::where('invoices.user_id', $userId)
                 ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
-                ->select('issuers.name', DB::raw('SUM(invoices.total_amount) as total'), DB::raw('COUNT(invoices.id) as count'))
-                ->groupBy('issuers.id', 'issuers.name')
+                ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
+                    $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
+                        ->where('issuer_nicknames.user_id', '=', $userId);
+                })
+                ->select(
+                    DB::raw('COALESCE(issuer_nicknames.nickname, issuers.name) as name'),
+                    DB::raw('SUM(invoices.total_amount) as total'),
+                    DB::raw('COUNT(invoices.id) as count')
+                )
+                ->groupBy('issuers.id', 'issuers.name', 'issuer_nicknames.nickname')
                 ->orderByDesc('total')
                 ->limit(5)
                 ->get();
@@ -197,32 +205,32 @@ class DashboardService
     private function paymentLabels(): array
     {
         return [
-            'dinheiro'         => 'Dinheiro',
-            'cheque'           => 'Cheque',
-            'cartao_credito'   => 'Cartão de Crédito',
-            'cartao_debito'    => 'Cartão de Débito',
-            'credito_loja'     => 'Crédito Loja',
+            'dinheiro' => 'Dinheiro',
+            'cheque' => 'Cheque',
+            'cartao_credito' => 'Cartão de Crédito',
+            'cartao_debito' => 'Cartão de Débito',
+            'credito_loja' => 'Crédito Loja',
             'vale_alimentacao' => 'Vale Alimentação',
-            'vale_refeicao'    => 'Vale Refeição',
-            'vale_presente'    => 'Vale Presente',
+            'vale_refeicao' => 'Vale Refeição',
+            'vale_presente' => 'Vale Presente',
             'vale_combustivel' => 'Vale Combustível',
-            'boleto'           => 'Boleto',
-            'sem_pagamento'    => 'Sem Pagamento',
-            'outros'           => 'Outros',
-            'pix'              => 'Pix',
+            'boleto' => 'Boleto',
+            'sem_pagamento' => 'Sem Pagamento',
+            'outros' => 'Outros',
+            'pix' => 'Pix',
         ];
     }
 
     private function paymentIcons(): array
     {
         return [
-            'dinheiro'         => 'ki-filled ki-dollar',
-            'cartao_credito'   => 'ki-filled ki-credit-cart',
-            'cartao_debito'    => 'ki-filled ki-credit-cart',
+            'dinheiro' => 'ki-filled ki-dollar',
+            'cartao_credito' => 'ki-filled ki-credit-cart',
+            'cartao_debito' => 'ki-filled ki-credit-cart',
             'vale_alimentacao' => 'ki-filled ki-basket',
-            'vale_refeicao'    => 'ki-filled ki-coffee',
-            'pix'              => 'ki-filled ki-send',
-            'boleto'           => 'ki-filled ki-document',
+            'vale_refeicao' => 'ki-filled ki-coffee',
+            'pix' => 'ki-filled ki-send',
+            'boleto' => 'ki-filled ki-document',
         ];
     }
 }

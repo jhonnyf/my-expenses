@@ -39,7 +39,7 @@ class InvoiceController extends Controller
     {
         abort_if($invoice->user_id !== $request->user()->id, 403);
 
-        $invoice->load('issuer', 'items.category', 'payments');
+        $invoice->load('issuer.nicknameForUser', 'items.category', 'payments');
 
         return $this->success(new InvoiceResource($invoice));
     }

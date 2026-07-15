@@ -52,7 +52,7 @@
                                     @foreach($issuers as $issuer)
                                         <option value="{{ $issuer->id }}"
                                             {{ isset($filters['issuer_id']) && $filters['issuer_id'] == $issuer->id ? 'selected' : '' }}>
-                                            {{ $issuer->name }}
+                                            {{ $issuer->display_name }}
                                         </option>
                                     @endforeach
                                 </select>

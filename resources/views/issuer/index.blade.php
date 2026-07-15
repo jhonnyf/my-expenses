@@ -1,5 +1,5 @@
 @extends('layout.main')
-@section('page-module', 'issuer-favorite,issuer-list')
+@section('page-module', 'issuer-favorite,issuer-list,issuer-nickname')
 
 @section('content')
 
@@ -84,7 +84,7 @@
                                     <th class="min-w-[180px]">Localização</th>
                                     <th class="min-w-[90px] text-center">Compras</th>
                                     <th class="min-w-[130px] text-end">Total Gasto</th>
-                                    <th class="w-[80px] text-end">Ações</th>
+                                    <th class="w-[110px] text-end">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -103,10 +103,11 @@
                                             <div class="flex items-center gap-3">
                                                 <div class="issuer-avatar flex items-center justify-center size-9 rounded-lg shrink-0 font-semibold text-sm uppercase transition-all duration-200
                                                     {{ $isFav ? 'bg-yellow-500/10 text-yellow-600 ring-2 ring-yellow-400/40' : 'bg-primary/10 text-primary' }}">
-                                                    {{ strtoupper(substr($item->name, 0, 2)) }}
+                                                    {{ strtoupper(substr($item->nickname ?: $item->name, 0, 2)) }}
                                                 </div>
                                                 <div class="min-w-0">
-                                                    <p class="text-sm font-semibold text-foreground truncate issuer-name">{{ $item->name }}</p>
+                                                    <p class="text-sm font-semibold text-foreground truncate issuer-name"
+                                                       @if($item->nickname) title="Nome oficial: {{ $item->name }}" @endif>{{ $item->nickname ?: $item->name }}</p>
                                                     @if($item->neighborhood)
                                                         <p class="text-xs text-secondary-foreground truncate">{{ $item->neighborhood }}</p>
                                                     @endif
@@ -145,9 +146,20 @@
                                             @endif
                                         </td>
                                         <td class="text-center py-2.5">
-                                            <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Ver detalhes">
-                                                <i class="ki-filled ki-eye text-base"></i>
-                                            </a>
+                                            <div class="flex items-center justify-end gap-1">
+                                                <button
+                                                    data-action="edit-nickname"
+                                                    data-kt-modal-toggle="#nicknameModal"
+                                                    data-issuer-id="{{ $item->id }}"
+                                                    data-issuer-name="{{ $item->name }}"
+                                                    data-issuer-nickname="{{ $item->nickname }}"
+                                                    class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Editar apelido">
+                                                    <i class="ki-filled ki-pencil text-base"></i>
+                                                </button>
+                                                <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Ver detalhes">
+                                                    <i class="ki-filled ki-eye text-base"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -195,6 +207,8 @@
 
         </div>
     </div>
+
+    @include('issuer._nickname-modal')
 
 @endsection
 

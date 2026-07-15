@@ -114,10 +114,10 @@
                                         <td class="py-2.5">
                                             <div class="flex items-center gap-3">
                                                 <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary font-semibold text-xs shrink-0 uppercase">
-                                                    {{ strtoupper(substr($item->issuer->name ?? '??', 0, 2)) }}
+                                                    {{ strtoupper(substr($item->issuer->display_name ?? '??', 0, 2)) }}
                                                 </div>
                                                 <div class="min-w-0">
-                                                    <p class="text-sm font-semibold text-foreground truncate">{{ $item->issuer->name ?? '—' }}</p>
+                                                    <p class="text-sm font-semibold text-foreground truncate">{{ $item->issuer->display_name ?? '—' }}</p>
                                                     <p class="text-xs text-secondary-foreground font-mono truncate">
                                                         Nº {{ $item->number }} / Série {{ $item->series }}
                                                     </p>

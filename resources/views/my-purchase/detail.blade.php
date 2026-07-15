@@ -146,7 +146,10 @@
                                 <i class="ki-filled ki-shop text-primary"></i>
                             </div>
                             <div class="min-w-0">
-                                <p class="font-semibold text-foreground truncate">{{ $invoice->issuer->name ?? '—' }}</p>
+                                <p class="font-semibold text-foreground truncate">{{ $invoice->issuer->display_name ?? '—' }}</p>
+                                @if($invoice->issuer?->nickname)
+                                    <p class="text-xs text-secondary-foreground truncate">Nome oficial: {{ $invoice->issuer->name }}</p>
+                                @endif
                                 <p class="text-xs text-secondary-foreground font-mono">{{ $invoice->issuer->cnpj ?? '—' }}</p>
                             </div>
                         </div>

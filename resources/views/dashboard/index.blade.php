@@ -145,7 +145,7 @@
                                     </div>
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-foreground truncate">
-                                            {{ $lastPurchase->issuer->name ?? '—' }}
+                                            {{ $lastPurchase->issuer->display_name ?? '—' }}
                                         </p>
                                         <p class="text-xs text-secondary-foreground">
                                             {{ \Carbon\Carbon::parse($lastPurchase->issued_at)->translatedFormat('d \d\e F') }}

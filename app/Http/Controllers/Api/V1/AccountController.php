@@ -27,7 +27,7 @@ class AccountController extends Controller
         $memberSince = $user->invoices()->min('issued_at');
 
         $recentInvoices = $user->invoices()
-            ->with('issuer')
+            ->with('issuer.nicknameForUser')
             ->latest('issued_at')
             ->take(5)
             ->get();

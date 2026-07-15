@@ -216,7 +216,7 @@
                           <div class="flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
                             <i class="ki-filled ki-shop text-primary text-sm"></i>
                           </div>
-                          <span class="text-sm text-foreground truncate max-w-[180px]">{{ $invoice->issuer?->name ?? '—' }}</span>
+                          <span class="text-sm text-foreground truncate max-w-[180px]">{{ $invoice->issuer?->display_name ?? '—' }}</span>
                         </div>
                       </td>
                       <td class="text-end">

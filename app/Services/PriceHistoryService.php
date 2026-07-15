@@ -31,6 +31,10 @@ class PriceHistoryService
     {
         $timeline = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
+            ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
+                $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
+                    ->where('issuer_nicknames.user_id', '=', $userId);
+            })
             ->where('invoices.user_id', $userId)
             ->where('invoices_items.description', $description)
             ->select(
@@ -38,9 +42,9 @@ class PriceHistoryService
                 'invoices_items.quantity',
                 'invoices_items.unit',
                 'invoices.issued_at',
-                'issuers.name as issuer_name',
                 'issuers.id as issuer_id'
             )
+            ->selectRaw('COALESCE(issuer_nicknames.nickname, issuers.name) as issuer_name')
             ->orderBy('invoices.issued_at')
             ->limit(100)
             ->get();
@@ -53,10 +57,10 @@ class PriceHistoryService
 
         return [
             'timeline' => $timeline,
-            'summary'  => [
-                'min_price'     => $minPrice,
-                'max_price'     => $maxPrice,
-                'avg_price'     => round($avgPrice, 2),
+            'summary' => [
+                'min_price' => $minPrice,
+                'max_price' => $maxPrice,
+                'avg_price' => round($avgPrice, 2),
                 'variation_pct' => round($variationPct, 1),
             ],
         ];

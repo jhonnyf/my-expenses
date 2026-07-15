@@ -65,6 +65,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/', [IssuerController::class, 'index'])->name('index');
             Route::get('{id}', [IssuerController::class, 'show'])->name('show');
             Route::post('{id}/favorite', [IssuerController::class, 'toggleFavorite'])->name('favorite');
+            Route::put('{id}/nickname', [IssuerController::class, 'updateNickname'])->name('nickname.update');
         });
 
         // Categorias — rotas fixas ANTES do apiResource
