@@ -82,13 +82,13 @@ class NfceXmlImporter
     {
         return [
             'cnpj' => $this->val($infNFe, 'nfe:emit/nfe:CNPJ'),
-            'nome' => $this->val($infNFe, 'nfe:emit/nfe:xNome'),
-            'logradouro' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xLgr'),
+            'nome' => $this->normalizeText($this->val($infNFe, 'nfe:emit/nfe:xNome')),
+            'logradouro' => $this->normalizeText($this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xLgr')),
             'numero' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:nro'),
-            'bairro' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xBairro'),
-            'municipio' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xMun'),
+            'bairro' => $this->normalizeText($this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xBairro')),
+            'municipio' => $this->normalizeText($this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:xMun')),
             'uf' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:UF'),
-            'cep' => $this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:CEP'),
+            'cep' => $this->normalizeCep($this->val($infNFe, 'nfe:emit/nfe:enderEmit/nfe:CEP')),
         ];
     }
 
@@ -111,7 +111,7 @@ class NfceXmlImporter
             $itens[] = [
                 'numero_item' => (int) $this->attr($det, 'nItem'),
                 'codigo' => $this->val($det, 'nfe:prod/nfe:cProd'),
-                'descricao' => $this->val($det, 'nfe:prod/nfe:xProd'),
+                'descricao' => $this->normalizeText($this->val($det, 'nfe:prod/nfe:xProd')),
                 'ncm' => $this->val($det, 'nfe:prod/nfe:NCM'),
                 'cfop' => $this->val($det, 'nfe:prod/nfe:CFOP'),
                 'unidade' => $this->val($det, 'nfe:prod/nfe:uCom'),
@@ -151,6 +151,26 @@ class NfceXmlImporter
         }
 
         return $pagamentos;
+    }
+
+    private function normalizeText(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        return mb_strtoupper(mb_substr($value, 0, 1)).mb_strtolower(mb_substr($value, 1));
+    }
+
+    private function normalizeCep(string $cep): string
+    {
+        if ($cep === '') {
+            return '';
+        }
+
+        $trimmed = ltrim($cep, '0');
+
+        return $trimmed === '' ? '0' : $trimmed;
     }
 
     private function val(SimpleXMLElement $node, string $xpath): string
