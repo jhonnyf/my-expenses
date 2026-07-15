@@ -1,0 +1,32 @@
+{
+    "name": "My Expenses",
+    "short_name": "My Expenses",
+    "description": "Controle de gastos pessoais via importação de NFC-e",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#ffffff",
+    "theme_color": "#3b82f6",
+    "lang": "pt-BR",
+    "icons": [
+        {
+            "src": "/assets/media/app/pwa/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/media/app/pwa/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/media/app/pwa/icon-maskable-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

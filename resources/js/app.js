@@ -15,6 +15,7 @@ import RecurringPurchase from './pages/recurring-purchase';
 import Report from './pages/report';
 import ShoppingList from './pages/shopping-list';
 import Upload from './pages/upload';
+import Pwa from './pwa';
 
 const pages = {
     'account': Account,
@@ -35,6 +36,7 @@ const pages = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    Pwa.init();
     GlobalSearch.init();
 
     const pageAttr = document.body.dataset.page;

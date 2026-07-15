@@ -5,7 +5,7 @@
     "scripts": {
         "dev": "vite",
         "clean": "rm -f public/hot",
-        "build": "npm run clean && vite build"
+        "build": "npm run clean && vite build && node scripts/stamp-sw-cache.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
