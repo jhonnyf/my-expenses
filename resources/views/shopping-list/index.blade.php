@@ -80,7 +80,7 @@
                     <div id="shoppingListContainer" style="display:none;" class="flex flex-col gap-5">
 
                         {{-- A Comprar --}}
-                        <div>
+                        <div class="mb-5">
                             <div class="flex items-center gap-2 mb-4">
                                 <i class="ki-filled ki-basket text-primary text-lg"></i>
                                 <h2 class="text-lg font-semibold text-foreground">A Comprar</h2>
