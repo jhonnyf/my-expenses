@@ -1,25 +1,23 @@
 <!DOCTYPE html>
-<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="pt-BR">
 <head>
     <base href="../../../../../">
     <title>{{ env('APP_NAME') }}</title>
     <meta charset="utf-8" />
-    <meta content="follow, index" name="robots" />
+    <meta content="noindex, nofollow" name="robots" />
     <link href="{{ url()->current() }}" rel="canonical" />
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
-    <meta content="Sign in page, using Tailwind CSS" name="description" />
-    <meta content="@keenthemes" name="twitter:site" />
-    <meta content="@keenthemes" name="twitter:creator" />
+    <meta content="Acesse sua conta para controlar seus gastos pessoais a partir das suas notas fiscais (NFC-e)." name="description" />
     <meta content="summary_large_image" name="twitter:card" />
-    <meta content="Metronic - Tailwind CSS Sign In" name="twitter:title" />
-    <meta content="Sign in page, using Tailwind CSS" name="twitter:description" />
-    <meta content="assets/media/app/og-image.png" name="twitter:image" />
+    <meta content="{{ env('APP_NAME') }}" name="twitter:title" />
+    <meta content="Acesse sua conta para controlar seus gastos pessoais a partir das suas notas fiscais (NFC-e)." name="twitter:description" />
+    <meta content="{{ asset('assets/media/app/og-image.png') }}" name="twitter:image" />
     <meta content="{{ url()->current() }}" property="og:url" />
-    <meta content="en_US" property="og:locale" />
+    <meta content="pt_BR" property="og:locale" />
     <meta content="website" property="og:type" />
-    <meta content="@keenthemes" property="og:site_name" />
-    <meta content="Metronic - Tailwind CSS Sign In" property="og:title" />
-    <meta content="Sign in page, using Tailwind CSS" property="og:description" />
+    <meta content="{{ env('APP_NAME') }}" property="og:site_name" />
+    <meta content="{{ env('APP_NAME') }}" property="og:title" />
+    <meta content="Acesse sua conta para controlar seus gastos pessoais a partir das suas notas fiscais (NFC-e)." property="og:description" />
     <meta content="{{ asset('assets/media/app/og-image.png') }}" property="og:image" />
     <link href="{{ asset('assets/media/app/apple-touch-icon.png') }}" rel="apple-touch-icon" sizes="180x180" />
     <link href="{{ asset('assets/media/app/favicon-32x32.png') }}" rel="icon" sizes="32x32" type="image/png" />

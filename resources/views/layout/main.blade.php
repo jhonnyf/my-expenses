@@ -1,26 +1,24 @@
 <!DOCTYPE html>
-<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="en">
+<html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="pt-BR">
 <head>
     <base href="../../">
     <title>{{ env('APP_NAME') }}</title>
     <meta charset="utf-8" />
     <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <meta content="follow, index" name="robots" />
+    <meta content="noindex, nofollow" name="robots" />
     <link href="{{ url()->current() }}" rel="canonical" />
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport" />
-    <meta content="" name="description" />
-    <meta content="@keenthemes" name="twitter:site" />
-    <meta content="@keenthemes" name="twitter:creator" />
+    <meta content="Controle de gastos pessoais via importação de NFC-e" name="description" />
     <meta content="summary_large_image" name="twitter:card" />
     <meta content="{{ env('APP_NAME') }}" name="twitter:title" />
-    <meta content="" name="twitter:description" />
+    <meta content="Controle de gastos pessoais via importação de NFC-e" name="twitter:description" />
     <meta content="{{ asset('assets/media/app/og-image.png') }}" name="twitter:image" />
     <meta content="{{ url()->current() }}" property="og:url" />
-    <meta content="en_US" property="og:locale" />
+    <meta content="pt_BR" property="og:locale" />
     <meta content="website" property="og:type" />
-    <meta content="@keenthemes" property="og:site_name" />
+    <meta content="{{ env('APP_NAME') }}" property="og:site_name" />
     <meta content="{{ env('APP_NAME') }}" property="og:title" />
-    <meta content="" property="og:description" />
+    <meta content="Controle de gastos pessoais via importação de NFC-e" property="og:description" />
     <meta content="{{ asset('assets/media/app/og-image.png') }}" property="og:image" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="{{ asset('assets/media/app/apple-touch-icon.png') }}" rel="apple-touch-icon" sizes="180x180" />
@@ -132,7 +130,7 @@
                                     <div class="flex items-center gap-2 justify-between">
                                         <span class="flex items-center gap-2">
                                             <i class="ki-filled ki-moon text-base text-muted-foreground"></i>
-                                            <span class="font-medium text-2sm">Dark Mode</span>
+                                            <span class="font-medium text-2sm">Modo Escuro</span>
                                         </span>
                                         <input class="kt-switch" data-kt-theme-switch-state="dark" data-kt-theme-switch-toggle="true" name="check" type="checkbox" value="1" />
                                     </div>

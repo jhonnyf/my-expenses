@@ -87,7 +87,7 @@
                             <input type="color" id="newColor" class="w-full h-9 rounded border border-border cursor-pointer" value="#3B82F6" />
                         </div>
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 block">Keywords</label>
+                            <label class="text-xs text-secondary-foreground mb-1 block">Palavras-chave</label>
                             <input type="text" id="newKeywords" class="kt-input w-full" placeholder="PALAVRA1, PALAVRA2" />
                         </div>
                     </div>
@@ -114,7 +114,7 @@
                             <input type="color" id="editColor" class="w-full h-9 rounded border border-border cursor-pointer" />
                         </div>
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 block">Keywords</label>
+                            <label class="text-xs text-secondary-foreground mb-1 block">Palavras-chave</label>
                             <input type="text" id="editKeywords" class="kt-input w-full" />
                         </div>
                     </div>
@@ -176,7 +176,7 @@
                                     <div data-keywords-section>
                                         @if($category->keywords && count($category->keywords) > 0)
                                             <div>
-                                                <p class="text-xs text-secondary-foreground mb-1.5">Keywords</p>
+                                                <p class="text-xs text-secondary-foreground mb-1.5">Palavras-chave</p>
                                                 <div class="flex flex-wrap gap-1">
                                                     @foreach(array_slice($category->keywords, 0, 8) as $kw)
                                                         <span class="text-xs bg-accent px-1.5 py-0.5 rounded">{{ $kw }}</span>
