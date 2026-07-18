@@ -17,6 +17,8 @@ class NfceImportTest extends TestCase
 
     public function test_importar_nfce_successfully_parses_and_saves_data()
     {
+        $this->actingAs(User::factory()->create());
+
         // Mocking the importer to prevent file system dependency
         $this->mock(NfceXmlImporter::class, function ($mock) {
             $mock->shouldReceive('fromFile')->andReturn([
@@ -114,7 +116,7 @@ class NfceImportTest extends TestCase
             'amount' => 21.00,
         ]);
 
-        $this->assertDatabaseCount(User::class, 1);
+        $this->assertDatabaseCount(User::class, 2);
         $this->assertDatabaseHas(User::class, [
             'name' => 'CLIENTE TESTE',
         ]);

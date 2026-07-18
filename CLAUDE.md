@@ -61,9 +61,9 @@ Aplicação Laravel 12 para controle de gastos pessoais via importação de NFC-
 - `GET /my-purchases/detail` — detalhe de nota
 - `POST /my-purchases/upload` — upload de XML de NFC-e
 
-### Rotas de API (sem autenticação)
+### Rotas de API legadas (autenticadas via middleware `web` + `auth`)
 
-- `GET|POST /api/nfce/importar` — importa XML de `public/import/nfc-e.xml` (legado/dev)
+- `GET|POST /api/nfce/importar` — importa XML de `storage/app/private/import/nfc-e.xml` (legado/dev)
 - `POST /api/nfce/upload` — upload de XML via API
 
 ### Views
