@@ -14,6 +14,7 @@ use App\Import\Strategies\XmlFileImportStrategy;
 use App\Models\Category;
 use App\Models\Invoice;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -87,46 +88,57 @@ class MyPurchaseController extends Controller
         ]);
     }
 
-    public function upload(UploadXmlRequest $request): RedirectResponse
+    public function upload(UploadXmlRequest $request): RedirectResponse|JsonResponse
     {
         return $this->executeImport($request, $this->xmlStrategy);
     }
 
-    public function importByQrCode(ImportByQrCodeRequest $request): RedirectResponse
+    public function importByQrCode(ImportByQrCodeRequest $request): RedirectResponse|JsonResponse
     {
         return $this->executeImport($request, $this->qrCodeStrategy);
     }
 
-    public function importByAccessKey(ImportByAccessKeyRequest $request): RedirectResponse
+    public function importByAccessKey(ImportByAccessKeyRequest $request): RedirectResponse|JsonResponse
     {
         return $this->executeImport($request, $this->accessKeyStrategy);
     }
 
-    private function executeImport(FormRequest $request, ImportStrategyInterface $strategy): RedirectResponse
+    private function executeImport(FormRequest $request, ImportStrategyInterface $strategy): RedirectResponse|JsonResponse
     {
         $errorField = $strategy->getErrorField();
 
         try {
             $payload = $strategy->resolve($request);
         } catch (\InvalidArgumentException|\RuntimeException $e) {
-            return back()->withErrors([$errorField => $e->getMessage()])->withInput();
+            return $this->importError($request, $errorField, $e->getMessage());
         }
 
         $userId = Auth::id();
 
         if (Invoice::where('user_id', $userId)->where('access_key', $payload->parsed['chave'])->exists()) {
-            return back()
-                ->withErrors([$errorField => 'Esta nota fiscal já foi importada anteriormente.'])
-                ->withInput();
+            return $this->importError($request, $errorField, 'Esta nota fiscal já foi importada anteriormente.');
         }
 
         try {
             $invoice = $this->importAction->execute($payload->parsed, $payload->rawContent, $userId);
             InvoiceImported::dispatch($invoice);
 
+            if ($request->wantsJson()) {
+                return response()->json(['redirect' => route('my-purchases.detail', $invoice->id)]);
+            }
+
             return redirect()->route('my-purchases.detail', $invoice->id);
         } catch (\InvalidArgumentException $e) {
-            return back()->withErrors([$errorField => $e->getMessage()])->withInput();
+            return $this->importError($request, $errorField, $e->getMessage());
         }
+    }
+
+    private function importError(Request $request, string $field, string $message): RedirectResponse|JsonResponse
+    {
+        if ($request->wantsJson()) {
+            return response()->json(['errors' => [$field => [$message]]], 422);
+        }
+
+        return back()->withErrors([$field => $message])->withInput();
     }
 }

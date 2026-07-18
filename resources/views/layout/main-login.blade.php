@@ -35,7 +35,7 @@
     <link href="{{ asset('assets/css/styles.css') }}" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/pwa.js'])
 </head>
-<body class="antialiased flex h-full text-base text-foreground bg-background">    
+<body class="antialiased flex h-full text-base text-foreground bg-background" data-app-env="{{ app()->environment() }}">
     <script>
         const defaultThemeMode = 'light'; // light|dark|system
 		let themeMode;

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Invoice;
 use App\Models\Issuer;
 use App\Models\User;
+use App\Services\NFCeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -204,5 +205,107 @@ class MyPurchaseControllerTest extends TestCase
         $this->actingAs($user)
             ->post('/my-purchases/upload', [])
             ->assertSessionHasErrors(['xml']);
+    }
+
+    // ─── importByQrCode ──────────────────────────────────────────────────────
+
+    public function test_import_by_qr_code_returns_json_redirect_without_reloading(): void
+    {
+        $user = User::factory()->create();
+        $chave = '35260700000000000191650010000098765123456789';
+
+        $this->mock(NFCeService::class, function ($mock) use ($chave) {
+            $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn($chave);
+            $mock->shouldReceive('isCertificadoConfigurado')->once()->andReturn(false);
+            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => [], 'html' => '']);
+            $mock->shouldReceive('normalizarDadosPortal')->once()->andReturn([
+                'chave' => $chave,
+                'emitente' => ['cnpj' => '12345678000199', 'nome' => 'Loja Teste'],
+                'itens' => [],
+                'total' => ['valor_nota' => 10.0],
+                'pagamento' => [],
+            ]);
+        });
+
+        $response = $this->actingAs($user)->postJson(route('my-purchases.import-qrcode'), [
+            'qrcode_url' => "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p={$chave}|3|1",
+        ]);
+
+        $invoice = Invoice::where('user_id', $user->id)->first();
+        $this->assertNotNull($invoice);
+        $response->assertOk()->assertExactJson(['redirect' => route('my-purchases.detail', $invoice->id)]);
+    }
+
+    public function test_import_by_qr_code_returns_json_error_without_reloading(): void
+    {
+        $user = User::factory()->create();
+
+        $this->mock(NFCeService::class, function ($mock) {
+            $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn(null);
+        });
+
+        $response = $this->actingAs($user)->postJson(route('my-purchases.import-qrcode'), [
+            'qrcode_url' => 'https://www.nfce.fazenda.sp.gov.br/invalido',
+        ]);
+
+        $response->assertStatus(422)->assertExactJson([
+            'errors' => ['qrcode_url' => ['Não foi possível extrair a chave de acesso da URL.']],
+        ]);
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
+    public function test_import_by_qr_code_rejects_duplicate_invoice_via_json(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $chave = '35260700000000000191650010000098765123456789';
+
+        Invoice::factory()->create([
+            'user_id' => $user->id,
+            'issuer_id' => $issuer->id,
+            'access_key' => $chave,
+        ]);
+
+        $this->mock(NFCeService::class, function ($mock) use ($chave) {
+            $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn($chave);
+            $mock->shouldReceive('isCertificadoConfigurado')->once()->andReturn(false);
+            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => [], 'html' => '']);
+            $mock->shouldReceive('normalizarDadosPortal')->once()->andReturn(['chave' => $chave]);
+        });
+
+        $response = $this->actingAs($user)->postJson(route('my-purchases.import-qrcode'), [
+            'qrcode_url' => "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p={$chave}|3|1",
+        ]);
+
+        $response->assertStatus(422)->assertExactJson([
+            'errors' => ['qrcode_url' => ['Esta nota fiscal já foi importada anteriormente.']],
+        ]);
+        $this->assertDatabaseCount('invoices', 1);
+    }
+
+    public function test_import_by_qr_code_still_redirects_for_non_json_requests(): void
+    {
+        $user = User::factory()->create();
+        $chave = '35260700000000000191650010000098765123456789';
+
+        $this->mock(NFCeService::class, function ($mock) use ($chave) {
+            $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn($chave);
+            $mock->shouldReceive('isCertificadoConfigurado')->once()->andReturn(false);
+            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => [], 'html' => '']);
+            $mock->shouldReceive('normalizarDadosPortal')->once()->andReturn([
+                'chave' => $chave,
+                'emitente' => ['cnpj' => '12345678000199', 'nome' => 'Loja Teste'],
+                'itens' => [],
+                'total' => ['valor_nota' => 10.0],
+                'pagamento' => [],
+            ]);
+        });
+
+        $response = $this->actingAs($user)->post(route('my-purchases.import-qrcode'), [
+            'qrcode_url' => "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p={$chave}|3|1",
+        ]);
+
+        $invoice = Invoice::where('user_id', $user->id)->first();
+        $response->assertRedirect(route('my-purchases.detail', $invoice->id));
     }
 }

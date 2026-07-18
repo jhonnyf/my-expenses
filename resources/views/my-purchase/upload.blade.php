@@ -144,12 +144,5 @@
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         initialTab: '{{ $errors->has("access_key") ? "access_key" : ($errors->has("xml") ? "xml" : "qrcode") }}',
     });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const tab = window.pageConfig.initialTab;
-        if (tab !== 'qrcode') {
-            document.querySelector(`[data-kt-tab-toggle="#panel-${tab}"]`)?.click();
-        }
-    });
 </script>
 @endpush
