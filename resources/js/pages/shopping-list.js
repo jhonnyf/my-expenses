@@ -20,16 +20,18 @@ const ShoppingList = (() => {
                         const price = Utils.formatCurrency(item.unit_price);
                         const date = item.issued_at ? new Date(item.issued_at).toLocaleDateString('pt-BR') : '';
                         const isFav = item.is_favorite == 1;
+                        const description = Utils.escapeHtml(item.description);
+                        const issuerName = Utils.escapeHtml(item.issuer_name);
 
                         return `
                             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors ${isFav ? 'bg-yellow-50 dark:bg-yellow-500/5' : ''}"
                                  data-add-item="${index}">
                                 <div class="w-full sm:flex-1 sm:min-w-0">
                                     <p class="text-sm font-medium text-foreground truncate">
-                                        ${isFav ? '<i class="ki-filled ki-star text-yellow-500 text-xs me-1"></i>' : ''}${item.description}
+                                        ${isFav ? '<i class="ki-filled ki-star text-yellow-500 text-xs me-1"></i>' : ''}${description}
                                     </p>
                                     <p class="text-xs text-secondary-foreground mt-0.5">
-                                        <span class="font-medium">${item.issuer_name}</span>
+                                        <span class="font-medium">${issuerName}</span>
                                         ${date ? `<span class="mx-1">&middot;</span> ${date}` : ''}
                                         ${item.unit ? `<span class="mx-1">&middot;</span> ${item.unit}` : ''}
                                     </p>
@@ -193,7 +195,7 @@ const ShoppingList = (() => {
                         ${isPurchased ? '<i class="ki-filled ki-check text-white text-xs"></i>' : ''}
                     </button>
                     <div class="min-w-0">
-                        <p class="text-sm font-medium ${textClass} truncate">${item.description}</p>
+                        <p class="text-sm font-medium ${textClass} truncate">${Utils.escapeHtml(item.description)}</p>
                         <p class="text-xs text-secondary-foreground">R$ ${Utils.formatCurrency(item.unit_price)} / ${item.unit || 'un'}</p>
                     </div>
                 </div>
@@ -237,7 +239,7 @@ const ShoppingList = (() => {
                 <div class="kt-card ${isPurchased ? 'opacity-75' : ''}" data-group="${isPurchased ? 'p' : 'u'}-${issuerId}">
                     <div class="kt-card-header">
                         <h3 class="kt-card-title">
-                            <i class="ki-filled ki-shop ${isPurchased ? 'text-green-500' : 'text-primary'} me-1"></i> ${group.name}
+                            <i class="ki-filled ki-shop ${isPurchased ? 'text-green-500' : 'text-primary'} me-1"></i> ${Utils.escapeHtml(group.name)}
                         </h3>
                         <span class="text-xs text-secondary-foreground" data-group-summary>
                             ${group.items.length} ${group.items.length === 1 ? 'item' : 'itens'}
@@ -342,7 +344,7 @@ const ShoppingList = (() => {
                     <i class="ki-filled ki-basket text-sm"></i>
                 </div>
                 <button data-load-list="${id}" class="flex-1 text-left min-w-0">
-                    <p class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">${name}</p>
+                    <p class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">${Utils.escapeHtml(name)}</p>
                     <p class="text-xs text-secondary-foreground">${count} ${count === 1 ? 'item' : 'itens'} &middot; R$ 0,00 &middot; ${today}</p>
                 </button>
                 <button data-delete-list="${id}" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive shrink-0">

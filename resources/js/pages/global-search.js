@@ -29,8 +29,8 @@ const GlobalSearch = (() => {
                     for (const item of items) {
                         html += `<a href="${item.url}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/30 transition-colors cursor-pointer">
                             <div class="min-w-0 flex-1">
-                                <p class="text-sm font-medium text-foreground truncate">${item.title}</p>
-                                <p class="text-xs text-secondary-foreground truncate">${item.subtitle}</p>
+                                <p class="text-sm font-medium text-foreground truncate">${Utils.escapeHtml(item.title)}</p>
+                                <p class="text-xs text-secondary-foreground truncate">${Utils.escapeHtml(item.subtitle)}</p>
                             </div>
                         </a>`;
                     }

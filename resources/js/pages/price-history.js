@@ -83,7 +83,7 @@ const PriceHistory = (() => {
         const data = timeline.map(entry => ({
             x: new Date(entry.issued_at).getTime(),
             y: parseFloat(entry.unit_price),
-            issuer: entry.issuer_name,
+            issuer: Utils.escapeHtml(entry.issuer_name),
         }));
 
         const minIndex = data.reduce((best, p, i) => (p.y < data[best].y ? i : best), 0);
@@ -173,7 +173,7 @@ const PriceHistory = (() => {
 
             return {
                 rowClass, priceClass, badge, date, qtyFormatted,
-                price, issuerName: entry.issuer_name, unit: entry.unit || '—',
+                price, issuerName: Utils.escapeHtml(entry.issuer_name), unit: Utils.escapeHtml(entry.unit || '—'),
             };
         });
 
@@ -229,7 +229,7 @@ const PriceHistory = (() => {
                                     <i class="ki-filled ki-chart-line-star text-sm"></i>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-foreground truncate">${item.description}</p>
+                                    <p class="text-sm font-medium text-foreground truncate">${Utils.escapeHtml(item.description)}</p>
                                     <p class="text-xs text-secondary-foreground mt-0.5">
                                         ${item.purchase_count}x comprado &middot; R$ ${min} — R$ ${max}
                                     </p>
