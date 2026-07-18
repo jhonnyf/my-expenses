@@ -1,59 +1,99 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# my-expenses
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplicação Laravel 12 para controle de gastos pessoais a partir da importação de NFC-e (Nota Fiscal de Consumidor Eletrônica). Permite importar notas via upload de XML, QR Code ou chave de acesso (consulta SEFAZ), categorizar itens automaticamente, acompanhar orçamentos, histórico de preços, listas de compras e gerar relatórios.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Laravel 12** (PHP `^8.2`, runtime real via Docker: PHP 8.4)
+- **Laravel Sanctum** — autenticação de API (v1)
+- **Laravel Socialite** — login social (Google, Facebook, Apple)
+- **Scramble** — documentação de API automática (disponível apenas em `local`/`staging`)
+- **barryvdh/laravel-dompdf** — exportação de relatórios em PDF
+- **nfephp-org/sped-nfe** — integração com SEFAZ para consulta de NFC-e por certificado digital
+- **Vite + Tailwind CSS 4** — build de assets front-end
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Funcionalidades
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Importação de NFC-e por upload de XML, QR Code ou chave de acesso
+- Categorização automática de itens (via listener disparado após importação)
+- Orçamentos por categoria ou gerais
+- Histórico de preços por produto/emitente
+- Listas de compras e compras recorrentes
+- Busca global (notas, emitentes, produtos)
+- Relatórios com exportação em PDF e CSV
+- API REST versionada (`/api/v1`) autenticada via Sanctum, com throttling dedicado
 
-## Learning Laravel
+## Requisitos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- Docker e Docker Compose (ambiente recomendado)
+- PHP 8.4, Composer e Node.js 18+ (caso rode fora do Docker)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Instalação
 
-## Laravel Sponsors
+Suba os containers:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+docker compose up -d
+```
 
-### Premium Partners
+Configuração inicial (instala dependências PHP/JS, gera `.env`, `APP_KEY` e roda migrations):
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+docker exec my-expenses composer setup
+```
 
-## Contributing
+Ou manualmente, fora do container:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer setup
+```
 
-## Code of Conduct
+## Desenvolvimento
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Sobe servidor, worker de fila, logs (Pail) e Vite em paralelo:
 
-## Security Vulnerabilities
+```bash
+composer dev
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Testes
 
-## License
+Os testes **sempre** devem rodar dentro do container Docker — o PHP do host não possui a extensão `gd`, o que gera falsos positivos em testes de upload de avatar/imagem:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+docker exec my-expenses php artisan test
+```
+
+Rodar um único teste:
+
+```bash
+docker exec my-expenses php artisan test --filter NomeDoTeste
+```
+
+## Lint
+
+Formatação de código via Laravel Pint (preset padrão):
+
+```bash
+./vendor/bin/pint
+```
+
+## Configuração de integração com SEFAZ
+
+Para usar a consulta de NFC-e por chave de acesso/QR Code via SEFAZ (`NFCeService`), configure as seguintes variáveis de ambiente (não presentes em `.env.example`):
+
+```
+NFE_CNPJ, NFE_RAZAO_SOCIAL, NFE_UF, NFE_AMBIENTE
+NFE_CERTIFICADO_PATH, NFE_CERTIFICADO_SENHA
+NFE_CSC, NFE_CSC_ID
+```
+
+O certificado digital `.pfx` deve estar em `storage/app/private/certificado.pfx` por padrão. O upload de XML local funciona sem essas variáveis.
+
+## Documentação de API
+
+Gerada automaticamente via Scramble, disponível apenas nos ambientes `local` e `staging`.
+
+## Licença
+
+Projeto pessoal, sem licença de código aberto definida.
