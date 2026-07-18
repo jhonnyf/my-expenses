@@ -2,23 +2,28 @@ services:
     app:
         build:
             context: .
-            dockerfile: Dockerfile        
+            dockerfile: Dockerfile
         container_name: ${APP_NAME}
         restart: unless-stopped
         user: "${UID:-1000}:${GID:-1000}"
         working_dir: /var/www
+        depends_on:
+            mysql:
+                condition: service_healthy
         volumes:
             - ./:/var/www
             - ./docker-config/php/up-config.ini:/usr/local/etc/php/conf.d/up-config.ini
+            - ./docker-config/php/zz-fpm-tuning.conf:/usr/local/etc/php-fpm.d/zz-fpm-tuning.conf
         networks:
             - app-network
     nginx:
         image: nginx:alpine
         container_name: nginx-${APP_NAME}
         restart: unless-stopped
+        depends_on:
+            - app
         ports:
             - "8000:80"
-            - "5173:5173"
         volumes:
             - ./:/var/www
             - ./docker-config/nginx:/etc/nginx/conf.d
@@ -27,17 +32,22 @@ services:
 
     mysql:
         image: mysql:8.0
-        container_name: mysql
+        container_name: mysql-${APP_NAME}
         restart: unless-stopped
         environment:
             MYSQL_DATABASE: ${DB_DATABASE}
             MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
             MYSQL_PASSWORD: ${DB_PASSWORD}
             MYSQL_USER: ${DB_USERNAME}
-        ports:
-            - 3306:3306
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${DB_USERNAME}", "-p${DB_PASSWORD}"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 30s
         volumes:
             - dbdata:/var/lib/mysql
+            - ./docker-config/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
         networks:
             - app-network
 
