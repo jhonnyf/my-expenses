@@ -20,9 +20,9 @@
 
             {{-- FILTROS --}}
             <div class="kt-card">
-                <div class="kt-card-header flex-wrap gap-2">
+                <div class="kt-card-header flex-col sm:flex-row items-start sm:items-center gap-3 py-3 lg:py-0">
                     <h3 class="kt-card-title">Filtros</h3>
-                    <div class="flex flex-wrap items-center gap-1.5">
+                    <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
                         <button type="button" data-action="quick-range" data-range="this-month" class="kt-btn kt-btn-outline kt-btn-sm">Este mês</button>
                         <button type="button" data-action="quick-range" data-range="last-month" class="kt-btn kt-btn-outline kt-btn-sm">Mês passado</button>
                         <button type="button" data-action="quick-range" data-range="last-3-months" class="kt-btn kt-btn-outline kt-btn-sm">Últimos 3 meses</button>
@@ -99,7 +99,7 @@
                         background-image: url('{{ asset('assets/media/images/2600x1600/bg-3-dark.png') }}');
                     }
                 </style>
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
 
                     <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
                         <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-primary/10">
@@ -159,17 +159,17 @@
                         </div>
                         <div class="kt-card-content pb-5">
                             <div class="grid lg:grid-cols-2 gap-4 items-center">
-                                <div id="reportCategoryChart" style="height: 220px;"></div>
+                                <div id="reportCategoryChart" class="max-w-[220px] mx-auto lg:max-w-none" style="height: 220px;"></div>
                                 <div class="grid gap-2">
                                     @php $catTotal = $categoryBreakdown->sum('total') ?: 1; @endphp
                                     @foreach($categoryBreakdown as $cat)
                                         @php $catPct = ($cat->total / $catTotal) * 100; @endphp
-                                        <div class="flex items-center justify-between gap-2">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2">
                                             <div class="flex items-center gap-1.5 min-w-0">
                                                 <span class="size-2.5 rounded-full shrink-0" style="background-color: {{ $cat->category_color }}"></span>
                                                 <span class="text-sm text-foreground truncate">{{ $cat->category_name }}</span>
                                             </div>
-                                            <div class="flex items-center gap-2 shrink-0">
+                                            <div class="flex items-center gap-2 shrink-0 ps-5 sm:ps-0">
                                                 <span class="text-xs text-secondary-foreground tabular-nums">{{ number_format($catPct, 0) }}%</span>
                                                 <span class="text-sm font-semibold text-foreground tabular-nums">R$ {{ number_format($cat->total, 2, ',', '.') }}</span>
                                             </div>
@@ -191,59 +191,86 @@
                             </span>
                         </div>
                     </div>
-                    <div class="kt-card-table">
-                        <div class="kt-scrollable-x-auto">
-                            <table class="kt-table kt-table-border table-fixed">
-                                <thead>
-                                    <tr>
-                                        <th class="min-w-[100px]">Data</th>
-                                        <th class="min-w-[160px]">Emissor</th>
-                                        <th class="min-w-[200px]">Produto</th>
-                                        <th class="min-w-[130px]">Categoria</th>
-                                        <th class="min-w-[70px] text-end">Qtd</th>
-                                        <th class="min-w-[100px] text-end">Preço Unit.</th>
-                                        <th class="min-w-[110px] text-end">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($items as $item)
-                                        <tr class="transition-colors hover:bg-accent/40">
-                                            <td class="text-sm text-secondary-foreground">
-                                                {{ \Carbon\Carbon::parse($item->issued_at)->format('d/m/Y') }}
-                                            </td>
-                                            <td class="text-sm truncate">{{ $item->issuer_name }}</td>
-                                            <td class="text-sm font-medium text-foreground truncate">{{ $item->description }}</td>
-                                            <td>
-                                                <div class="flex items-center gap-1.5">
-                                                    <span class="size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
-                                                    <span class="text-xs text-foreground truncate">{{ $item->category_name }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="text-end font-mono text-sm">
-                                                {{ rtrim(rtrim(number_format($item->quantity, 4, ',', '.'), '0'), ',') }}
-                                            </td>
-                                            <td class="text-end font-mono text-sm">
-                                                R$ {{ number_format($item->unit_price, 2, ',', '.') }}
-                                            </td>
-                                            <td class="text-end font-mono font-semibold text-sm">
-                                                R$ {{ number_format($item->total_price, 2, ',', '.') }}
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="7">
-                                                <div class="flex flex-col items-center justify-center py-12 text-center">
-                                                    <i class="ki-filled ki-document text-4xl text-secondary-foreground/30 mb-3"></i>
-                                                    <p class="text-sm font-medium text-foreground">Nenhum item encontrado</p>
-                                                    <p class="text-xs text-secondary-foreground mt-1">Tente ajustar os filtros e gerar novamente.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                    @if($items->isEmpty())
+                        <div class="kt-card-content p-5">
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <i class="ki-filled ki-document text-4xl text-secondary-foreground/30 mb-3"></i>
+                                <p class="text-sm font-medium text-foreground">Nenhum item encontrado</p>
+                                <p class="text-xs text-secondary-foreground mt-1">Tente ajustar os filtros e gerar novamente.</p>
+                            </div>
                         </div>
-                    </div>
+                    @else
+                        {{-- DESKTOP (lg+): tabela --}}
+                        <div class="kt-card-table hidden lg:block">
+                            <div class="kt-scrollable-x-auto">
+                                <table class="kt-table kt-table-border table-auto">
+                                    <thead>
+                                        <tr>
+                                            <th class="min-w-[100px]">Data</th>
+                                            <th class="min-w-[160px]">Emissor</th>
+                                            <th class="min-w-[200px]">Produto</th>
+                                            <th class="min-w-[130px]">Categoria</th>
+                                            <th class="min-w-[70px] text-end">Qtd</th>
+                                            <th class="min-w-[100px] text-end">Preço Unit.</th>
+                                            <th class="min-w-[110px] text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($items as $item)
+                                            <tr class="transition-colors hover:bg-accent/40">
+                                                <td class="text-sm text-secondary-foreground">
+                                                    {{ \Carbon\Carbon::parse($item->issued_at)->format('d/m/Y') }}
+                                                </td>
+                                                <td class="text-sm truncate">{{ $item->issuer_name }}</td>
+                                                <td class="text-sm font-medium text-foreground truncate">{{ $item->description }}</td>
+                                                <td>
+                                                    <div class="flex items-center gap-1.5">
+                                                        <span class="size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
+                                                        <span class="text-xs text-foreground truncate">{{ $item->category_name }}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="text-end font-mono text-sm">
+                                                    {{ rtrim(rtrim(number_format($item->quantity, 4, ',', '.'), '0'), ',') }}
+                                                </td>
+                                                <td class="text-end font-mono text-sm">
+                                                    R$ {{ number_format($item->unit_price, 2, ',', '.') }}
+                                                </td>
+                                                <td class="text-end font-mono font-semibold text-sm">
+                                                    R$ {{ number_format($item->total_price, 2, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- MOBILE (< lg): cards --}}
+                        <div class="kt-card-content lg:hidden grid gap-3 p-5">
+                            @foreach($items as $item)
+                                <div class="rounded-xl border border-border p-4 flex flex-col gap-2">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <p class="text-sm font-medium text-foreground min-w-0 truncate">{{ $item->description }}</p>
+                                        <span class="text-sm font-mono font-semibold text-foreground shrink-0">
+                                            R$ {{ number_format($item->total_price, 2, ',', '.') }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
+                                        <span class="text-xs text-foreground truncate">{{ $item->category_name }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs text-secondary-foreground">
+                                        <span class="truncate">{{ $item->issuer_name }}</span>
+                                        <span class="shrink-0">{{ \Carbon\Carbon::parse($item->issued_at)->format('d/m/Y') }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-2 text-xs text-secondary-foreground">
+                                        <span>Qtd: {{ rtrim(rtrim(number_format($item->quantity, 4, ',', '.'), '0'), ',') }}</span>
+                                        <span>Unit.: R$ {{ number_format($item->unit_price, 2, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
 
             @endisset

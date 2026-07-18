@@ -12,7 +12,7 @@ const InvoiceDetail = (() => {
     };
 
     const updateCategoryDot = (select) => {
-        const dot = select.closest('td')?.querySelector('.category-dot');
+        const dot = select.closest('.item-category-cell')?.querySelector('.category-dot');
         const color = select.options[select.selectedIndex]?.dataset.color;
         if (dot && color) dot.style.backgroundColor = color;
     };
@@ -21,8 +21,15 @@ const InvoiceDetail = (() => {
         const select = e.target.closest('[data-action="assign-category"]');
         if (!select) return;
 
-        updateCategoryDot(select);
-        assignCategory(select.dataset.itemId, select.value);
+        const { itemId } = select.dataset;
+        const categoryId = select.value;
+
+        document.querySelectorAll(`[data-action="assign-category"][data-item-id="${itemId}"]`).forEach(s => {
+            if (s !== select) s.value = categoryId;
+            updateCategoryDot(s);
+        });
+
+        assignCategory(itemId, categoryId);
     };
 
     return {

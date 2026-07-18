@@ -146,17 +146,19 @@ const PriceHistory = (() => {
 
     const renderTable = (timeline, summary) => {
         const tbody = document.getElementById('priceTableBody');
+        const cardsBody = document.getElementById('priceCardsBody');
         const count = timeline.length;
         document.getElementById('entryCount').textContent = `${count} ${count === 1 ? 'registro' : 'registros'}`;
 
         if (count === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary-foreground py-6">Nenhum registro.</td></tr>';
+            cardsBody.innerHTML = '<p class="text-center text-secondary-foreground py-6 text-sm">Nenhum registro.</p>';
             return;
         }
 
         const { max_price: maxPrice, min_price: minPrice } = summary;
 
-        tbody.innerHTML = timeline.map(entry => {
+        const rows = timeline.map(entry => {
             const price = parseFloat(entry.unit_price);
             const isMin = price === minPrice;
             const isMax = price === maxPrice;
@@ -169,15 +171,32 @@ const PriceHistory = (() => {
             const qty = parseFloat(entry.quantity);
             const qtyFormatted = qty % 1 === 0 ? qty.toFixed(0) : qty.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
 
-            return `
-                <tr class="${rowClass} transition-colors hover:bg-accent/40">
-                    <td class="text-sm text-secondary-foreground">${date}</td>
-                    <td class="text-sm font-medium text-foreground">${entry.issuer_name}</td>
-                    <td class="text-right font-semibold font-mono text-sm ${priceClass}">R$ ${Utils.formatCurrency(price)}${badge}</td>
-                    <td class="text-right font-mono text-sm">${qtyFormatted.replace('.', ',')}</td>
-                    <td class="text-center text-secondary-foreground text-sm">${entry.unit || '—'}</td>
-                </tr>`;
-        }).join('');
+            return {
+                rowClass, priceClass, badge, date, qtyFormatted,
+                price, issuerName: entry.issuer_name, unit: entry.unit || '—',
+            };
+        });
+
+        tbody.innerHTML = rows.map(r => `
+                <tr class="${r.rowClass} transition-colors hover:bg-accent/40">
+                    <td class="text-sm text-secondary-foreground">${r.date}</td>
+                    <td class="text-sm font-medium text-foreground">${r.issuerName}</td>
+                    <td class="text-right font-semibold font-mono text-sm ${r.priceClass}">R$ ${Utils.formatCurrency(r.price)}${r.badge}</td>
+                    <td class="text-right font-mono text-sm">${r.qtyFormatted.replace('.', ',')}</td>
+                    <td class="text-center text-secondary-foreground text-sm">${r.unit}</td>
+                </tr>`).join('');
+
+        cardsBody.innerHTML = rows.map(r => `
+                <div class="rounded-xl border border-border p-4 flex flex-col gap-2 ${r.rowClass}">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-medium text-foreground">${r.issuerName}</span>
+                        <span class="text-sm font-semibold font-mono ${r.priceClass}">R$ ${Utils.formatCurrency(r.price)}${r.badge}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs text-secondary-foreground">
+                        <span>${r.date}</span>
+                        <span>Qtd: ${r.qtyFormatted.replace('.', ',')} ${r.unit}</span>
+                    </div>
+                </div>`).join('');
     };
 
     const loadProduct = (encodedDesc) => {

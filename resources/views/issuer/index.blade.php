@@ -40,7 +40,7 @@
                     </div>
                 </div>
 
-                <div class="kt-card flex-row items-center gap-4 p-5">
+                <div class="kt-card flex-row items-center gap-4 p-5 col-span-2 lg:col-span-1">
                     <div class="flex items-center justify-center size-10 rounded-xl bg-green-500/10 shrink-0">
                         <i class="ki-filled ki-dollar text-green-600 text-xl"></i>
                     </div>
@@ -56,7 +56,7 @@
 
             <div class="kt-card kt-card-grid min-w-full">
 
-                <div class="kt-card-header flex-wrap gap-2">
+                <div class="kt-card-header flex-wrap gap-3 py-3 lg:py-0">
                     <div class="flex items-center gap-2.5">
                         <h3 class="kt-card-title">Lista de Emissores</h3>
                         <span id="issuerFavoritesBadge" class="kt-badge kt-badge-warning kt-badge-outline kt-badge-sm {{ $favoriteIds->isEmpty() ? 'hidden' : '' }}">
@@ -65,132 +65,202 @@
                             <span id="issuerFavoritesLabel">{{ $favoriteIds->count() == 1 ? 'favorito' : 'favoritos' }}</span>
                         </span>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <label class="kt-input max-w-56">
+                    <div class="flex items-center gap-3 w-full lg:w-auto">
+                        <label class="kt-input w-full lg:max-w-56">
                             <i class="ki-filled ki-magnifier"></i>
                             <input type="text" id="issuerSearchInput" placeholder="Buscar emissor..." autocomplete="off" />
                         </label>
                     </div>
                 </div>
 
-                <div class="kt-card-table">
-                    <div class="kt-scrollable-x-auto">
-                        <table class="kt-table kt-table-border table-fixed" id="issuersTable">
-                            <thead>
-                                <tr>
-                                    <th class="w-[70px]"></th>
-                                    <th class="min-w-[260px]">Emissor</th>
-                                    <th class="min-w-[150px]">CNPJ</th>
-                                    <th class="min-w-[180px]">Localização</th>
-                                    <th class="min-w-[90px] text-center">Compras</th>
-                                    <th class="min-w-[130px] text-end">Total Gasto</th>
-                                    <th class="w-[110px] text-end">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($records->items() as $item)
-                                    @php $isFav = $favoriteIds->contains($item->id); @endphp
-                                    <tr class="issuer-row transition-colors duration-150 hover:bg-accent/40 {{ $isFav ? 'bg-yellow-500/5' : '' }}">
-                                        <td class="text-center py-2.5 {{ $isFav ? 'shadow-[inset_3px_0_0_0_#eab308]' : '' }}">
-                                            <button
-                                                data-favorite-id="{{ $item->id }}"
-                                                title="{{ $isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
-                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm favorite-btn transition-transform duration-200 hover:scale-110">
-                                                <i class="ki-filled ki-star text-base transition-colors duration-200 {{ $isFav ? 'text-yellow-500' : 'hover:text-yellow-500' }}"></i>
-                                            </button>
-                                        </td>
-                                        <td class="py-2.5">
-                                            <div class="flex items-center gap-3">
-                                                <div class="issuer-avatar flex items-center justify-center size-9 rounded-lg shrink-0 font-semibold text-sm uppercase transition-all duration-200
-                                                    {{ $isFav ? 'bg-yellow-500/10 text-yellow-600 ring-2 ring-yellow-400/40' : 'bg-primary/10 text-primary' }}">
-                                                    {{ strtoupper(substr($item->nickname ?: $item->name, 0, 2)) }}
+                @if($records->isEmpty())
+                    <div class="kt-card-content p-5">
+                        <div class="flex flex-col items-center justify-center py-16 text-center">
+                            <i class="ki-filled ki-shop text-5xl text-secondary-foreground/30 mb-4"></i>
+                            <p class="text-sm font-medium text-foreground mb-1">Nenhum emissor encontrado</p>
+                            <p class="text-xs text-secondary-foreground">Importe uma NF-e para registrar emissores.</p>
+                            <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm mt-4">
+                                <i class="ki-filled ki-file-up"></i>
+                                Importar NF-e
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    {{-- DESKTOP (lg+): tabela --}}
+                    <div class="kt-card-table hidden lg:block">
+                        <div class="kt-scrollable-x-auto">
+                            <table class="kt-table kt-table-border table-auto" id="issuersTable">
+                                <thead>
+                                    <tr>
+                                        <th class="w-[70px]"></th>
+                                        <th class="min-w-[260px]">Emissor</th>
+                                        <th class="min-w-[150px]">CNPJ</th>
+                                        <th class="min-w-[180px]">Localização</th>
+                                        <th class="min-w-[90px] text-center">Compras</th>
+                                        <th class="min-w-[130px] text-end">Total Gasto</th>
+                                        <th class="w-[110px] text-end">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($records->items() as $item)
+                                        @php $isFav = $favoriteIds->contains($item->id); @endphp
+                                        <tr class="issuer-row transition-colors duration-150 hover:bg-accent/40 {{ $isFav ? 'bg-yellow-500/5' : '' }}">
+                                            <td class="text-center py-2.5 {{ $isFav ? 'shadow-[inset_3px_0_0_0_#eab308]' : '' }}">
+                                                <button
+                                                    data-favorite-id="{{ $item->id }}"
+                                                    title="{{ $isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
+                                                    class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm favorite-btn transition-transform duration-200 hover:scale-110">
+                                                    <i class="ki-filled ki-star text-base transition-colors duration-200 {{ $isFav ? 'text-yellow-500' : 'hover:text-yellow-500' }}"></i>
+                                                </button>
+                                            </td>
+                                            <td class="py-2.5">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="issuer-avatar flex items-center justify-center size-9 rounded-lg shrink-0 font-semibold text-sm uppercase transition-all duration-200
+                                                        {{ $isFav ? 'bg-yellow-500/10 text-yellow-600 ring-2 ring-yellow-400/40' : 'bg-primary/10 text-primary' }}">
+                                                        {{ strtoupper(substr($item->nickname ?: $item->name, 0, 2)) }}
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-semibold text-foreground truncate issuer-name"
+                                                           @if($item->nickname) title="Nome oficial: {{ $item->name }}" @endif>{{ $item->nickname ?: $item->name }}</p>
+                                                        @if($item->neighborhood)
+                                                            <p class="text-xs text-secondary-foreground truncate">{{ $item->neighborhood }}</p>
+                                                        @endif
+                                                    </div>
                                                 </div>
-                                                <div class="min-w-0">
-                                                    <p class="text-sm font-semibold text-foreground truncate issuer-name"
-                                                       @if($item->nickname) title="Nome oficial: {{ $item->name }}" @endif>{{ $item->nickname ?: $item->name }}</p>
-                                                    @if($item->neighborhood)
-                                                        <p class="text-xs text-secondary-foreground truncate">{{ $item->neighborhood }}</p>
-                                                    @endif
+                                            </td>
+                                            <td class="py-2.5">
+                                                <span class="text-sm text-foreground font-mono">
+                                                    {{ preg_replace('/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/', '$1.$2.$3/$4-$5', $item->cnpj) }}
+                                                </span>
+                                            </td>
+                                            <td class="py-2.5">
+                                                @if($item->city || $item->state)
+                                                    <div class="flex items-center gap-1.5">
+                                                        <i class="ki-filled ki-geolocation text-sm text-muted-foreground shrink-0"></i>
+                                                        <span class="text-sm text-foreground truncate">
+                                                            {{ implode(' — ', array_filter([$item->city, $item->state])) }}
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    <span class="text-sm text-secondary-foreground">—</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center py-2.5">
+                                                @if($item->purchase_count > 0)
+                                                    <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm tabular-nums">{{ $item->purchase_count }}</span>
+                                                @else
+                                                    <span class="text-sm text-secondary-foreground">—</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-end py-2.5">
+                                                @if($item->total_spent)
+                                                    <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($item->total_spent, 2, ',', '.') }}</span>
+                                                @else
+                                                    <span class="text-sm text-secondary-foreground">—</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center py-2.5">
+                                                <div class="flex items-center justify-end gap-1">
+                                                    <button
+                                                        data-action="edit-nickname"
+                                                        data-kt-modal-toggle="#nicknameModal"
+                                                        data-issuer-id="{{ $item->id }}"
+                                                        data-issuer-name="{{ $item->name }}"
+                                                        data-issuer-nickname="{{ $item->nickname }}"
+                                                        class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Editar apelido">
+                                                        <i class="ki-filled ki-pencil text-base"></i>
+                                                    </button>
+                                                    <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Ver detalhes">
+                                                        <i class="ki-filled ki-eye text-base"></i>
+                                                    </a>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td class="py-2.5">
-                                            <span class="text-sm text-foreground font-mono">
-                                                {{ preg_replace('/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/', '$1.$2.$3/$4-$5', $item->cnpj) }}
-                                            </span>
-                                        </td>
-                                        <td class="py-2.5">
-                                            @if($item->city || $item->state)
-                                                <div class="flex items-center gap-1.5">
-                                                    <i class="ki-filled ki-geolocation text-sm text-muted-foreground shrink-0"></i>
-                                                    <span class="text-sm text-foreground truncate">
-                                                        {{ implode(' — ', array_filter([$item->city, $item->state])) }}
-                                                    </span>
-                                                </div>
-                                            @else
-                                                <span class="text-sm text-secondary-foreground">—</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center py-2.5">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- MOBILE (< lg): cards --}}
+                    <div class="kt-card-content lg:hidden grid gap-3 p-5">
+                        @foreach ($records->items() as $item)
+                            @php $isFav = $favoriteIds->contains($item->id); @endphp
+                            <div class="issuer-row rounded-xl border border-border p-4 flex flex-col gap-3 transition-colors duration-150 {{ $isFav ? 'bg-yellow-500/5 border-yellow-400/40' : '' }}">
+                                <div class="flex items-center gap-3">
+                                    <div class="issuer-avatar flex items-center justify-center size-10 rounded-lg shrink-0 font-semibold text-sm uppercase transition-all duration-200
+                                        {{ $isFav ? 'bg-yellow-500/10 text-yellow-600 ring-2 ring-yellow-400/40' : 'bg-primary/10 text-primary' }}">
+                                        {{ strtoupper(substr($item->nickname ?: $item->name, 0, 2)) }}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-foreground truncate issuer-name"
+                                           @if($item->nickname) title="Nome oficial: {{ $item->name }}" @endif>{{ $item->nickname ?: $item->name }}</p>
+                                        <p class="text-xs text-secondary-foreground truncate font-mono">
+                                            {{ preg_replace('/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/', '$1.$2.$3/$4-$5', $item->cnpj) }}
+                                        </p>
+                                    </div>
+                                    <button
+                                        data-favorite-id="{{ $item->id }}"
+                                        title="{{ $isFav ? 'Remover dos favoritos' : 'Adicionar aos favoritos' }}"
+                                        class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm favorite-btn shrink-0 transition-transform duration-200 hover:scale-110">
+                                        <i class="ki-filled ki-star text-base transition-colors duration-200 {{ $isFav ? 'text-yellow-500' : 'hover:text-yellow-500' }}"></i>
+                                    </button>
+                                </div>
+
+                                @if($item->city || $item->state)
+                                    <div class="flex items-center gap-1.5">
+                                        <i class="ki-filled ki-geolocation text-sm text-muted-foreground shrink-0"></i>
+                                        <span class="text-sm text-secondary-foreground truncate">
+                                            {{ implode(' — ', array_filter([$item->city, $item->state])) }}
+                                        </span>
+                                    </div>
+                                @endif
+
+                                <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex flex-col gap-0.5">
+                                            <span class="text-xs text-secondary-foreground">Compras</span>
                                             @if($item->purchase_count > 0)
-                                                <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm tabular-nums">{{ $item->purchase_count }}</span>
+                                                <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm tabular-nums w-fit">{{ $item->purchase_count }}</span>
                                             @else
                                                 <span class="text-sm text-secondary-foreground">—</span>
                                             @endif
-                                        </td>
-                                        <td class="text-end py-2.5">
+                                        </div>
+                                        <div class="flex flex-col gap-0.5">
+                                            <span class="text-xs text-secondary-foreground">Total Gasto</span>
                                             @if($item->total_spent)
                                                 <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($item->total_spent, 2, ',', '.') }}</span>
                                             @else
                                                 <span class="text-sm text-secondary-foreground">—</span>
                                             @endif
-                                        </td>
-                                        <td class="text-center py-2.5">
-                                            <div class="flex items-center justify-end gap-1">
-                                                <button
-                                                    data-action="edit-nickname"
-                                                    data-kt-modal-toggle="#nicknameModal"
-                                                    data-issuer-id="{{ $item->id }}"
-                                                    data-issuer-name="{{ $item->name }}"
-                                                    data-issuer-nickname="{{ $item->nickname }}"
-                                                    class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Editar apelido">
-                                                    <i class="ki-filled ki-pencil text-base"></i>
-                                                </button>
-                                                <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon transition-transform duration-200 hover:scale-110" title="Ver detalhes">
-                                                    <i class="ki-filled ki-eye text-base"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="7">
-                                            <div class="flex flex-col items-center justify-center py-16 text-center">
-                                                <i class="ki-filled ki-shop text-5xl text-secondary-foreground/30 mb-4"></i>
-                                                <p class="text-sm font-medium text-foreground mb-1">Nenhum emissor encontrado</p>
-                                                <p class="text-xs text-secondary-foreground">Importe uma NF-e para registrar emissores.</p>
-                                                <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm mt-4">
-                                                    <i class="ki-filled ki-file-up"></i>
-                                                    Importar NF-e
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                                @if($records->isNotEmpty())
-                                    <tr id="issuerNoSearchResults" class="hidden">
-                                        <td colspan="7">
-                                            <div class="flex flex-col items-center justify-center py-12 text-center">
-                                                <i class="ki-filled ki-magnifier text-4xl text-secondary-foreground/30 mb-3"></i>
-                                                <p class="text-sm text-secondary-foreground">Nenhum emissor corresponde à busca.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endif
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button
+                                            data-action="edit-nickname"
+                                            data-kt-modal-toggle="#nicknameModal"
+                                            data-issuer-id="{{ $item->id }}"
+                                            data-issuer-name="{{ $item->name }}"
+                                            data-issuer-nickname="{{ $item->nickname }}"
+                                            class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon" title="Editar apelido">
+                                            <i class="ki-filled ki-pencil text-base"></i>
+                                        </button>
+                                        <a href="{{ route('issuers.detail', ['id' => $item->id]) }}" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon" title="Ver detalhes">
+                                            <i class="ki-filled ki-eye text-base"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
-                </div>
+
+                    <div id="issuerNoSearchResults" class="hidden px-5">
+                        <div class="flex flex-col items-center justify-center py-12 text-center">
+                            <i class="ki-filled ki-magnifier text-4xl text-secondary-foreground/30 mb-3"></i>
+                            <p class="text-sm text-secondary-foreground">Nenhum emissor corresponde à busca.</p>
+                        </div>
+                    </div>
+                @endif
 
                 @if($records->hasPages())
                     <div class="kt-card-footer justify-center md:justify-between flex-col md:flex-row gap-3 text-secondary-foreground text-sm font-medium">

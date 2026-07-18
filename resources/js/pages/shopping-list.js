@@ -22,9 +22,9 @@ const ShoppingList = (() => {
                         const isFav = item.is_favorite == 1;
 
                         return `
-                            <div class="flex items-center justify-between px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors ${isFav ? 'bg-yellow-50 dark:bg-yellow-500/5' : ''}"
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors ${isFav ? 'bg-yellow-50 dark:bg-yellow-500/5' : ''}"
                                  data-add-item="${index}">
-                                <div class="flex-1 min-w-0">
+                                <div class="w-full sm:flex-1 sm:min-w-0">
                                     <p class="text-sm font-medium text-foreground truncate">
                                         ${isFav ? '<i class="ki-filled ki-star text-yellow-500 text-xs me-1"></i>' : ''}${item.description}
                                     </p>
@@ -34,7 +34,7 @@ const ShoppingList = (() => {
                                         ${item.unit ? `<span class="mx-1">&middot;</span> ${item.unit}` : ''}
                                     </p>
                                 </div>
-                                <div class="flex items-center gap-3 ms-4 shrink-0">
+                                <div class="flex items-center gap-3 shrink-0">
                                     <span class="font-semibold font-mono text-sm text-primary">R$ ${price}</span>
                                     <i class="ki-filled ki-plus-squared text-lg text-muted-foreground hover:text-primary"></i>
                                 </div>
@@ -186,7 +186,7 @@ const ShoppingList = (() => {
         const textClass = isPurchased ? 'line-through text-secondary-foreground' : 'text-foreground';
 
         return `
-            <div class="flex items-center justify-between py-2.5 px-4 transition-colors hover:bg-accent/30" data-item-row="${item._index}">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-2.5 px-4 transition-colors hover:bg-accent/30" data-item-row="${item._index}">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <button data-toggle-purchased="${item._index}"
                             class="flex items-center justify-center size-5 rounded border ${checkedClass} shrink-0 transition-colors">
@@ -197,7 +197,7 @@ const ShoppingList = (() => {
                         <p class="text-xs text-secondary-foreground">R$ ${Utils.formatCurrency(item.unit_price)} / ${item.unit || 'un'}</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 ms-4 shrink-0">
+                <div class="flex items-center justify-between sm:justify-end gap-3 ps-8 sm:ps-0 sm:ms-4 shrink-0">
                     ${!isPurchased ? `
                         <div class="flex items-center gap-1.5">
                             <button data-qty-delta="${item._index},-1"

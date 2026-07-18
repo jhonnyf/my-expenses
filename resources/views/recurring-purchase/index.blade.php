@@ -29,7 +29,7 @@
                 }
             </style>
 
-            <div class="grid grid-cols-2 lg:grid-cols-3 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
                 <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
                     <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-primary/10">
@@ -76,9 +76,10 @@
                 </div>
 
                 @if($recurring->isNotEmpty())
-                    <div class="kt-card-table">
+                    {{-- DESKTOP (lg+): tabela --}}
+                    <div class="kt-card-table hidden lg:block">
                         <div class="kt-scrollable-x-auto">
-                            <table class="kt-table kt-table-border table-fixed">
+                            <table class="kt-table kt-table-border table-auto">
                                 <thead>
                                     <tr>
                                         <th class="min-w-[220px]">Produto</th>
@@ -165,8 +166,91 @@
                             </table>
                         </div>
                     </div>
+
+                    {{-- MOBILE (< lg): cards --}}
+                    <div class="kt-card-content lg:hidden grid gap-3 p-5">
+                        @foreach($recurring as $item)
+                            @php
+                                $best = $bestIssuers[$item->description] ?? null;
+                                $range = max($item->max_price - $item->min_price, 0.01);
+                                $avgPos = min(max((($item->avg_price - $item->min_price) / $range) * 100, 0), 100);
+                                $daysSinceLast = $item->last_purchased_at ? \Carbon\Carbon::parse($item->last_purchased_at)->diffInDays(now()) : null;
+                                $isDue = $daysSinceLast !== null && $daysSinceLast >= $item->avg_interval_days;
+                            @endphp
+                            <div class="rounded-xl border border-border p-4 flex flex-col gap-3">
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-sm font-medium text-foreground truncate">{{ $item->description }}</p>
+                                    <span class="kt-badge kt-badge-primary kt-badge-sm shrink-0">{{ $item->purchase_count }}×</span>
+                                </div>
+
+                                <div>
+                                    <div class="flex items-center justify-between text-xs mb-1">
+                                        <span class="text-green-600 font-mono tabular-nums">R$ {{ number_format($item->min_price, 2, ',', '.') }}</span>
+                                        <span class="text-secondary-foreground">média R$ {{ number_format($item->avg_price, 2, ',', '.') }}</span>
+                                        <span class="text-destructive font-mono tabular-nums">R$ {{ number_format($item->max_price, 2, ',', '.') }}</span>
+                                    </div>
+                                    <div class="relative h-1.5 rounded-full bg-gradient-to-r from-green-500 to-red-500">
+                                        <span class="absolute top-1/2 -translate-y-1/2 size-2.5 rounded-full bg-mono ring-2 ring-background"
+                                              style="left: calc({{ $avgPos }}% - 5px)"
+                                              title="Preço médio: R$ {{ number_format($item->avg_price, 2, ',', '.') }}"></span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs">
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-secondary-foreground">Última Compra</span>
+                                        <span class="text-foreground font-medium">
+                                            {{ $item->last_purchased_at ? \Carbon\Carbon::parse($item->last_purchased_at)->format('d/m/Y') : '—' }}
+                                        </span>
+                                        @if($isDue)
+                                            <span class="kt-badge kt-badge-warning kt-badge-outline kt-badge-sm mt-1 w-fit">
+                                                <i class="ki-filled ki-time text-2xs"></i> Hora de comprar
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="flex flex-col gap-0.5 items-end">
+                                        <span class="text-secondary-foreground">Intervalo</span>
+                                        <span class="text-foreground font-medium">~{{ $item->avg_interval_days }} dias</span>
+                                        <span class="text-secondary-foreground">{{ $item->purchases_per_month }}×/mês</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
+                                    <div class="min-w-0">
+                                        <span class="text-xs text-secondary-foreground">Melhor Emissor</span>
+                                        <p class="text-sm text-foreground truncate">{{ $best->issuer_name ?? '—' }}</p>
+                                    </div>
+                                    @if($shoppingLists->isNotEmpty() && $best)
+                                        <div class="kt-menu shrink-0" data-kt-menu="true">
+                                            <div class="kt-menu-item" data-kt-menu-item-toggle="dropdown" data-kt-menu-item-trigger="click"
+                                                 data-kt-menu-item-placement="bottom-end" data-kt-menu-item-offset="0, 5px">
+                                                <button class="kt-menu-toggle kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm" title="Adicionar à lista">
+                                                    <i class="ki-filled ki-plus text-base"></i>
+                                                </button>
+                                                <div class="kt-menu-dropdown kt-menu-default w-48" data-kt-menu-dismiss="true">
+                                                    @foreach($shoppingLists as $list)
+                                                        <div class="kt-menu-item">
+                                                            <button class="kt-menu-link w-full text-left"
+                                                                    data-action="add-to-list"
+                                                                    data-list-id="{{ $list->id }}"
+                                                                    data-description="{{ $item->description }}"
+                                                                    data-unit-price="{{ $best->avg_price ?? 0 }}"
+                                                                    data-issuer-id="{{ $best->issuer_id ?? '' }}"
+                                                                    data-unit="{{ $best->unit ?? '' }}">
+                                                                <span class="kt-menu-title truncate">{{ $list->name }}</span>
+                                                            </button>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 @else
-                    <div class="kt-card-content">
+                    <div class="kt-card-content p-5">
                         <div class="flex flex-col items-center justify-center py-12 text-center">
                             <i class="ki-filled ki-arrows-loop text-5xl text-secondary-foreground/30 mb-4"></i>
                             <p class="text-sm font-medium text-foreground mb-1">Nenhum produto recorrente.</p>

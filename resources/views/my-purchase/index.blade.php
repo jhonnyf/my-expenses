@@ -25,7 +25,7 @@
         <div class="grid gap-5 lg:gap-7.5">
 
             {{-- STAT CARDS --}}
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
 
                 <div class="kt-card flex-row items-center gap-4 p-5">
                     <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 shrink-0">
@@ -79,11 +79,11 @@
 
             <div class="kt-card kt-card-grid min-w-full">
 
-                <div class="kt-card-header flex-wrap gap-2">
+                <div class="kt-card-header flex-wrap gap-3 py-3 lg:py-0">
                     <h3 class="kt-card-title">Lista de Compras</h3>
-                    <div class="flex items-center gap-3">
-                        <form id="myPurchasesSearchForm" method="GET" action="{{ route('my-purchases.index') }}">
-                            <label class="kt-input max-w-56">
+                    <div class="flex items-center gap-3 w-full lg:w-auto">
+                        <form id="myPurchasesSearchForm" method="GET" action="{{ route('my-purchases.index') }}" class="w-full lg:w-auto">
+                            <label class="kt-input w-full lg:max-w-56">
                                 <i class="ki-filled ki-magnifier"></i>
                                 <input type="text" name="search" id="myPurchasesSearchInput" value="{{ $search }}"
                                        placeholder="Buscar por emissor..." autocomplete="off" />
@@ -97,77 +97,116 @@
                     </div>
                 </div>
 
-                <div class="kt-card-table">
-                    <div class="kt-scrollable-x-auto">
-                        <table class="kt-table kt-table-border table-fixed">
-                            <thead>
-                                <tr>
-                                    <th class="min-w-[260px]">Emissor</th>
-                                    <th class="min-w-[140px]">Data</th>
-                                    <th class="min-w-[130px] text-end">Valor</th>
-                                    <th class="w-[60px] text-end">Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($records->items() as $item)
-                                    <tr class="transition-colors duration-150 hover:bg-accent/40">
-                                        <td class="py-2.5">
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary font-semibold text-xs shrink-0 uppercase">
-                                                    {{ strtoupper(substr($item->issuer->display_name ?? '??', 0, 2)) }}
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <p class="text-sm font-semibold text-foreground truncate">{{ $item->issuer->display_name ?? '—' }}</p>
-                                                    <p class="text-xs text-secondary-foreground font-mono truncate">
-                                                        Nº {{ $item->number }} / Série {{ $item->series }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="py-2.5">
-                                            <p class="text-sm text-foreground">{{ $item->issued_at->format('d/m/Y') }}</p>
-                                            <p class="text-xs text-secondary-foreground">{{ $item->issued_at->format('H:i') }}</p>
-                                        </td>
-                                        <td class="text-end py-2.5">
-                                            <span class="text-sm font-semibold font-mono tabular-nums text-foreground">
-                                                R$ {{ number_format($item->total_amount, 2, ',', '.') }}
-                                            </span>
-                                        </td>
-                                        <td class="text-end py-2.5">
-                                            <a href="{{ route('my-purchases.detail', $item->id) }}"
-                                               class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform duration-200 hover:scale-110"
-                                               title="Ver detalhes">
-                                                <i class="ki-filled ki-eye text-base"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4">
-                                            <div class="flex flex-col items-center justify-center py-16 text-center">
-                                                @if($search !== '')
-                                                    <i class="ki-filled ki-magnifier text-5xl text-secondary-foreground/30 mb-4"></i>
-                                                    <p class="text-sm font-medium text-foreground mb-1">Nenhuma compra encontrada</p>
-                                                    <p class="text-xs text-secondary-foreground">Nenhum resultado para "{{ $search }}".</p>
-                                                    <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-secondary kt-btn-sm mt-4">
-                                                        Limpar busca
-                                                    </a>
-                                                @else
-                                                    <i class="ki-filled ki-document text-5xl text-secondary-foreground/30 mb-4"></i>
-                                                    <p class="text-sm font-medium text-foreground mb-1">Nenhuma compra encontrada</p>
-                                                    <p class="text-xs text-secondary-foreground">Importe sua primeira NF-e para começar.</p>
-                                                    <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm mt-4">
-                                                        <i class="ki-filled ki-file-up"></i> Importar NF-e
-                                                    </a>
-                                                @endif
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                @if($records->isEmpty())
+                    <div class="kt-card-content p-5">
+                        <div class="flex flex-col items-center justify-center py-16 text-center">
+                            @if($search !== '')
+                                <i class="ki-filled ki-magnifier text-5xl text-secondary-foreground/30 mb-4"></i>
+                                <p class="text-sm font-medium text-foreground mb-1">Nenhuma compra encontrada</p>
+                                <p class="text-xs text-secondary-foreground">Nenhum resultado para "{{ $search }}".</p>
+                                <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-secondary kt-btn-sm mt-4">
+                                    Limpar busca
+                                </a>
+                            @else
+                                <i class="ki-filled ki-document text-5xl text-secondary-foreground/30 mb-4"></i>
+                                <p class="text-sm font-medium text-foreground mb-1">Nenhuma compra encontrada</p>
+                                <p class="text-xs text-secondary-foreground">Importe sua primeira NF-e para começar.</p>
+                                <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm mt-4">
+                                    <i class="ki-filled ki-file-up"></i> Importar NF-e
+                                </a>
+                            @endif
+                        </div>
                     </div>
-                </div>
+                @else
+                    {{-- DESKTOP (lg+): tabela --}}
+                    <div class="kt-card-table hidden lg:block">
+                        <div class="kt-scrollable-x-auto">
+                            <table class="kt-table kt-table-border table-auto">
+                                <thead>
+                                    <tr>
+                                        <th class="min-w-[260px]">Emissor</th>
+                                        <th class="min-w-[140px]">Data</th>
+                                        <th class="min-w-[130px] text-end">Valor</th>
+                                        <th class="w-[60px] text-end">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($records->items() as $item)
+                                        <tr class="transition-colors duration-150 hover:bg-accent/40">
+                                            <td class="py-2.5">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary font-semibold text-xs shrink-0 uppercase">
+                                                        {{ strtoupper(substr($item->issuer->display_name ?? '??', 0, 2)) }}
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-semibold text-foreground truncate">{{ $item->issuer->display_name ?? '—' }}</p>
+                                                        <p class="text-xs text-secondary-foreground font-mono truncate">
+                                                            Nº {{ $item->number }} / Série {{ $item->series }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="py-2.5">
+                                                <p class="text-sm text-foreground">{{ $item->issued_at->format('d/m/Y') }}</p>
+                                                <p class="text-xs text-secondary-foreground">{{ $item->issued_at->format('H:i') }}</p>
+                                            </td>
+                                            <td class="text-end py-2.5">
+                                                <span class="text-sm font-semibold font-mono tabular-nums text-foreground">
+                                                    R$ {{ number_format($item->total_amount, 2, ',', '.') }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end py-2.5">
+                                                <a href="{{ route('my-purchases.detail', $item->id) }}"
+                                                   class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform duration-200 hover:scale-110"
+                                                   title="Ver detalhes">
+                                                    <i class="ki-filled ki-eye text-base"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- MOBILE (< lg): cards --}}
+                    <div class="kt-card-content lg:hidden grid gap-3 p-5">
+                        @foreach ($records->items() as $item)
+                            <div class="rounded-xl border border-border p-4 flex flex-col gap-3 transition-colors duration-150">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary font-semibold text-xs shrink-0 uppercase">
+                                        {{ strtoupper(substr($item->issuer->display_name ?? '??', 0, 2)) }}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-foreground truncate">{{ $item->issuer->display_name ?? '—' }}</p>
+                                        <p class="text-xs text-secondary-foreground font-mono truncate">
+                                            Nº {{ $item->number }} / Série {{ $item->series }}
+                                        </p>
+                                    </div>
+                                    <a href="{{ route('my-purchases.detail', $item->id) }}"
+                                       class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm shrink-0"
+                                       title="Ver detalhes">
+                                        <i class="ki-filled ki-eye text-base"></i>
+                                    </a>
+                                </div>
+                                <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-xs text-secondary-foreground">Data</span>
+                                        <span class="text-sm text-foreground">
+                                            {{ $item->issued_at->format('d/m/Y') }} {{ $item->issued_at->format('H:i') }}
+                                        </span>
+                                    </div>
+                                    <div class="flex flex-col gap-0.5 items-end">
+                                        <span class="text-xs text-secondary-foreground">Valor</span>
+                                        <span class="text-sm font-semibold font-mono tabular-nums text-foreground">
+                                            R$ {{ number_format($item->total_amount, 2, ',', '.') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
 
                 @if($records->hasPages())
                     <div class="kt-card-footer justify-center md:justify-between flex-col md:flex-row gap-3 text-secondary-foreground text-sm font-medium">

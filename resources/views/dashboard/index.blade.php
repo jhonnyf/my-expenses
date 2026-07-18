@@ -33,7 +33,7 @@
                     background-image: url('{{ asset('assets/media/images/2600x1600/bg-3-dark.png') }}');
                 }
             </style>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
 
                 <div class="kt-card flex-col justify-between gap-6 bg-cover bg-[right_top_-1.7rem] bg-no-repeat channel-stats-bg">
                     <div class="flex items-center justify-center size-10 mt-4 ms-5 rounded-xl bg-primary/10">
@@ -205,17 +205,17 @@
                     <div class="kt-card-content pb-5">
                         @if($paymentDistribution->isNotEmpty())
                             <div class="grid lg:grid-cols-2 gap-4 items-center">
-                                <div id="paymentChart" style="height: 200px;"></div>
+                                <div id="paymentChart" class="max-w-[220px] mx-auto lg:max-w-none" style="height: 200px;"></div>
                                 <div class="grid gap-2">
                                     @php $payTotal = $paymentDistribution->sum('total') ?: 1; @endphp
                                     @foreach($paymentDistribution->take(5) as $pay)
                                         @php $pct = ($pay->total / $payTotal) * 100; @endphp
-                                        <div class="flex items-center justify-between gap-2">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2">
                                             <div class="flex items-center gap-1.5 min-w-0">
                                                 <i class="{{ $paymentIcons[$pay->method] ?? 'ki-filled ki-wallet' }} text-sm text-muted-foreground shrink-0"></i>
                                                 <span class="text-sm text-foreground truncate">{{ $paymentLabels[$pay->method] ?? $pay->method }}</span>
                                             </div>
-                                            <div class="flex items-center gap-2 shrink-0">
+                                            <div class="flex items-center gap-2 shrink-0 ps-5 sm:ps-0">
                                                 <span class="text-xs text-secondary-foreground tabular-nums">{{ number_format($pct, 0) }}%</span>
                                                 <span class="text-sm font-semibold text-foreground tabular-nums">R$ {{ number_format($pay->total, 2, ',', '.') }}</span>
                                             </div>
@@ -245,17 +245,17 @@
                     <div class="kt-card-content pb-5">
                         @if($spendingByCategory->isNotEmpty())
                             <div class="grid lg:grid-cols-2 gap-4 items-center">
-                                <div id="categoryChart" style="height: 200px;"></div>
+                                <div id="categoryChart" class="max-w-[220px] mx-auto lg:max-w-none" style="height: 200px;"></div>
                                 <div class="grid gap-2">
                                     @php $catTotal = $spendingByCategory->sum('total') ?: 1; @endphp
                                     @foreach($spendingByCategory->take(5) as $cat)
                                         @php $catPct = ($cat->total / $catTotal) * 100; @endphp
-                                        <div class="flex items-center justify-between gap-2">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2">
                                             <div class="flex items-center gap-1.5 min-w-0">
                                                 <span class="size-2.5 rounded-full shrink-0" style="background-color: {{ $cat->category_color }}"></span>
                                                 <span class="text-sm text-foreground truncate">{{ $cat->category_name }}</span>
                                             </div>
-                                            <div class="flex items-center gap-2 shrink-0">
+                                            <div class="flex items-center gap-2 shrink-0 ps-5 sm:ps-0">
                                                 <span class="text-xs text-secondary-foreground tabular-nums">{{ number_format($catPct, 0) }}%</span>
                                                 <span class="text-sm font-semibold text-foreground tabular-nums">R$ {{ number_format($cat->total, 2, ',', '.') }}</span>
                                             </div>

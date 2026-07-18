@@ -32,7 +32,7 @@
                     {{-- Nome da lista --}}
                     <div class="kt-card hidden" id="listNameCard">
                         <div class="kt-card-content py-4 px-5">
-                            <div class="flex items-center gap-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                                 <div class="flex-1 min-w-0">
                                     <label class="text-xs font-medium text-secondary-foreground">Nome da lista</label>
                                     <input type="text"
@@ -40,7 +40,7 @@
                                            class="kt-input mt-1.5 w-full"
                                            placeholder="Lista de compras {{ now()->format('d/m/Y') }}" />
                                 </div>
-                                <button data-action="save-name" class="kt-btn kt-btn-sm kt-btn-outline mt-5 shrink-0">
+                                <button data-action="save-name" class="kt-btn kt-btn-sm kt-btn-outline sm:mt-5 shrink-0">
                                     <i class="ki-filled ki-check"></i>
                                     Salvar
                                 </button>

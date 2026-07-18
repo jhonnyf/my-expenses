@@ -5,7 +5,7 @@ const IssuerList = (() => {
         const term = this.value.toLowerCase();
         let visibleCount = 0;
 
-        document.querySelectorAll('#issuersTable tbody .issuer-row').forEach(row => {
+        document.querySelectorAll('.issuer-row').forEach(row => {
             const name = row.querySelector('.issuer-name')?.textContent.toLowerCase() ?? '';
             const matches = name.includes(term);
             row.style.display = matches ? '' : 'none';

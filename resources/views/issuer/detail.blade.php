@@ -203,82 +203,121 @@
             {{-- COLUNA DIREITA — Notas Fiscais --}}
             <div class="lg:col-span-2">
                 <div class="kt-card kt-card-grid">
-                    <div class="kt-card-header flex-wrap gap-2">
+                    <div class="kt-card-header flex-wrap gap-3 py-3 lg:py-0">
                         <h3 class="kt-card-title">Notas Fiscais</h3>
-                        <div class="flex items-center gap-3">
-                            <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm">
+                        <div class="flex items-center gap-3 w-full lg:w-auto">
+                            <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm shrink-0">
                                 {{ $stats->total_count }} {{ $stats->total_count == 1 ? 'nota' : 'notas' }}
                             </span>
-                            <label class="kt-input max-w-48">
+                            <label class="kt-input w-full lg:max-w-48">
                                 <i class="ki-filled ki-magnifier"></i>
                                 <input type="text" id="invoiceSearchInput" placeholder="Buscar nota..." autocomplete="off" />
                             </label>
                         </div>
                     </div>
-                    <div class="kt-card-table">
-                        <div class="kt-scrollable-x-auto">
-                            <table class="kt-table kt-table-border table-fixed" id="invoicesTable">
-                                <thead>
-                                    <tr>
-                                        <th class="w-[100px]">Número</th>
-                                        <th class="min-w-[130px]">Data</th>
-                                        <th class="min-w-[130px] text-end">Valor</th>
-                                        <th class="w-[80px] text-center">Itens</th>
-                                        <th class="w-[60px]"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($record->invoices as $invoice)
-                                        <tr class="invoice-row transition-colors hover:bg-accent/40">
-                                            <td>
-                                                <span class="text-sm font-mono text-foreground">
-                                                    {{ $invoice->number }}<span class="text-secondary-foreground">/{{ $invoice->series }}</span>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="flex flex-col gap-0.5">
-                                                    <span class="text-sm text-foreground">
-                                                        {{ $invoice->issued_at?->format('d/m/Y') ?? '—' }}
-                                                    </span>
-                                                    @if($invoice->issued_at)
-                                                        <span class="text-xs text-secondary-foreground">
-                                                            {{ $invoice->issued_at->format('H:i') }}
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                            <td class="text-end">
-                                                <span class="text-sm font-semibold text-foreground tabular-nums font-mono">
-                                                    R$ {{ number_format($invoice->total_amount, 2, ',', '.') }}
-                                                </span>
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm tabular-nums">
-                                                    {{ $invoice->items_count }}
-                                                </span>
-                                            </td>
-                                            <td class="text-end">
-                                                <a href="{{ route('my-purchases.detail', ['invoice' => $invoice->id]) }}"
-                                                   class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm"
-                                                   title="Ver nota">
-                                                    <i class="ki-filled ki-eye text-base"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="5">
-                                                <div class="flex flex-col items-center justify-center py-12 text-center">
-                                                    <i class="ki-filled ki-document text-4xl text-secondary-foreground/30 mb-3"></i>
-                                                    <p class="text-sm text-secondary-foreground">Nenhuma nota fiscal encontrada.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                    @if($record->invoices->isEmpty())
+                        <div class="kt-card-content p-5">
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <i class="ki-filled ki-document text-4xl text-secondary-foreground/30 mb-3"></i>
+                                <p class="text-sm text-secondary-foreground">Nenhuma nota fiscal encontrada.</p>
+                            </div>
                         </div>
-                    </div>
+                    @else
+                        {{-- DESKTOP (lg+): tabela --}}
+                        <div class="kt-card-table hidden lg:block">
+                            <div class="kt-scrollable-x-auto">
+                                <table class="kt-table kt-table-border table-auto" id="invoicesTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="w-[100px]">Número</th>
+                                            <th class="min-w-[130px]">Data</th>
+                                            <th class="min-w-[130px] text-end">Valor</th>
+                                            <th class="w-[80px] text-center">Itens</th>
+                                            <th class="w-[60px]"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($record->invoices as $invoice)
+                                            <tr class="invoice-row transition-colors hover:bg-accent/40">
+                                                <td>
+                                                    <span class="text-sm font-mono text-foreground">
+                                                        {{ $invoice->number }}<span class="text-secondary-foreground">/{{ $invoice->series }}</span>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="flex flex-col gap-0.5">
+                                                        <span class="text-sm text-foreground">
+                                                            {{ $invoice->issued_at?->format('d/m/Y') ?? '—' }}
+                                                        </span>
+                                                        @if($invoice->issued_at)
+                                                            <span class="text-xs text-secondary-foreground">
+                                                                {{ $invoice->issued_at->format('H:i') }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                                <td class="text-end">
+                                                    <span class="text-sm font-semibold text-foreground tabular-nums font-mono">
+                                                        R$ {{ number_format($invoice->total_amount, 2, ',', '.') }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm tabular-nums">
+                                                        {{ $invoice->items_count }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">
+                                                    <a href="{{ route('my-purchases.detail', ['invoice' => $invoice->id]) }}"
+                                                       class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm"
+                                                       title="Ver nota">
+                                                        <i class="ki-filled ki-eye text-base"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- MOBILE (< lg): cards --}}
+                        <div class="kt-card-content lg:hidden grid gap-3 p-5">
+                            @foreach($record->invoices as $invoice)
+                                <div class="invoice-row rounded-xl border border-border p-4 flex flex-col gap-2 transition-colors hover:bg-accent/40">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-sm font-mono text-foreground">
+                                            {{ $invoice->number }}<span class="text-secondary-foreground">/{{ $invoice->series }}</span>
+                                        </span>
+                                        <a href="{{ route('my-purchases.detail', ['invoice' => $invoice->id]) }}"
+                                           class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm"
+                                           title="Ver nota">
+                                            <i class="ki-filled ki-eye text-base"></i>
+                                        </a>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
+                                        <div class="flex flex-col gap-0.5">
+                                            <span class="text-xs text-secondary-foreground">Data</span>
+                                            <span class="text-sm text-foreground">
+                                                {{ $invoice->issued_at?->format('d/m/Y H:i') ?? '—' }}
+                                            </span>
+                                        </div>
+                                        <div class="flex flex-col gap-0.5 items-center">
+                                            <span class="text-xs text-secondary-foreground">Itens</span>
+                                            <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm tabular-nums">
+                                                {{ $invoice->items_count }}
+                                            </span>
+                                        </div>
+                                        <div class="flex flex-col gap-0.5 items-end">
+                                            <span class="text-xs text-secondary-foreground">Valor</span>
+                                            <span class="text-sm font-semibold text-foreground tabular-nums font-mono">
+                                                R$ {{ number_format($invoice->total_amount, 2, ',', '.') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </div>
 

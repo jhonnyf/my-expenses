@@ -22,7 +22,7 @@ const RecurringPurchase = (() => {
             const check = document.createElement('span');
             check.className = 'text-green-500 text-sm';
             check.innerHTML = '<i class="ki-filled ki-check"></i>';
-            btn.closest('td').appendChild(check);
+            btn.closest('.kt-menu')?.insertAdjacentElement('afterend', check);
         });
     };
 

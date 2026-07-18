@@ -36,9 +36,9 @@
                 <div class="flex items-center justify-center size-12 rounded-xl bg-primary/10 shrink-0">
                     <i class="ki-filled ki-document text-primary text-xl"></i>
                 </div>
-                <div>
-                    <div class="flex items-center gap-2.5">
-                        <h1 class="text-xl font-medium leading-none text-mono">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h1 class="text-xl font-medium leading-none text-mono break-words">
                             NFC-e Nº {{ $invoice->number }} / Série {{ $invoice->series }}
                         </h1>
                         @if($invoice->environment === 'staging')
@@ -288,72 +288,123 @@
                     {{ $invoice->items->count() }} {{ $invoice->items->count() === 1 ? 'item' : 'itens' }}
                 </span>
             </div>
-            <div class="kt-card-content">
-                <div class="kt-scrollable-x-auto">
-                    <table class="kt-table table-auto kt-table-border">
-                        <thead>
-                            <tr>
-                                <th class="w-10 text-center">#</th>
-                                <th class="min-w-[280px]">Descrição</th>
-                                <th class="min-w-[150px]">Categoria</th>
-                                <th class="min-w-[90px] text-right">Qtd</th>
-                                <th class="min-w-[60px] text-center">Un.</th>
-                                <th class="min-w-[110px] text-right">Vl. Unit.</th>
-                                <th class="min-w-[110px] text-right">Vl. Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $itemsTotal = $invoice->items->sum('total_price') ?: 1; @endphp
-                            @forelse($invoice->items as $item)
-                                @php $share = ($item->total_price / $itemsTotal) * 100; @endphp
-                                <tr class="transition-colors duration-150 hover:bg-accent/40">
-                                    <td class="text-center text-secondary-foreground">{{ $item->item_number }}</td>
-                                    <td class="py-2.5">
-                                        <div class="flex items-center gap-1.5 min-w-0">
-                                            <span class="font-medium text-foreground truncate">{{ $item->description }}</span>
-                                            <button type="button"
-                                                    class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                                                    data-kt-tooltip="true" data-kt-tooltip-placement="top">
-                                                <i class="ki-filled ki-information-2 text-sm"></i>
-                                                <span data-kt-tooltip-content="true" class="kt-tooltip">
-                                                    Código: {{ $item->code ?: '—' }} &middot;
-                                                    NCM: {{ $item->ncm ?: '—' }} &middot;
-                                                    CFOP: {{ $item->cfop ?: '—' }}
-                                                </span>
-                                            </button>
-                                        </div>
-                                        <div class="kt-progress h-1 mt-1.5 max-w-32">
-                                            <div class="kt-progress-indicator" style="width: {{ min($share, 100) }}%"></div>
-                                        </div>
-                                    </td>
-                                    <td class="py-2.5">
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category->color ?? '#94a3b8' }}"></span>
-                                            <select data-action="assign-category" data-item-id="{{ $item->id }}"
-                                                    class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
-                                                <option value="" data-color="#94a3b8">Sem categoria</option>
-                                                @foreach($categories as $cat)
-                                                    <option value="{{ $cat->id }}" data-color="{{ $cat->color }}" {{ $item->category_id == $cat->id ? 'selected' : '' }}>
-                                                        {{ $cat->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </td>
-                                    <td class="text-right font-mono text-sm py-2.5">{{ rtrim(rtrim(number_format($item->quantity, 4, ',', '.'), '0'), ',') }}</td>
-                                    <td class="text-center text-secondary-foreground py-2.5">{{ $item->unit }}</td>
-                                    <td class="text-right font-mono text-sm py-2.5">R$ {{ number_format($item->unit_price, 2, ',', '.') }}</td>
-                                    <td class="text-right font-semibold font-mono text-sm py-2.5">R$ {{ number_format($item->total_price, 2, ',', '.') }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="text-center text-secondary-foreground py-6">Nenhum item encontrado.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+            @if($invoice->items->isEmpty())
+                <div class="kt-card-content p-5">
+                    <p class="text-center text-secondary-foreground py-6">Nenhum item encontrado.</p>
                 </div>
-            </div>
+            @else
+                @php $itemsTotal = $invoice->items->sum('total_price') ?: 1; @endphp
+
+                {{-- DESKTOP (lg+): tabela --}}
+                <div class="kt-card-content hidden lg:block">
+                    <div class="kt-scrollable-x-auto">
+                        <table class="kt-table table-auto kt-table-border">
+                            <thead>
+                                <tr>
+                                    <th class="w-10 text-center">#</th>
+                                    <th class="min-w-[280px]">Descrição</th>
+                                    <th class="min-w-[150px]">Categoria</th>
+                                    <th class="min-w-[90px] text-right">Qtd</th>
+                                    <th class="min-w-[60px] text-center">Un.</th>
+                                    <th class="min-w-[110px] text-right">Vl. Unit.</th>
+                                    <th class="min-w-[110px] text-right">Vl. Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($invoice->items as $item)
+                                    @php $share = ($item->total_price / $itemsTotal) * 100; @endphp
+                                    <tr class="transition-colors duration-150 hover:bg-accent/40">
+                                        <td class="text-center text-secondary-foreground">{{ $item->item_number }}</td>
+                                        <td class="py-2.5">
+                                            <div class="flex items-center gap-1.5 min-w-0">
+                                                <span class="font-medium text-foreground truncate">{{ $item->description }}</span>
+                                                <button type="button"
+                                                        class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                                                        data-kt-tooltip="true" data-kt-tooltip-placement="top">
+                                                    <i class="ki-filled ki-information-2 text-sm"></i>
+                                                    <span data-kt-tooltip-content="true" class="kt-tooltip">
+                                                        Código: {{ $item->code ?: '—' }} &middot;
+                                                        NCM: {{ $item->ncm ?: '—' }} &middot;
+                                                        CFOP: {{ $item->cfop ?: '—' }}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                            <div class="kt-progress h-1 mt-1.5 max-w-32">
+                                                <div class="kt-progress-indicator" style="width: {{ min($share, 100) }}%"></div>
+                                            </div>
+                                        </td>
+                                        <td class="py-2.5 item-category-cell">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category->color ?? '#94a3b8' }}"></span>
+                                                <select data-action="assign-category" data-item-id="{{ $item->id }}"
+                                                        class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                                                    <option value="" data-color="#94a3b8">Sem categoria</option>
+                                                    @foreach($categories as $cat)
+                                                        <option value="{{ $cat->id }}" data-color="{{ $cat->color }}" {{ $item->category_id == $cat->id ? 'selected' : '' }}>
+                                                            {{ $cat->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </td>
+                                        <td class="text-right font-mono text-sm py-2.5">{{ rtrim(rtrim(number_format($item->quantity, 4, ',', '.'), '0'), ',') }}</td>
+                                        <td class="text-center text-secondary-foreground py-2.5">{{ $item->unit }}</td>
+                                        <td class="text-right font-mono text-sm py-2.5">R$ {{ number_format($item->unit_price, 2, ',', '.') }}</td>
+                                        <td class="text-right font-semibold font-mono text-sm py-2.5">R$ {{ number_format($item->total_price, 2, ',', '.') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- MOBILE (< lg): cards --}}
+                <div class="kt-card-content lg:hidden grid gap-3 p-5">
+                    @foreach($invoice->items as $item)
+                        @php $share = ($item->total_price / $itemsTotal) * 100; @endphp
+                        <div class="rounded-xl border border-border p-4 flex flex-col gap-2">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <span class="text-xs text-secondary-foreground shrink-0">#{{ $item->item_number }}</span>
+                                        <span class="font-medium text-foreground truncate">{{ $item->description }}</span>
+                                    </div>
+                                    <div class="kt-progress h-1 mt-1.5 max-w-32">
+                                        <div class="kt-progress-indicator" style="width: {{ min($share, 100) }}%"></div>
+                                    </div>
+                                </div>
+                                <span class="text-sm font-semibold font-mono text-foreground shrink-0">
+                                    R$ {{ number_format($item->total_price, 2, ',', '.') }}
+                                </span>
+                            </div>
+
+                            <p class="text-xs text-secondary-foreground">
+                                Código: {{ $item->code ?: '—' }} &middot;
+                                NCM: {{ $item->ncm ?: '—' }} &middot;
+                                CFOP: {{ $item->cfop ?: '—' }}
+                            </p>
+
+                            <div class="flex items-center gap-1.5 item-category-cell">
+                                <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category->color ?? '#94a3b8' }}"></span>
+                                <select data-action="assign-category" data-item-id="{{ $item->id }}"
+                                        class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                                    <option value="" data-color="#94a3b8">Sem categoria</option>
+                                    @foreach($categories as $cat)
+                                        <option value="{{ $cat->id }}" data-color="{{ $cat->color }}" {{ $item->category_id == $cat->id ? 'selected' : '' }}>
+                                            {{ $cat->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs text-secondary-foreground">
+                                <span>Qtd: {{ rtrim(rtrim(number_format($item->quantity, 4, ',', '.'), '0'), ',') }} {{ $item->unit }}</span>
+                                <span>Unit.: R$ {{ number_format($item->unit_price, 2, ',', '.') }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
     </div>

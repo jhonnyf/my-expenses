@@ -9,3 +9,27 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+@layer components {
+    /*
+     * .kt-card é display:flex e vive como item direto de containers `grid` em quase
+     * toda página. Sem min-width:0, um item flex/grid usa min-width:auto (baseado no
+     * conteúdo), o que deixa o card (e o grid inteiro) crescer além do viewport quando
+     * há conteúdo que não pode encolher (ex.: uma linha de botões com white-space:nowrap).
+     * Isso reproduz o "grid blowout" clássico do CSS Grid/Flexbox.
+     */
+    .kt-card {
+        min-width: 0;
+    }
+
+    /*
+     * Mesma causa, outro nível: qualquer item filho direto de um `.grid` (usado o
+     * tempo todo como wrapper de colunas/stack vertical neste projeto) também sofre
+     * do mesmo "grid blowout" caso contenha, em qualquer profundidade, algo que não
+     * quebra linha (nowrap). min-width:0 deixa o item encolher pro espaço disponível
+     * em vez de empurrar o grid (e a página) pra rolar horizontalmente.
+     */
+    .grid > * {
+        min-width: 0;
+    }
+}

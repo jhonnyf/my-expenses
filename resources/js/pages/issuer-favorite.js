@@ -8,7 +8,7 @@ const DETAIL_OUTLINE_CLASSES = ['kt-btn-outline', 'hover:border-yellow-500', 'ho
 const AVATAR_FAVORITE_CLASSES = ['bg-yellow-500/15', 'text-yellow-600', 'ring-yellow-400', 'shadow-lg', 'shadow-yellow-500/20'];
 const AVATAR_DEFAULT_CLASSES = ['bg-primary/10', 'text-primary', 'ring-primary/30'];
 
-const LIST_ROW_FAVORITE_CLASSES = ['bg-yellow-500/5'];
+const LIST_ROW_FAVORITE_CLASSES = ['bg-yellow-500/5', 'border-yellow-400/40'];
 const LIST_CELL_ACCENT_CLASSES = ['shadow-[inset_3px_0_0_0_#eab308]'];
 const LIST_AVATAR_FAVORITE_CLASSES = ['bg-yellow-500/10', 'text-yellow-600', 'ring-2', 'ring-yellow-400/40'];
 const LIST_AVATAR_DEFAULT_CLASSES = ['bg-primary/10', 'text-primary'];
@@ -64,7 +64,7 @@ const IssuerFavorite = (() => {
             btn.title = isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
         }
 
-        const row = btn.closest('tr.issuer-row');
+        const row = btn.closest('.issuer-row');
         if (!row) return;
 
         toggleClassList(row, LIST_ROW_FAVORITE_CLASSES, isFavorite);
@@ -77,8 +77,6 @@ const IssuerFavorite = (() => {
             toggleClassList(avatar, LIST_AVATAR_FAVORITE_CLASSES, isFavorite);
             toggleClassList(avatar, LIST_AVATAR_DEFAULT_CLASSES, !isFavorite);
         }
-
-        updateFavoritesBadge(isFavorite ? 1 : -1);
     };
 
     const applyProfileCardState = (isFavorite) => {
@@ -107,9 +105,14 @@ const IssuerFavorite = (() => {
     };
 
     const applyFavoriteState = (btn, isFavorite) => {
-        btn.id === DETAIL_BUTTON_ID
-            ? applyDetailButtonState(btn, isFavorite)
-            : applyIconButtonState(btn, isFavorite);
+        if (btn.id === DETAIL_BUTTON_ID) {
+            applyDetailButtonState(btn, isFavorite);
+            return;
+        }
+
+        const issuerId = btn.dataset.favoriteId;
+        document.querySelectorAll(`[data-favorite-id="${issuerId}"]`).forEach(b => applyIconButtonState(b, isFavorite));
+        updateFavoritesBadge(isFavorite ? 1 : -1);
     };
 
     return {

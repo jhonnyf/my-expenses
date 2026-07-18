@@ -4,7 +4,7 @@ const IssuerDetail = (() => {
     const filterInvoices = function () {
         const term = this.value.toLowerCase();
 
-        document.querySelectorAll('#invoicesTable tbody .invoice-row').forEach(row => {
+        document.querySelectorAll('.invoice-row').forEach(row => {
             row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
         });
     };

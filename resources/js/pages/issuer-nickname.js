@@ -31,24 +31,23 @@ const IssuerNickname = (() => {
     };
 
     const updateListRow = (issuerId, displayName) => {
-        const btn = document.querySelector(`[data-action="edit-nickname"][data-issuer-id="${issuerId}"]`);
-        if (!btn) return;
+        document.querySelectorAll(`[data-action="edit-nickname"][data-issuer-id="${issuerId}"]`).forEach(btn => {
+            const row = btn.closest('.issuer-row');
+            if (!row) return;
 
-        const row = btn.closest('tr.issuer-row');
-        if (!row) return;
-
-        const nameEl = row.querySelector('.issuer-name');
-        if (nameEl) {
-            nameEl.textContent = displayName;
-            if (btn.dataset.issuerNickname) {
-                nameEl.title = `Nome oficial: ${btn.dataset.issuerName}`;
-            } else {
-                nameEl.removeAttribute('title');
+            const nameEl = row.querySelector('.issuer-name');
+            if (nameEl) {
+                nameEl.textContent = displayName;
+                if (btn.dataset.issuerNickname) {
+                    nameEl.title = `Nome oficial: ${btn.dataset.issuerName}`;
+                } else {
+                    nameEl.removeAttribute('title');
+                }
             }
-        }
 
-        const avatar = row.querySelector('.issuer-avatar');
-        if (avatar) avatar.textContent = displayName.substring(0, 2).toUpperCase();
+            const avatar = row.querySelector('.issuer-avatar');
+            if (avatar) avatar.textContent = displayName.substring(0, 2).toUpperCase();
+        });
     };
 
     const updateDetailPage = (nickname, displayName) => {

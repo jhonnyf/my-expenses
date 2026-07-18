@@ -70,9 +70,10 @@
                         <h3 class="kt-card-title">Histórico</h3>
                         <span id="entryCount" class="text-xs text-secondary-foreground"></span>
                     </div>
-                    <div class="kt-card-table">
+                    {{-- DESKTOP (lg+): tabela --}}
+                    <div class="kt-card-table hidden lg:block">
                         <div class="kt-scrollable-x-auto">
-                            <table class="kt-table kt-table-border table-fixed">
+                            <table class="kt-table kt-table-border table-auto">
                                 <thead>
                                     <tr>
                                         <th class="min-w-[120px]">Data</th>
@@ -93,6 +94,14 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    {{-- MOBILE (< lg): cards --}}
+                    <div id="priceCardsBody" class="kt-card-content lg:hidden grid gap-3 p-5">
+                        <div class="flex flex-col items-center justify-center py-12 text-center">
+                            <i class="ki-filled ki-chart-line text-4xl text-secondary-foreground/30 mb-3"></i>
+                            <p class="text-sm text-secondary-foreground">Selecione um produto para ver o histórico.</p>
                         </div>
                     </div>
                 </div>

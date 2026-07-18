@@ -24,7 +24,7 @@
         <div class="grid gap-5 lg:gap-7.5">
 
             {{-- STAT CARDS --}}
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
 
                 <div class="kt-card flex-row items-center gap-4 p-5">
                     <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 shrink-0">
