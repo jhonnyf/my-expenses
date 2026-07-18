@@ -7,6 +7,12 @@ services:
         restart: unless-stopped
         user: "${UID:-1000}:${GID:-1000}"
         working_dir: /var/www
+        environment:
+            # A imagem não tem usuário cadastrado para o uid do host (${UID:-1000}),
+            # então $HOME fica vazio e o Composer não consegue criar seu cache padrão
+            # (~/.composer/cache). Aponta para dentro do bind mount, que já é
+            # gravável pelo uid do host e persiste entre execuções/recreações.
+            COMPOSER_HOME: /var/www/.composer-cache
         depends_on:
             mysql:
                 condition: service_healthy
