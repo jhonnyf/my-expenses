@@ -276,7 +276,7 @@
             <form method="POST" action="{{ route('account.avatar') }}" enctype="multipart/form-data" class="kt-form max-w-lg">
               @csrf
               <div class="flex items-center gap-5">
-                <div class="rounded-full size-16 shrink-0 flex items-center justify-center bg-primary text-primary-foreground overflow-hidden border border-border" id="avatar_preview_wrapper">
+                <div class="rounded-full size-16 shrink-0 flex items-center justify-center bg-primary text-primary-foreground overflow-hidden border border-border" id="avatar_preview_frame">
                   @if($user->avatar)
                     <img src="{{ $user->avatar->url() }}" alt="{{ $user->name }}" class="size-full object-cover" id="avatar_preview_img" />
                   @else

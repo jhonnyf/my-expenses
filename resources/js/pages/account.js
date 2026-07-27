@@ -16,7 +16,7 @@ const Account = (() => {
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            const wrapper = document.getElementById('avatar_preview_wrapper');
+            const wrapper = document.getElementById('avatar_preview_frame');
             if (wrapper) {
                 wrapper.innerHTML = `<img src="${e.target.result}" alt="preview" class="size-full object-cover" />`;
             }

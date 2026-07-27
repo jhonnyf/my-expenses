@@ -23,5 +23,9 @@ class DatabaseSeeder extends Seeder
             'email' => 'jhonnyf7@gmail.com',
             'password' => Hash::make('123123'),
         ]);
+
+        if (app()->isLocal()) {
+            $this->call(VisualCheckUserSeeder::class);
+        }
     }
 }

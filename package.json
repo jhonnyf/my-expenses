@@ -5,13 +5,15 @@
     "scripts": {
         "dev": "vite",
         "clean": "rm -f public/hot",
-        "build": "npm run clean && vite build && node scripts/stamp-sw-cache.mjs"
+        "build": "npm run clean && vite build && node scripts/stamp-sw-cache.mjs",
+        "visual-check": "node scripts/visual-check.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
+        "playwright": "^1.62.0",
         "tailwindcss": "^4.0.0",
         "vite": "^7.0.7"
     }
