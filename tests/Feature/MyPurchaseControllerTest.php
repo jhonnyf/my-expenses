@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Issuer;
+use App\Models\ProductAlias;
 use App\Models\User;
 use App\Services\NFCeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -136,6 +138,20 @@ class MyPurchaseControllerTest extends TestCase
             ->get("/my-purchases/detail/{$invoice->id}")
             ->assertStatus(200)
             ->assertViewHas('invoice');
+    }
+
+    public function test_detail_shows_canonical_product_name_when_aliased(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'ARROZ 5KG']);
+        ProductAlias::create(['user_id' => $user->id, 'description' => 'ARROZ 5KG', 'canonical_name' => 'Arroz Branco 5kg']);
+
+        $this->actingAs($user)
+            ->get("/my-purchases/detail/{$invoice->id}")
+            ->assertStatus(200)
+            ->assertSee('Arroz Branco 5kg');
     }
 
     // ─── upload (XML) ────────────────────────────────────────────────────────

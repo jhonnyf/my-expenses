@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Issuer;
+use App\Models\ProductAlias;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
 use App\Models\User;
@@ -41,7 +44,7 @@ class ShoppingListControllerTest extends TestCase
 
         $this->assertDatabaseHas('shopping_lists', [
             'user_id' => $user->id,
-            'name'    => 'Mercado',
+            'name' => 'Mercado',
         ]);
     }
 
@@ -54,7 +57,7 @@ class ShoppingListControllerTest extends TestCase
 
     public function test_show_returns_403_when_list_belongs_to_another_user(): void
     {
-        $list  = ShoppingList::factory()->create();
+        $list = ShoppingList::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
@@ -75,7 +78,7 @@ class ShoppingListControllerTest extends TestCase
 
     public function test_destroy_returns_403_when_list_belongs_to_another_user(): void
     {
-        $list  = ShoppingList::factory()->create();
+        $list = ShoppingList::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
@@ -97,7 +100,7 @@ class ShoppingListControllerTest extends TestCase
 
     public function test_update_returns_403_for_other_users_list(): void
     {
-        $list  = ShoppingList::factory()->create();
+        $list = ShoppingList::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
@@ -132,42 +135,56 @@ class ShoppingListControllerTest extends TestCase
             ->assertJsonPath('data', []);
     }
 
+    public function test_search_finds_item_by_canonical_name(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'REFRIG COCA COLA 350ML LAT']);
+        ProductAlias::create(['user_id' => $user->id, 'description' => 'REFRIG COCA COLA 350ML LAT', 'canonical_name' => 'Coca-Cola 350ml']);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/shopping-lists/search?q=Coca-Cola');
+
+        $response->assertStatus(200);
+        $this->assertEquals('Coca-Cola 350ml', $response->json('data.0.description'));
+    }
+
     public function test_add_item_returns_403_for_other_users_list(): void
     {
-        $list   = ShoppingList::factory()->create();
-        $other  = User::factory()->create();
+        $list = ShoppingList::factory()->create();
+        $other = User::factory()->create();
         $issuer = Issuer::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->postJson("/api/v1/shopping-lists/{$list->id}/items", [
                 'description' => 'Leite',
-                'unit'        => 'UN',
-                'unit_price'  => 5.00,
-                'quantity'    => 1,
-                'issuer_id'   => $issuer->id,
+                'unit' => 'UN',
+                'unit_price' => 5.00,
+                'quantity' => 1,
+                'issuer_id' => $issuer->id,
             ])->assertStatus(403);
     }
 
     public function test_add_item_to_list(): void
     {
-        $user   = User::factory()->create();
-        $list   = ShoppingList::factory()->for($user)->create();
+        $user = User::factory()->create();
+        $list = ShoppingList::factory()->for($user)->create();
         $issuer = Issuer::factory()->create();
 
         $this->actingAs($user, 'sanctum')
             ->postJson("/api/v1/shopping-lists/{$list->id}/items", [
                 'description' => 'Leite Integral',
-                'unit'        => 'UN',
-                'unit_price'  => 5.50,
-                'quantity'    => 2,
-                'issuer_id'   => $issuer->id,
+                'unit' => 'UN',
+                'unit_price' => 5.50,
+                'quantity' => 2,
+                'issuer_id' => $issuer->id,
             ])
             ->assertStatus(201)
             ->assertJsonPath('data.description', 'Leite Integral');
 
         $this->assertDatabaseHas('shopping_list_items', [
             'shopping_list_id' => $list->id,
-            'description'      => 'Leite Integral',
+            'description' => 'Leite Integral',
         ]);
     }
 
@@ -186,10 +203,10 @@ class ShoppingListControllerTest extends TestCase
 
     public function test_update_item_returns_404_when_item_not_in_list(): void
     {
-        $user      = User::factory()->create();
-        $list      = ShoppingList::factory()->for($user)->create();
+        $user = User::factory()->create();
+        $list = ShoppingList::factory()->for($user)->create();
         $otherList = ShoppingList::factory()->for($user)->create();
-        $item      = ShoppingListItem::factory()->for($otherList)->create();
+        $item = ShoppingListItem::factory()->for($otherList)->create();
 
         $this->actingAs($user, 'sanctum')
             ->patchJson("/api/v1/shopping-lists/{$list->id}/items/{$item->id}", ['quantity' => 5])

@@ -5,6 +5,7 @@ namespace Tests\Feature\Services;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Issuer;
+use App\Models\ProductAlias;
 use App\Models\User;
 use App\Services\SearchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,7 +39,7 @@ class SearchServiceTest extends TestCase
 
     public function test_search_finds_issuer_by_name(): void
     {
-        $user   = User::factory()->create();
+        $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['name' => 'SUPERMERCADO BONS PRECOS']);
         Invoice::factory()->for($user)->for($issuer)->create();
 
@@ -49,8 +50,8 @@ class SearchServiceTest extends TestCase
 
     public function test_search_finds_products_by_description(): void
     {
-        $user    = User::factory()->create();
-        $issuer  = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->for($user)->for($issuer)->create();
         InvoiceItem::factory()->for($invoice)->create(['description' => 'FEIJAO CARIOCA 1KG']);
 
@@ -59,10 +60,24 @@ class SearchServiceTest extends TestCase
         $this->assertNotEmpty($result['produtos']);
     }
 
+    public function test_search_finds_product_by_canonical_name(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'REFRIG COCA COLA 350ML LAT']);
+        ProductAlias::create(['user_id' => $user->id, 'description' => 'REFRIG COCA COLA 350ML LAT', 'canonical_name' => 'Coca-Cola 350ml']);
+
+        $result = $this->service->search('Coca-Cola', $user->id);
+
+        $this->assertNotEmpty($result['produtos']);
+        $this->assertEquals('Coca-Cola 350ml', $result['produtos']->first()['title']);
+    }
+
     public function test_search_does_not_return_other_users_data(): void
     {
-        $userA  = User::factory()->create();
-        $userB  = User::factory()->create();
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
         $issuer = Issuer::factory()->create(['name' => 'FARMACIA SAUDE']);
         Invoice::factory()->for($userB)->for($issuer)->create();
 

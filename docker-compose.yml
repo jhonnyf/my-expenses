@@ -40,6 +40,8 @@ services:
         image: mysql:8.0
         container_name: mysql-${APP_NAME}
         restart: unless-stopped
+        ports:
+            - "3306:3306"
         environment:
             MYSQL_DATABASE: ${DB_DATABASE}
             MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}

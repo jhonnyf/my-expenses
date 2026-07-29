@@ -317,7 +317,18 @@
                                         <td class="text-center text-secondary-foreground">{{ $item->item_number }}</td>
                                         <td class="py-2.5">
                                             <div class="flex items-center gap-1.5 min-w-0">
-                                                <span class="font-medium text-foreground truncate">{{ $item->description }}</span>
+                                                <span class="font-medium text-foreground truncate item-alias-name" data-item-description="{{ $item->description }}">
+                                                    {{ $item->canonical_name ?? $item->description }}
+                                                </span>
+                                                <button type="button"
+                                                        data-action="edit-product-alias"
+                                                        data-kt-modal-toggle="#productAliasModal"
+                                                        data-description="{{ $item->description }}"
+                                                        data-canonical-name="{{ $item->canonical_name }}"
+                                                        class="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                                                        title="Unificar nome do produto">
+                                                    <i class="ki-filled ki-pencil text-xs"></i>
+                                                </button>
                                                 <button type="button"
                                                         class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                                                         data-kt-tooltip="true" data-kt-tooltip-placement="top">
@@ -326,6 +337,9 @@
                                                         Código: {{ $item->code ?: '—' }} &middot;
                                                         NCM: {{ $item->ncm ?: '—' }} &middot;
                                                         CFOP: {{ $item->cfop ?: '—' }}
+                                                        @if($item->canonical_name)
+                                                            &middot; Original: {{ $item->description }}
+                                                        @endif
                                                     </span>
                                                 </button>
                                             </div>
@@ -367,8 +381,22 @@
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-1.5 min-w-0">
                                         <span class="text-xs text-secondary-foreground shrink-0">#{{ $item->item_number }}</span>
-                                        <span class="font-medium text-foreground truncate">{{ $item->description }}</span>
+                                        <span class="font-medium text-foreground truncate item-alias-name" data-item-description="{{ $item->description }}">
+                                            {{ $item->canonical_name ?? $item->description }}
+                                        </span>
+                                        <button type="button"
+                                                data-action="edit-product-alias"
+                                                data-kt-modal-toggle="#productAliasModal"
+                                                data-description="{{ $item->description }}"
+                                                data-canonical-name="{{ $item->canonical_name }}"
+                                                class="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                                                title="Unificar nome do produto">
+                                            <i class="ki-filled ki-pencil text-xs"></i>
+                                        </button>
                                     </div>
+                                    @if($item->canonical_name)
+                                        <p class="text-[11px] text-secondary-foreground truncate">Original: {{ $item->description }}</p>
+                                    @endif
                                     <div class="kt-progress h-1 mt-1.5 max-w-32">
                                         <div class="kt-progress-indicator" style="width: {{ min($share, 100) }}%"></div>
                                     </div>
@@ -409,7 +437,9 @@
 
     </div>
 
-    @section('page-module', 'issuer-favorite,invoice-detail')
+    @include('product-alias._alias-modal')
+
+    @section('page-module', 'issuer-favorite,invoice-detail,product-alias')
 @endsection
 
 @push('scripts')
@@ -417,6 +447,8 @@
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         assignCategoryUrl: '{{ route("categories.assign-item") }}',
         issuerBaseUrl: '{{ url("issuers") }}',
+        productAliasStoreUrl: '{{ route("product-aliases.store") }}',
+        productAliasAiSuggestUrl: '{{ route("product-aliases.ai-suggest-name") }}',
     });
 </script>
 @endpush

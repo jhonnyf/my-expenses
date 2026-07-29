@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class ReportService
 {
+    public function __construct(private readonly ProductAliasService $aliasService) {}
+
     public function buildReportData(int $userId, array $filters): array
     {
         $startDate = $filters['start_date'] ?? Carbon::now()->startOfMonth()->format('Y-m-d');
@@ -30,8 +32,12 @@ class ReportService
             ->when($issuerId, fn ($q) => $q->where('invoices.issuer_id', $issuerId))
             ->when($categoryId, fn ($q) => $q->where('invoices_items.category_id', $categoryId));
 
-        $items = (clone $query)->select(
-            'invoices_items.description',
+        $itemsQuery = clone $query;
+        $this->aliasService->joinCanonicalNames($itemsQuery, $userId);
+        $nameSql = $this->aliasService->canonicalNameSql();
+
+        $items = $itemsQuery->select(
+            DB::raw("{$nameSql} as description"),
             'invoices_items.quantity',
             'invoices_items.unit',
             'invoices_items.unit_price',

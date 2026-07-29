@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Issuer;
+use App\Models\ProductAlias;
 use App\Models\User;
 use App\Services\ReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,7 +27,7 @@ class ReportServiceTest extends TestCase
     private function createInvoiceWithItem(User $user, Issuer $issuer, array $invoiceOverrides = [], float $itemPrice = 10.00, array $itemOverrides = []): InvoiceItem
     {
         $invoiceOverrides = array_merge(['issued_at' => now()], $invoiceOverrides);
-        $invoice          = Invoice::factory()->for($user)->for($issuer)->create($invoiceOverrides);
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create($invoiceOverrides);
 
         return InvoiceItem::factory()->for($invoice)->create(
             array_merge(['total_price' => $itemPrice], $itemOverrides)
@@ -49,7 +50,7 @@ class ReportServiceTest extends TestCase
 
     public function test_build_report_data_filters_by_date_range(): void
     {
-        $user   = User::factory()->create();
+        $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
 
         $this->createInvoiceWithItem($user, $issuer, ['issued_at' => now()->subDays(5)], 50.00);
@@ -57,7 +58,7 @@ class ReportServiceTest extends TestCase
 
         $result = $this->service->buildReportData($user->id, [
             'start_date' => now()->subDays(10)->format('Y-m-d'),
-            'end_date'   => now()->format('Y-m-d'),
+            'end_date' => now()->format('Y-m-d'),
         ]);
 
         $this->assertEquals(50.00, (float) $result['summary']->total_amount);
@@ -65,7 +66,7 @@ class ReportServiceTest extends TestCase
 
     public function test_build_report_data_filters_by_issuer_id(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $issuer1 = Issuer::factory()->create();
         $issuer2 = Issuer::factory()->create();
 
@@ -79,12 +80,12 @@ class ReportServiceTest extends TestCase
 
     public function test_build_report_data_filters_by_category_id(): void
     {
-        $user     = User::factory()->create();
-        $issuer   = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $category = Category::factory()->for($user)->create();
-        $invoice  = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
 
-        $catItem   = InvoiceItem::factory()->for($invoice)->create(['total_price' => 20.00, 'category_id' => $category->id]);
+        $catItem = InvoiceItem::factory()->for($invoice)->create(['total_price' => 20.00, 'category_id' => $category->id]);
         $noCatItem = InvoiceItem::factory()->for($invoice)->create(['total_price' => 80.00, 'category_id' => null]);
 
         $result = $this->service->buildReportData($user->id, ['category_id' => $category->id]);
@@ -94,13 +95,26 @@ class ReportServiceTest extends TestCase
 
     public function test_build_report_data_groups_by_category(): void
     {
-        $user    = User::factory()->create();
-        $issuer  = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
 
         $this->createInvoiceWithItem($user, $issuer, ['issued_at' => now()], 25.00);
 
         $result = $this->service->buildReportData($user->id, []);
 
         $this->assertNotEmpty($result['categoryBreakdown']);
+    }
+
+    public function test_build_report_data_shows_canonical_name_when_aliased(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        $this->createInvoiceWithItem($user, $issuer, [], 10.00, ['description' => 'ARROZ 5KG']);
+        ProductAlias::create(['user_id' => $user->id, 'description' => 'ARROZ 5KG', 'canonical_name' => 'Arroz Branco 5kg']);
+
+        $result = $this->service->buildReportData($user->id, []);
+
+        $this->assertEquals('Arroz Branco 5kg', $result['items']->first()->description);
     }
 }

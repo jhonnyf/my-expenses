@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    public function __construct(private readonly ProductAliasService $aliasService) {}
+
     public function getViewData(int $userId): array
     {
         $now = Carbon::now();
@@ -192,10 +194,15 @@ class DashboardService
     private function getTopProducts(int $userId): Collection
     {
         return Cache::remember("dashboard.top_products.{$userId}", 300, function () use ($userId) {
-            return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-                ->where('invoices.user_id', $userId)
-                ->select('invoices_items.description', DB::raw('COUNT(*) as frequency'), DB::raw('AVG(invoices_items.unit_price) as avg_price'))
-                ->groupBy('invoices_items.description')
+            $query = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+                ->where('invoices.user_id', $userId);
+            $this->aliasService->joinCanonicalNames($query, $userId);
+
+            $nameSql = $this->aliasService->canonicalNameSql();
+
+            return $query
+                ->select(DB::raw("{$nameSql} as description"), DB::raw('COUNT(*) as frequency'), DB::raw('AVG(invoices_items.unit_price) as avg_price'))
+                ->groupBy(DB::raw($nameSql))
                 ->orderByDesc('frequency')
                 ->limit(10)
                 ->get();

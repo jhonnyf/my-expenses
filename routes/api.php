@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\IssuerController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PriceHistoryController;
+use App\Http\Controllers\Api\V1\ProductAliasController;
 use App\Http\Controllers\Api\V1\RecurringPurchaseController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SearchController;
@@ -86,6 +87,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::prefix('price-history')->name('price-history.')->group(function () {
             Route::get('/', [PriceHistoryController::class, 'search'])->name('search');
             Route::get('timeline', [PriceHistoryController::class, 'timeline'])->name('timeline');
+        });
+
+        // Apelidos de produto (unificação de nome entre lojas)
+        Route::prefix('product-aliases')->name('product-aliases.')->group(function () {
+            Route::get('suggestions', [ProductAliasController::class, 'suggestions'])->name('suggestions');
+            Route::get('suggestions-all', [ProductAliasController::class, 'suggestionsAll'])->name('suggestions-all');
+            Route::get('community-suggestions', [ProductAliasController::class, 'communitySuggestions'])->name('community-suggestions');
+            Route::post('/', [ProductAliasController::class, 'store'])->name('store');
+            Route::post('merge', [ProductAliasController::class, 'merge'])->name('merge');
+            Route::post('dismiss', [ProductAliasController::class, 'dismiss'])->name('dismiss');
+            Route::post('ai-suggest-name', [ProductAliasController::class, 'aiSuggestName'])
+                ->name('ai-suggest-name')
+                ->middleware('throttle:ai-suggestions');
         });
 
         // Compras recorrentes

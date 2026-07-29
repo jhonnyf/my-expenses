@@ -13,6 +13,7 @@ use App\Import\Strategies\QrCodeImportStrategy;
 use App\Import\Strategies\XmlFileImportStrategy;
 use App\Models\Category;
 use App\Models\Invoice;
+use App\Services\ProductAliasService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class MyPurchaseController extends Controller
         private readonly XmlFileImportStrategy $xmlStrategy,
         private readonly QrCodeImportStrategy $qrCodeStrategy,
         private readonly AccessKeyImportStrategy $accessKeyStrategy,
+        private readonly ProductAliasService $productAliasService,
     ) {}
 
     public function index(Request $request): View
@@ -74,6 +76,7 @@ class MyPurchaseController extends Controller
         abort_if($invoice->user_id !== $user->id, 403);
 
         $invoice->load('issuer.nicknameForUser', 'items.category', 'payments');
+        $this->productAliasService->attachCanonicalNames($invoice->items, $user->id);
 
         $isIssuerFavorite = $invoice->issuer
             ? $user->favoriteIssuers()->where('issuers.id', $invoice->issuer_id)->exists()

@@ -4,30 +4,40 @@ namespace App\Search\Strategies;
 
 use App\Contracts\SearchStrategyInterface;
 use App\Models\InvoiceItem;
+use App\Services\ProductAliasService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ProductSearchStrategy implements SearchStrategyInterface
 {
+    public function __construct(private readonly ProductAliasService $aliasService) {}
+
     public function search(string $query, int $userId): Collection
     {
-        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-            ->where('invoices.user_id', $userId)
-            ->where('invoices_items.description', 'like', "%{$query}%")
+        $productQuery = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->where('invoices.user_id', $userId);
+        $this->aliasService->joinCanonicalNames($productQuery, $userId);
+
+        $nameSql = $this->aliasService->canonicalNameSql();
+
+        return $productQuery
+            ->where(fn ($q) => $q
+                ->where('invoices_items.description', 'like', "%{$query}%")
+                ->orWhere('product_aliases.canonical_name', 'like', "%{$query}%"))
             ->select(
-                'invoices_items.description',
+                DB::raw("{$nameSql} as description"),
                 DB::raw('COUNT(*) as count'),
                 DB::raw('AVG(invoices_items.unit_price) as avg_price')
             )
-            ->groupBy('invoices_items.description')
+            ->groupBy(DB::raw($nameSql))
             ->orderByDesc('count')
             ->limit(5)
             ->get()
             ->map(fn ($p) => [
-                'type'     => 'product',
-                'title'    => $p->description,
+                'type' => 'product',
+                'title' => $p->description,
                 'subtitle' => $p->count.'x comprado - Média R$ '.number_format($p->avg_price, 2, ',', '.'),
-                'url'      => route('price-history.index').'?q='.urlencode($p->description),
+                'url' => route('price-history.index').'?q='.urlencode($p->description),
             ]);
     }
 }

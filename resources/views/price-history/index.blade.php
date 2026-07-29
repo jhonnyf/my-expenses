@@ -1,5 +1,5 @@
 @extends('layout.main')
-@section('page-module', 'price-history')
+@section('page-module', 'price-history,product-alias')
 
 @section('content')
 
@@ -41,13 +41,39 @@
                 </div>
             </div>
 
+            {{-- SUGESTÕES DE UNIFICAÇÃO --}}
+            <div class="kt-card" id="suggestionsCard" style="display:none;">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">
+                        <i class="ki-filled ki-abstract-26 text-primary me-1"></i> Sugestões de Unificação
+                    </h3>
+                    <span id="suggestionsCount" class="kt-badge kt-badge-primary kt-badge-outline kt-badge-sm"></span>
+                </div>
+                <div class="kt-card-content pb-2">
+                    <p class="text-xs text-secondary-foreground mb-2">
+                        Produtos com descrições parecidas comprados em lojas diferentes. Ajuste o nome e unifique, ou ignore se forem produtos diferentes.
+                        <a href="{{ route('product-aliases.review') }}" class="text-primary hover:underline">Ver todas as sugestões &rarr;</a>
+                    </p>
+                    <div id="suggestionsList" class="divide-y divide-border"></div>
+                </div>
+            </div>
+
             {{-- DETALHE DO PRODUTO --}}
             <div id="productDetail" style="display:none;" class="grid gap-5 lg:gap-7.5">
 
                 {{-- Visão Geral --}}
                 <div class="kt-card">
                     <div class="kt-card-header">
-                        <h3 class="kt-card-title" id="productTitle"></h3>
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <h3 class="kt-card-title truncate" id="productTitle"></h3>
+                            <button type="button" id="productAliasEditBtn"
+                                    data-action="edit-product-alias"
+                                    data-kt-modal-toggle="#productAliasModal"
+                                    class="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                                    title="Editar nome do produto">
+                                <i class="ki-filled ki-pencil text-sm"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="kt-card-content pb-5">
                         <div id="summaryCards" class="grid grid-cols-2 lg:grid-cols-4 gap-5"></div>
@@ -111,6 +137,8 @@
         </div>
     </div>
 
+    @include('product-alias._alias-modal')
+
 @endsection
 
 @push('scripts')
@@ -118,6 +146,11 @@
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         searchUrl: '{{ route("price-history.search") }}',
         showUrl: '{{ route("price-history.show") }}',
+        productAliasStoreUrl: '{{ route("product-aliases.store") }}',
+        productAliasMergeUrl: '{{ route("product-aliases.merge") }}',
+        productAliasDismissUrl: '{{ route("product-aliases.dismiss") }}',
+        productAliasSuggestionsUrl: '{{ route("product-aliases.suggestions") }}',
+        productAliasAiSuggestUrl: '{{ route("product-aliases.ai-suggest-name") }}',
     });
 </script>
 @endpush

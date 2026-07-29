@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\Issuer;
+use App\Models\ProductAlias;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
 use App\Models\User;
@@ -46,5 +50,19 @@ class ShoppingListControllerTest extends TestCase
                     && (float) $lists->first()->items_total === 25.0
                     && $lists->first()->items_count === 2;
             });
+    }
+
+    public function test_search_finds_item_by_canonical_name(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'REFRIG COCA COLA 350ML LAT']);
+        ProductAlias::create(['user_id' => $user->id, 'description' => 'REFRIG COCA COLA 350ML LAT', 'canonical_name' => 'Coca-Cola 350ml']);
+
+        $response = $this->actingAs($user)->getJson('/shopping-list/search?q=Coca-Cola');
+
+        $response->assertStatus(200);
+        $this->assertEquals('Coca-Cola 350ml', $response->json('0.description'));
     }
 }

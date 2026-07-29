@@ -12,6 +12,7 @@ import IssuerList from './pages/issuer-list';
 import IssuerNickname from './pages/issuer-nickname';
 import MyPurchases from './pages/my-purchases';
 import PriceHistory from './pages/price-history';
+import ProductAlias from './pages/product-alias';
 import RecurringPurchase from './pages/recurring-purchase';
 import Report from './pages/report';
 import ShoppingList from './pages/shopping-list';
@@ -31,6 +32,7 @@ const pages = {
     'issuer-nickname': IssuerNickname,
     'my-purchases': MyPurchases,
     'price-history': PriceHistory,
+    'product-alias': ProductAlias,
     'recurring-purchase': RecurringPurchase,
     'report': Report,
     'shopping-list': ShoppingList,

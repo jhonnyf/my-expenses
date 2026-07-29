@@ -9,12 +9,19 @@ use Illuminate\Support\Facades\DB;
 
 class RecurringPurchaseService
 {
+    public function __construct(private readonly ProductAliasService $aliasService) {}
+
     public function getRecurringItems(int $userId): Collection
     {
-        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-            ->where('invoices.user_id', $userId)
+        $query = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->where('invoices.user_id', $userId);
+        $this->aliasService->joinCanonicalNames($query, $userId);
+
+        $nameSql = $this->aliasService->canonicalNameSql();
+
+        return $query
             ->select(
-                'invoices_items.description',
+                DB::raw("{$nameSql} as description"),
                 DB::raw('COUNT(DISTINCT invoices.id) as purchase_count'),
                 DB::raw('COUNT(DISTINCT invoices.issuer_id) as issuer_count'),
                 DB::raw('AVG(invoices_items.unit_price) as avg_price'),
@@ -23,7 +30,7 @@ class RecurringPurchaseService
                 DB::raw('MAX(invoices.issued_at) as last_purchased_at'),
                 DB::raw('MIN(invoices.issued_at) as first_purchased_at')
             )
-            ->groupBy('invoices_items.description')
+            ->groupBy(DB::raw($nameSql))
             ->havingRaw('COUNT(DISTINCT invoices.id) >= 3')
             ->orderByDesc('purchase_count')
             ->get()
@@ -47,23 +54,28 @@ class RecurringPurchaseService
             return collect();
         }
 
-        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+        $query = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
             ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
                 $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
                     ->where('issuer_nicknames.user_id', '=', $userId);
             })
-            ->where('invoices.user_id', $userId)
-            ->whereIn('invoices_items.description', $topDescriptions)
+            ->where('invoices.user_id', $userId);
+        $this->aliasService->joinCanonicalNames($query, $userId);
+
+        $nameSql = $this->aliasService->canonicalNameSql();
+
+        return $query
+            ->whereIn(DB::raw($nameSql), $topDescriptions)
             ->select(
-                'invoices_items.description',
+                DB::raw("{$nameSql} as description"),
                 'issuers.id as issuer_id',
                 DB::raw('COALESCE(issuer_nicknames.nickname, issuers.name) as issuer_name'),
                 DB::raw('AVG(invoices_items.unit_price) as avg_price'),
                 DB::raw('COUNT(*) as count'),
                 DB::raw('MAX(invoices_items.unit) as unit')
             )
-            ->groupBy('invoices_items.description', 'issuers.id', 'issuers.name', 'issuer_nicknames.nickname')
+            ->groupBy(DB::raw($nameSql), 'issuers.id', 'issuers.name', 'issuer_nicknames.nickname')
             ->get()
             ->groupBy('description')
             ->map(fn ($group) => $group->sortBy('avg_price')->first());

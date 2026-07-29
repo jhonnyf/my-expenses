@@ -210,6 +210,13 @@ const PriceHistory = (() => {
                 renderChart(data.timeline, data.summary);
                 renderTable(data.timeline, data.summary);
                 productDetail.style.display = 'block';
+
+                const editBtn = document.getElementById('productAliasEditBtn');
+                if (editBtn) {
+                    editBtn.dataset.description = description;
+                    editBtn.dataset.canonicalName = description;
+                    editBtn.dataset.descriptions = JSON.stringify(data.descriptions?.length ? data.descriptions : [description]);
+                }
             });
     };
 
@@ -261,6 +268,13 @@ const PriceHistory = (() => {
         loadProduct(row.dataset.product);
     };
 
+    const handleAliasUpdated = (e) => {
+        const titleEl = document.getElementById('productTitle');
+        if (titleEl && productDetail.style.display !== 'none') {
+            titleEl.textContent = e.detail.display_name;
+        }
+    };
+
     return {
         init: () => {
             if (initialized) return;
@@ -274,6 +288,7 @@ const PriceHistory = (() => {
 
             searchInput.addEventListener('input', handleInput);
             resultsList.addEventListener('click', handleResultsClick);
+            document.addEventListener('product-alias:updated', handleAliasUpdated);
 
             const params = new URLSearchParams(window.location.search);
             const q = params.get('q');

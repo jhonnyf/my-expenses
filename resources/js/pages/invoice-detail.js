@@ -32,6 +32,14 @@ const InvoiceDetail = (() => {
         assignCategory(itemId, categoryId);
     };
 
+    const handleAliasUpdated = (e) => {
+        const { description, display_name: displayName } = e.detail;
+
+        document.querySelectorAll(`.item-alias-name[data-item-description="${CSS.escape(description)}"]`).forEach(el => {
+            el.textContent = displayName;
+        });
+    };
+
     return {
         init: () => {
             if (initialized) return;
@@ -40,6 +48,7 @@ const InvoiceDetail = (() => {
             ({ assignCategoryUrl } = window.pageConfig || {});
 
             document.addEventListener('change', handleChange);
+            document.addEventListener('product-alias:updated', handleAliasUpdated);
         }
     };
 })();

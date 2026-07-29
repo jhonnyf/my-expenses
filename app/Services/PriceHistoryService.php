@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\InvoiceItem;
+use App\Models\ProductAlias;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -11,17 +12,24 @@ class PriceHistoryService
     public function search(string $query, int $userId): Collection
     {
         return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->leftJoin('product_aliases', function ($join) use ($userId) {
+                $join->on('product_aliases.description', '=', 'invoices_items.description')
+                    ->where('product_aliases.user_id', '=', $userId);
+            })
             ->where('invoices.user_id', $userId)
-            ->where('invoices_items.description', 'like', "%{$query}%")
+            ->where(function ($q) use ($query) {
+                $q->where('invoices_items.description', 'like', "%{$query}%")
+                    ->orWhere('product_aliases.canonical_name', 'like', "%{$query}%");
+            })
             ->select(
-                'invoices_items.description',
+                DB::raw('COALESCE(product_aliases.canonical_name, invoices_items.description) as description'),
                 DB::raw('COUNT(*) as purchase_count'),
                 DB::raw('MIN(invoices_items.unit_price) as min_price'),
                 DB::raw('MAX(invoices_items.unit_price) as max_price'),
                 DB::raw('AVG(invoices_items.unit_price) as avg_price'),
                 DB::raw('MAX(invoices.issued_at) as last_purchased_at')
             )
-            ->groupBy('invoices_items.description')
+            ->groupBy(DB::raw('COALESCE(product_aliases.canonical_name, invoices_items.description)'))
             ->orderByDesc('purchase_count')
             ->limit(20)
             ->get();
@@ -29,6 +37,17 @@ class PriceHistoryService
 
     public function getTimeline(string $description, int $userId): array
     {
+        // $description pode ser um nome canônico (agrupando várias descrições
+        // originais unificadas via ProductAlias) ou uma descrição bruta ainda
+        // não unificada — nesse caso ela mesma é usada como filtro.
+        $matchDescriptions = ProductAlias::where('user_id', $userId)
+            ->where('canonical_name', $description)
+            ->pluck('description');
+
+        if ($matchDescriptions->isEmpty()) {
+            $matchDescriptions = collect([$description]);
+        }
+
         $timeline = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
             ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
@@ -36,7 +55,7 @@ class PriceHistoryService
                     ->where('issuer_nicknames.user_id', '=', $userId);
             })
             ->where('invoices.user_id', $userId)
-            ->where('invoices_items.description', $description)
+            ->whereIn('invoices_items.description', $matchDescriptions)
             ->select(
                 'invoices_items.unit_price',
                 'invoices_items.quantity',
@@ -57,6 +76,7 @@ class PriceHistoryService
 
         return [
             'timeline' => $timeline,
+            'descriptions' => $matchDescriptions->values(),
             'summary' => [
                 'min_price' => $minPrice,
                 'max_price' => $maxPrice,

@@ -9,6 +9,7 @@ use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MyPurchaseController;
 use App\Http\Controllers\PriceHistoryController;
+use App\Http\Controllers\ProductAliasController;
 use App\Http\Controllers\RecurringPurchaseController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\ReportController;
@@ -78,6 +79,19 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/', [PriceHistoryController::class, 'index'])->name('index');
         Route::get('search', [PriceHistoryController::class, 'search'])->name('search');
         Route::get('show', [PriceHistoryController::class, 'show'])->name('show');
+    });
+
+    Route::group(['prefix' => 'product-aliases', 'as' => 'product-aliases.'], function () {
+        Route::get('review', [ProductAliasController::class, 'review'])->name('review');
+        Route::get('suggestions', [ProductAliasController::class, 'suggestions'])->name('suggestions');
+        Route::get('suggestions-all', [ProductAliasController::class, 'suggestionsAll'])->name('suggestions-all');
+        Route::get('community-suggestions', [ProductAliasController::class, 'communitySuggestions'])->name('community-suggestions');
+        Route::post('/', [ProductAliasController::class, 'store'])->name('store');
+        Route::post('merge', [ProductAliasController::class, 'merge'])->name('merge');
+        Route::post('dismiss', [ProductAliasController::class, 'dismiss'])->name('dismiss');
+        Route::post('ai-suggest-name', [ProductAliasController::class, 'aiSuggestName'])
+            ->name('ai-suggest-name')
+            ->middleware('throttle:ai-suggestions');
     });
 
     Route::get('search', [SearchController::class, 'search'])->name('search');

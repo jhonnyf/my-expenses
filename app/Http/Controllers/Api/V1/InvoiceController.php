@@ -13,6 +13,7 @@ use App\Import\Strategies\AccessKeyImportStrategy;
 use App\Import\Strategies\QrCodeImportStrategy;
 use App\Import\Strategies\XmlFileImportStrategy;
 use App\Models\Invoice;
+use App\Services\ProductAliasService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class InvoiceController extends Controller
         private readonly XmlFileImportStrategy $xmlStrategy,
         private readonly QrCodeImportStrategy $qrCodeStrategy,
         private readonly AccessKeyImportStrategy $accessKeyStrategy,
+        private readonly ProductAliasService $productAliasService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -40,6 +42,7 @@ class InvoiceController extends Controller
         abort_if($invoice->user_id !== $request->user()->id, 403);
 
         $invoice->load('issuer.nicknameForUser', 'items.category', 'payments');
+        $this->productAliasService->attachCanonicalNames($invoice->items, $request->user()->id);
 
         return $this->success(new InvoiceResource($invoice));
     }

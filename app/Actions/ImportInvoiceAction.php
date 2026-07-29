@@ -21,7 +21,10 @@ class ImportInvoiceAction
         $issuer = $this->findOrCreateIssuer(Arr::get($parsed, 'emitente', []));
 
         $invoice = Invoice::updateOrCreate(
-            ['access_key' => Arr::get($parsed, 'chave')],
+            [
+                'access_key' => Arr::get($parsed, 'chave'),
+                'user_id' => $userId,
+            ],
             $this->invoiceAttributes($parsed, $issuer, $rawContent, $userId)
         );
 
@@ -42,13 +45,13 @@ class ImportInvoiceAction
         return Issuer::firstOrCreate(
             ['cnpj' => $cnpj],
             [
-                'name'          => Arr::get($emitente, 'nome', ''),
-                'street'        => Arr::get($emitente, 'logradouro', ''),
+                'name' => Arr::get($emitente, 'nome', ''),
+                'street' => Arr::get($emitente, 'logradouro', ''),
                 'street_number' => Arr::get($emitente, 'numero', ''),
-                'neighborhood'  => Arr::get($emitente, 'bairro', ''),
-                'city'          => Arr::get($emitente, 'municipio', ''),
-                'state'         => Arr::get($emitente, 'uf', ''),
-                'zip_code'      => Arr::get($emitente, 'cep', ''),
+                'neighborhood' => Arr::get($emitente, 'bairro', ''),
+                'city' => Arr::get($emitente, 'municipio', ''),
+                'state' => Arr::get($emitente, 'uf', ''),
+                'zip_code' => Arr::get($emitente, 'cep', ''),
             ]
         );
     }
@@ -56,18 +59,18 @@ class ImportInvoiceAction
     private function invoiceAttributes(array $parsed, ?Issuer $issuer, string $rawContent, int $userId): array
     {
         return [
-            'user_id'         => $userId,
-            'number'          => Arr::get($parsed, 'numero', ''),
-            'series'          => Arr::get($parsed, 'serie', ''),
-            'issued_at'       => Arr::get($parsed, 'emitido_em', now()),
-            'environment'     => Arr::get($parsed, 'ambiente', 'producao') === 'producao' ? 'production' : 'staging',
-            'issuer_id'       => $issuer?->id,
+            'user_id' => $userId,
+            'number' => Arr::get($parsed, 'numero', ''),
+            'series' => Arr::get($parsed, 'serie', ''),
+            'issued_at' => Arr::get($parsed, 'emitido_em', now()),
+            'environment' => Arr::get($parsed, 'ambiente', 'producao') === 'producao' ? 'production' : 'staging',
+            'issuer_id' => $issuer?->id,
             'total_icms_base' => (float) Arr::get($parsed, 'total.base_calculo_icms', 0),
-            'total_icms'      => (float) Arr::get($parsed, 'total.valor_icms', 0),
-            'total_products'  => (float) Arr::get($parsed, 'total.valor_produtos', 0),
-            'total_amount'    => (float) Arr::get($parsed, 'total.valor_nota', 0),
-            'total_taxes'     => (float) Arr::get($parsed, 'total.valor_tributos', 0),
-            'raw_xml'         => $rawContent,
+            'total_icms' => (float) Arr::get($parsed, 'total.valor_icms', 0),
+            'total_products' => (float) Arr::get($parsed, 'total.valor_produtos', 0),
+            'total_amount' => (float) Arr::get($parsed, 'total.valor_nota', 0),
+            'total_taxes' => (float) Arr::get($parsed, 'total.valor_tributos', 0),
+            'raw_xml' => $rawContent,
         ];
     }
 
@@ -76,17 +79,17 @@ class ImportInvoiceAction
         foreach ($items as $item) {
             InvoiceItem::updateOrCreate(
                 [
-                    'invoice_id'  => $invoice->id,
+                    'invoice_id' => $invoice->id,
                     'item_number' => (int) Arr::get($item, 'numero_item', 0),
                 ],
                 [
-                    'code'        => Arr::get($item, 'codigo', ''),
+                    'code' => Arr::get($item, 'codigo', ''),
                     'description' => Arr::get($item, 'descricao', ''),
-                    'ncm'         => Arr::get($item, 'ncm', ''),
-                    'cfop'        => Arr::get($item, 'cfop', ''),
-                    'unit'        => Arr::get($item, 'unidade', ''),
-                    'quantity'    => (float) Arr::get($item, 'quantidade', 0),
-                    'unit_price'  => (float) Arr::get($item, 'valor_unitario', 0),
+                    'ncm' => Arr::get($item, 'ncm', ''),
+                    'cfop' => Arr::get($item, 'cfop', ''),
+                    'unit' => Arr::get($item, 'unidade', ''),
+                    'quantity' => (float) Arr::get($item, 'quantidade', 0),
+                    'unit_price' => (float) Arr::get($item, 'valor_unitario', 0),
                     'total_price' => (float) Arr::get($item, 'valor_total', 0),
                 ]
             );
@@ -105,8 +108,8 @@ class ImportInvoiceAction
         InvoicePayment::insert(
             array_map(fn (array $p) => [
                 'invoice_id' => $invoice->id,
-                'method'     => Arr::get($p, 'forma', 'outros'),
-                'amount'     => (float) Arr::get($p, 'valor', 0),
+                'method' => Arr::get($p, 'forma', 'outros'),
+                'amount' => (float) Arr::get($p, 'valor', 0),
                 'created_at' => $now,
                 'updated_at' => $now,
             ], $payments)
