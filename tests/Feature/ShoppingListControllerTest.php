@@ -65,4 +65,54 @@ class ShoppingListControllerTest extends TestCase
         $response->assertStatus(200);
         $this->assertEquals('Coca-Cola 350ml', $response->json('0.description'));
     }
+
+    public function test_search_finds_item_from_other_users_invoice(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($other)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'ARROZ TIPO 1 5KG']);
+
+        $response = $this->actingAs($user)->getJson('/shopping-list/search?q=ARROZ');
+
+        $response->assertStatus(200);
+        $this->assertEquals('ARROZ TIPO 1 5KG', $response->json('0.description'));
+        $this->assertEquals(0, $response->json('0.is_own'));
+    }
+
+    public function test_search_marks_own_items_as_own(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'FEIJAO CARIOCA 1KG']);
+
+        $response = $this->actingAs($user)->getJson('/shopping-list/search?q=FEIJAO');
+
+        $response->assertStatus(200);
+        $this->assertEquals(1, $response->json('0.is_own'));
+    }
+
+    public function test_show_includes_issuer_address_for_directions(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create([
+            'street' => 'Avenida Paulista',
+            'street_number' => '1000',
+            'neighborhood' => 'Bela Vista',
+            'city' => 'São Paulo',
+            'state' => 'SP',
+            'zip_code' => '01310100',
+        ]);
+        $list = ShoppingList::factory()->for($user)->create();
+        ShoppingListItem::factory()->create(['shopping_list_id' => $list->id, 'issuer_id' => $issuer->id]);
+
+        $response = $this->actingAs($user)->getJson("/shopping-list/{$list->id}");
+
+        $response->assertStatus(200);
+        $this->assertEquals('Avenida Paulista', $response->json('items.0.issuer.street'));
+        $this->assertEquals('São Paulo', $response->json('items.0.issuer.city'));
+        $this->assertEquals('01310100', $response->json('items.0.issuer.zip_code'));
+    }
 }

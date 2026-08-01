@@ -149,6 +149,21 @@ class ShoppingListControllerTest extends TestCase
         $this->assertEquals('Coca-Cola 350ml', $response->json('data.0.description'));
     }
 
+    public function test_search_finds_item_from_other_users_invoice(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($other)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'ARROZ TIPO 1 5KG']);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/shopping-lists/search?q=ARROZ');
+
+        $response->assertStatus(200);
+        $this->assertEquals('ARROZ TIPO 1 5KG', $response->json('data.0.description'));
+        $this->assertEquals(0, $response->json('data.0.is_own'));
+    }
+
     public function test_add_item_returns_403_for_other_users_list(): void
     {
         $list = ShoppingList::factory()->create();

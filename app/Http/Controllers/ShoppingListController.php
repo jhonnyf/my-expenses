@@ -5,10 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AddShoppingListItemRequest;
 use App\Http\Requests\UpdateShoppingListItemRequest;
 use App\Http\Requests\UpdateShoppingListRequest;
-use App\Models\InvoiceItem;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
-use App\Services\ProductAliasService;
+use App\Services\ShoppingListService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +17,7 @@ use Illuminate\View\View;
 
 class ShoppingListController extends Controller
 {
-    public function __construct(private readonly ProductAliasService $aliasService) {}
+    public function __construct(private readonly ShoppingListService $service) {}
 
     public function index(): View
     {
@@ -42,36 +41,7 @@ class ShoppingListController extends Controller
         $userId = Auth::id();
         $favoriteIds = Auth::user()->favoriteIssuers()->pluck('issuers.id');
 
-        $itemsQuery = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-            ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
-            ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
-                $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
-                    ->where('issuer_nicknames.user_id', '=', $userId);
-            });
-        $this->aliasService->joinCanonicalNames($itemsQuery, $userId);
-        $nameSql = $this->aliasService->canonicalNameSql();
-
-        $items = $itemsQuery
-            ->select(
-                DB::raw("{$nameSql} as description"),
-                'invoices_items.unit_price',
-                'invoices_items.unit',
-                'invoices_items.code',
-                'issuers.id as issuer_id',
-                'invoices.issued_at'
-            )
-            ->selectRaw('COALESCE(issuer_nicknames.nickname, issuers.name) as issuer_name')
-            ->selectRaw('IF(issuers.id IN ('.($favoriteIds->isNotEmpty() ? $favoriteIds->implode(',') : '0').'), 1, 0) as is_favorite')
-            ->where('invoices.user_id', $userId)
-            ->where(fn ($q) => $q
-                ->where('invoices_items.description', 'like', "%{$query}%")
-                ->orWhere('product_aliases.canonical_name', 'like', "%{$query}%"))
-            ->orderByDesc('is_favorite')
-            ->orderBy('invoices_items.unit_price', 'asc')
-            ->limit(20)
-            ->get();
-
-        return response()->json($items);
+        return response()->json($this->service->searchProducts($userId, $query, $favoriteIds));
     }
 
     public function store(Request $request): JsonResponse

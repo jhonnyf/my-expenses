@@ -176,6 +176,8 @@
         </div>
     </div>
 
+    @include('shopping-list._directions-modal')
+
 @endsection
 
 @push('scripts')

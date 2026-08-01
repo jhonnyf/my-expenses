@@ -20,6 +20,7 @@ const ShoppingList = (() => {
                         const price = Utils.formatCurrency(item.unit_price);
                         const date = item.issued_at ? new Date(item.issued_at).toLocaleDateString('pt-BR') : '';
                         const isFav = item.is_favorite == 1;
+                        const isOwn = item.is_own == 1;
                         const description = Utils.escapeHtml(item.description);
                         const issuerName = Utils.escapeHtml(item.issuer_name);
 
@@ -30,10 +31,11 @@ const ShoppingList = (() => {
                                     <p class="text-sm font-medium text-foreground truncate">
                                         ${isFav ? '<i class="ki-filled ki-star text-yellow-500 text-xs me-1"></i>' : ''}${description}
                                     </p>
-                                    <p class="text-xs text-secondary-foreground mt-0.5">
+                                    <p class="text-xs text-secondary-foreground mt-0.5 flex items-center flex-wrap gap-x-1">
                                         <span class="font-medium">${issuerName}</span>
                                         ${date ? `<span class="mx-1">&middot;</span> ${date}` : ''}
                                         ${item.unit ? `<span class="mx-1">&middot;</span> ${item.unit}` : ''}
+                                        ${!isOwn ? '<span class="kt-badge kt-badge-outline kt-badge-sm shrink-0">Comunidade</span>' : ''}
                                     </p>
                                 </div>
                                 <div class="flex items-center gap-3 shrink-0">
@@ -73,6 +75,15 @@ const ShoppingList = (() => {
         return currentListId;
     };
 
+    const mapIssuerAddress = (issuer) => ({
+        street: issuer.street,
+        street_number: issuer.street_number,
+        neighborhood: issuer.neighborhood,
+        city: issuer.city,
+        state: issuer.state,
+        zip_code: issuer.zip_code,
+    });
+
     const addToList = async (item) => {
         await ensureListExists();
 
@@ -94,6 +105,7 @@ const ShoppingList = (() => {
             unit: saved.unit,
             issuer_name: saved.issuer.display_name,
             issuer_id: saved.issuer_id,
+            ...mapIssuerAddress(saved.issuer),
             quantity: saved.quantity,
             purchased_at: null,
         });
@@ -237,20 +249,59 @@ const ShoppingList = (() => {
 
             return `
                 <div class="kt-card ${isPurchased ? 'opacity-75' : ''}" data-group="${isPurchased ? 'p' : 'u'}-${issuerId}">
-                    <div class="kt-card-header">
+                    <div class="kt-card-header flex-wrap gap-2">
                         <h3 class="kt-card-title">
                             <i class="ki-filled ki-shop ${isPurchased ? 'text-green-500' : 'text-primary'} me-1"></i> ${Utils.escapeHtml(group.name)}
                         </h3>
-                        <span class="text-xs text-secondary-foreground" data-group-summary>
-                            ${group.items.length} ${group.items.length === 1 ? 'item' : 'itens'}
-                            &middot; R$ ${Utils.formatCurrency(groupTotal)}
-                        </span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-secondary-foreground" data-group-summary>
+                                ${group.items.length} ${group.items.length === 1 ? 'item' : 'itens'}
+                                &middot; R$ ${Utils.formatCurrency(groupTotal)}
+                            </span>
+                            <button type="button"
+                                    class="kt-btn kt-btn-sm kt-btn-outline"
+                                    data-directions="${issuerId}"
+                                    data-kt-modal-toggle="#directionsModal">
+                                <i class="ki-filled ki-geolocation"></i> Como chegar
+                            </button>
+                        </div>
                     </div>
                     <div class="kt-card-content pb-3">
                         <div class="divide-y divide-border">${rows}</div>
                     </div>
                 </div>`;
         }).join('');
+    };
+
+    const buildAddressParts = (item) => [
+        item.street ? [item.street, item.street_number].filter(Boolean).join(', ') : null,
+        item.neighborhood,
+        item.city,
+        item.state,
+        item.zip_code,
+    ].filter(Boolean);
+
+    const openDirectionsModal = (issuerId) => {
+        const item = shoppingItems.find(i => i.issuer_id === issuerId);
+        if (!item) return;
+
+        document.getElementById('directionsModalTitle').textContent = item.issuer_name;
+
+        const parts = buildAddressParts(item);
+        const hasAddress = parts.length > 0;
+
+        document.getElementById('directionsModalMapWrapper').classList.toggle('hidden', !hasAddress);
+        document.getElementById('directionsModalOpenLink').classList.toggle('hidden', !hasAddress);
+        document.getElementById('directionsModalWazeLink').classList.toggle('hidden', !hasAddress);
+        document.getElementById('directionsModalEmpty').classList.toggle('hidden', hasAddress);
+        document.getElementById('directionsModalAddress').textContent = hasAddress ? parts.join(' — ') : '';
+
+        if (hasAddress) {
+            const query = encodeURIComponent([...parts, 'Brasil'].join(', '));
+            document.getElementById('directionsModalMap').src = `https://maps.google.com/maps?q=${query}&output=embed&z=16&hl=pt-BR`;
+            document.getElementById('directionsModalOpenLink').href = `https://www.google.com/maps/dir/?api=1&destination=${query}`;
+            document.getElementById('directionsModalWazeLink').href = `https://waze.com/ul?q=${query}&navigate=yes`;
+        }
     };
 
     const updateSidebarCount = () => {
@@ -313,6 +364,12 @@ const ShoppingList = (() => {
     };
 
     const handleListContainerClick = (e) => {
+        const directionsBtn = e.target.closest('[data-directions]');
+        if (directionsBtn) {
+            openDirectionsModal(parseInt(directionsBtn.dataset.directions));
+            return;
+        }
+
         const toggleBtn = e.target.closest('[data-toggle-purchased]');
         if (toggleBtn) {
             togglePurchased(parseInt(toggleBtn.dataset.togglePurchased));
@@ -364,6 +421,7 @@ const ShoppingList = (() => {
             unit: item.unit,
             issuer_name: item.issuer.display_name,
             issuer_id: item.issuer_id,
+            ...mapIssuerAddress(item.issuer),
             quantity: item.quantity,
             purchased_at: item.purchased_at,
         }));
