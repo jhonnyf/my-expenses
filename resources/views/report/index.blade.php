@@ -223,10 +223,18 @@
                                                 </td>
                                                 <td class="text-sm truncate">{{ $item->issuer_name }}</td>
                                                 <td class="text-sm font-medium text-foreground truncate">{{ $item->description }}</td>
-                                                <td>
+                                                <td class="item-category-cell">
                                                     <div class="flex items-center gap-1.5">
-                                                        <span class="size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
-                                                        <span class="text-xs text-foreground truncate">{{ $item->category_name }}</span>
+                                                        <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
+                                                        <select data-action="assign-category" data-item-id="{{ $item->item_id }}"
+                                                                class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                                                            <option value="" data-color="#94a3b8" {{ ! $item->category_id ? 'selected' : '' }}>Sem categoria</option>
+                                                            @foreach($categories as $cat)
+                                                                <option value="{{ $cat->id }}" data-color="{{ $cat->color }}" {{ $item->category_id == $cat->id ? 'selected' : '' }}>
+                                                                    {{ $cat->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
                                                     </div>
                                                 </td>
                                                 <td class="text-end font-mono text-sm">
@@ -255,9 +263,17 @@
                                             R$ {{ number_format($item->total_price, 2, ',', '.') }}
                                         </span>
                                     </div>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
-                                        <span class="text-xs text-foreground truncate">{{ $item->category_name }}</span>
+                                    <div class="flex items-center gap-1.5 item-category-cell">
+                                        <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
+                                        <select data-action="assign-category" data-item-id="{{ $item->item_id }}"
+                                                class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
+                                            <option value="" data-color="#94a3b8" {{ ! $item->category_id ? 'selected' : '' }}>Sem categoria</option>
+                                            @foreach($categories as $cat)
+                                                <option value="{{ $cat->id }}" data-color="{{ $cat->color }}" {{ $item->category_id == $cat->id ? 'selected' : '' }}>
+                                                    {{ $cat->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                     <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs text-secondary-foreground">
                                         <span class="truncate">{{ $item->issuer_name }}</span>
@@ -284,6 +300,7 @@
 <script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         generateUrl: '{{ route("reports.generate") }}',
+        assignCategoryUrl: '{{ route("categories.assign-item") }}',
         categoryBreakdown: @json($categoryBreakdown ?? []),
     });
 </script>

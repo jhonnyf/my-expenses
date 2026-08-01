@@ -37,6 +37,8 @@ class ReportService
         $nameSql = $this->aliasService->canonicalNameSql();
 
         $items = $itemsQuery->select(
+            'invoices_items.id as item_id',
+            'invoices_items.category_id',
             DB::raw("{$nameSql} as description"),
             'invoices_items.quantity',
             'invoices_items.unit',

@@ -1,3 +1,5 @@
+import Utils from '../utils';
+
 const formatBRL = (value) => parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const toISODate = (date) => date.toISOString().slice(0, 10);
@@ -107,7 +109,9 @@ const Report = (() => {
 
             document.addEventListener('click', handleClick);
 
-            const { categoryBreakdown } = window.pageConfig;
+            const { categoryBreakdown, assignCategoryUrl } = window.pageConfig;
+            Utils.initCategoryAssignment(assignCategoryUrl);
+
             if (categoryBreakdown?.length) {
                 renderCategoryChart(categoryBreakdown);
             }

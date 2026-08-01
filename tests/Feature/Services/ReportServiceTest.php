@@ -105,6 +105,20 @@ class ReportServiceTest extends TestCase
         $this->assertNotEmpty($result['categoryBreakdown']);
     }
 
+    public function test_build_report_data_items_expose_item_id_and_category_id_for_categorization(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $item = $this->createInvoiceWithItem($user, $issuer, [], 10.00, ['category_id' => $category->id]);
+
+        $result = $this->service->buildReportData($user->id, []);
+
+        $this->assertEquals($item->id, $result['items']->first()->item_id);
+        $this->assertEquals($category->id, $result['items']->first()->category_id);
+    }
+
     public function test_build_report_data_shows_canonical_name_when_aliased(): void
     {
         $user = User::factory()->create();

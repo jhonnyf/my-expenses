@@ -1,11 +1,14 @@
+import QrScanner from 'qr-scanner';
+
+const QR_ERROR_MESSAGES = {
+    NotAllowedError: 'Permissão de câmera negada. Habilite o acesso à câmera nas configurações do navegador.',
+    NotFoundError: 'Nenhuma câmera foi encontrada neste dispositivo.',
+    NotReadableError: 'Não foi possível acessar a câmera. Ela pode estar em uso por outro aplicativo.',
+};
+
 const Upload = (() => {
     let initialized = false;
-
-    // Delega para o próprio toggle da aba (data-kt-tab-toggle), que já cuida de
-    // mostrar/esconder o painel e aplicar as classes de estado ativo via KTUI.
-    const switchTab = (tab) => {
-        document.querySelector(`[data-kt-tab-toggle="#panel-${tab}"]`)?.click();
-    };
+    let scanner = null;
 
     const clearFieldError = (form, field) => {
         form.querySelector(`[name="${field}"]`)?.removeAttribute('aria-invalid');
@@ -32,43 +35,122 @@ const Upload = (() => {
     // Submete via fetch para não recarregar a página quando a importação falha
     // (chave inválida, nota duplicada, SEFAZ fora do ar etc.) — o erro aparece
     // no próprio formulário. Sem JS, o form ainda funciona via POST clássico.
+    // Reutilizado tanto pelo submit manual quanto pelo callback da leitura por câmera.
+    const submitQrCodeForm = async (form) => {
+        const field = 'qrcode_url';
+        clearFieldError(form, field);
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Importando...';
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: new FormData(form),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const message = data.errors?.[field]?.[0] ?? data.message ?? 'Não foi possível importar a nota.';
+                showFieldError(form, field, message);
+                return false;
+            }
+
+            window.location.href = data.redirect;
+            return true;
+        } catch (error) {
+            showFieldError(form, field, 'Erro de conexão. Tente novamente.');
+            return false;
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    };
+
     const initQrCodeForm = () => {
         const form = document.querySelector('#panel-qrcode form');
-        const field = 'qrcode_url';
         if (!form) return;
 
-        form.addEventListener('submit', async (event) => {
+        form.addEventListener('submit', (event) => {
             event.preventDefault();
-            clearFieldError(form, field);
-
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Importando...';
-
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: { 'Accept': 'application/json' },
-                    body: new FormData(form),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    const message = data.errors?.[field]?.[0] ?? data.message ?? 'Não foi possível importar a nota.';
-                    showFieldError(form, field, message);
-                    return;
-                }
-
-                window.location.href = data.redirect;
-            } catch (error) {
-                showFieldError(form, field, 'Erro de conexão. Tente novamente.');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
+            submitQrCodeForm(form);
         });
+    };
+
+    const resetScannerUi = () => {
+        document.getElementById('qrScannerError').classList.add('hidden');
+
+        const statusEl = document.getElementById('qrScannerStatus');
+        statusEl.classList.remove('hidden');
+        statusEl.textContent = 'Aponte a câmera para o QR Code do cupom fiscal.';
+    };
+
+    const showScannerError = (message) => {
+        document.getElementById('qrScannerStatus').classList.add('hidden');
+
+        const errorEl = document.getElementById('qrScannerError');
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+    };
+
+    const handleQrDecoded = async (result) => {
+        scanner?.stop();
+
+        document.getElementById('qrScannerStatus').textContent = 'QR Code detectado, importando...';
+
+        const form = document.querySelector('#panel-qrcode form');
+        document.getElementById('qrcode_url').value = result.data;
+
+        const ok = await submitQrCodeForm(form);
+
+        // Em sucesso, submitQrCodeForm já redireciona a página. Em erro, fecha
+        // o modal para o usuário ver a mensagem no formulário por trás.
+        if (!ok) {
+            window.KTModal?.getInstance(document.getElementById('qrScannerModal'))?.hide();
+        }
+    };
+
+    const startCamera = async () => {
+        resetScannerUi();
+
+        const video = document.getElementById('qrScannerVideo');
+        scanner = new QrScanner(video, handleQrDecoded, {
+            preferredCamera: 'environment',
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
+        });
+
+        try {
+            await scanner.start();
+        } catch (error) {
+            showScannerError(QR_ERROR_MESSAGES[error?.name] ?? 'Não foi possível iniciar a câmera. Tente novamente.');
+        }
+    };
+
+    const stopCamera = () => {
+        scanner?.stop();
+        scanner?.destroy();
+        scanner = null;
+    };
+
+    const initQrScannerModal = () => {
+        const modal = document.getElementById('qrScannerModal');
+        const triggerBtn = document.getElementById('qrScannerTriggerBtn');
+        if (!modal || !triggerBtn) return;
+
+        // Sem suporte a getUserMedia (browser antigo ou contexto inseguro fora
+        // de https/localhost): esconde o botão da câmera, mantém o input manual.
+        if (!navigator.mediaDevices?.getUserMedia) {
+            triggerBtn.remove();
+            return;
+        }
+
+        modal.addEventListener('shown', startCamera);
+        modal.addEventListener('hidden', stopCamera);
     };
 
     return {
@@ -76,12 +158,8 @@ const Upload = (() => {
             if (initialized) return;
             initialized = true;
 
-            const { initialTab } = window.pageConfig || {};
-            if (initialTab && initialTab !== 'qrcode') {
-                switchTab(initialTab);
-            }
-
             initQrCodeForm();
+            initQrScannerModal();
         }
     };
 })();
