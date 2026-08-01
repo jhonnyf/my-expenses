@@ -48,7 +48,7 @@ class CategoryServiceTest extends TestCase
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
         $category = Category::factory()->for($user)->create();
-        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
 
         InvoiceItem::factory()->for($invoice)->create([
             'category_id' => $category->id,
@@ -66,7 +66,7 @@ class CategoryServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
-        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
 
         $low = Category::factory()->for($user)->create(['name' => 'Baixo']);
         $high = Category::factory()->for($user)->create(['name' => 'Alto']);
@@ -85,8 +85,8 @@ class CategoryServiceTest extends TestCase
         $user = User::factory()->create();
         $other = User::factory()->create();
         $issuer = Issuer::factory()->create();
-        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
-        $otherInvoice = Invoice::factory()->for($other)->for($issuer)->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        $otherInvoice = Invoice::factory()->for($other)->for($issuer)->create(['issued_at' => now()]);
 
         InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
         InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
@@ -95,6 +95,59 @@ class CategoryServiceTest extends TestCase
         $count = $this->service->countUncategorizedItems($user->id);
 
         $this->assertEquals(2, $count);
+    }
+
+    public function test_get_categories_defaults_to_current_month_spending(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $thisMonthInvoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        InvoiceItem::factory()->for($thisMonthInvoice)->create(['category_id' => $category->id, 'total_price' => 50.00]);
+
+        $lastMonthInvoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subMonth()]);
+        InvoiceItem::factory()->for($lastMonthInvoice)->create(['category_id' => $category->id, 'total_price' => 100.00]);
+
+        $result = $this->service->getCategoriesWithSpending($user->id);
+
+        $this->assertEquals(50.00, (float) $result->firstWhere('id', $category->id)->total_spent);
+    }
+
+    public function test_get_categories_filters_by_custom_date_range(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(5)]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id, 'total_price' => 30.00]);
+
+        $oldInvoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(40)]);
+        InvoiceItem::factory()->for($oldInvoice)->create(['category_id' => $category->id, 'total_price' => 70.00]);
+
+        $result = $this->service->getCategoriesWithSpending(
+            $user->id,
+            now()->subDays(10)->format('Y-m-d'),
+            now()->format('Y-m-d'),
+        );
+
+        $this->assertEquals(30.00, (float) $result->firstWhere('id', $category->id)->total_spent);
+    }
+
+    public function test_count_uncategorized_items_filters_by_date_range(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        $oldInvoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subMonth()]);
+
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
+        InvoiceItem::factory()->for($oldInvoice)->create(['category_id' => null]);
+
+        $count = $this->service->countUncategorizedItems($user->id);
+
+        $this->assertEquals(1, $count);
     }
 
     public function test_auto_categorize_matches_items_by_keyword(): void

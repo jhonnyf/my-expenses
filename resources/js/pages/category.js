@@ -203,6 +203,7 @@ const Category = (() => {
 
             ({ baseUrl } = window.pageConfig);
 
+            Utils.initPeriodFilter();
             document.addEventListener('click', handleClick);
         }
     };

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\Invoice;
 use App\Models\Issuer;
 use App\Models\IssuerNickname;
 use App\Models\User;
@@ -20,13 +21,31 @@ class IssuerControllerTest extends TestCase
     public function test_index_returns_paginated_issuers(): void
     {
         $user = User::factory()->create();
-        Issuer::factory()->count(3)->create();
+        $issuers = Issuer::factory()->count(3)->create();
+        $issuers->each(fn (Issuer $issuer) => Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]));
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/issuers')
             ->assertStatus(200)
             ->assertJsonStructure(['data', 'links', 'meta'])
             ->assertJsonCount(3, 'data');
+    }
+
+    public function test_index_excludes_issuers_the_user_never_bought_from(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $ownIssuer = Issuer::factory()->create();
+        $otherIssuer = Issuer::factory()->create();
+
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $ownIssuer->id]);
+        Invoice::factory()->create(['user_id' => $other->id, 'issuer_id' => $otherIssuer->id]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/issuers')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownIssuer->id);
     }
 
     public function test_show_returns_404_for_nonexistent_issuer(): void
@@ -100,7 +119,8 @@ class IssuerControllerTest extends TestCase
     public function test_index_display_name_falls_back_to_official_name(): void
     {
         $user = User::factory()->create();
-        Issuer::factory()->create(['name' => 'Nome Oficial Ltda']);
+        $issuer = Issuer::factory()->create(['name' => 'Nome Oficial Ltda']);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/issuers')

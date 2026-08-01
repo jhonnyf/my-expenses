@@ -18,6 +18,7 @@ class IssuerController extends Controller
 
         $query = Issuer::query()
             ->select('issuers.*')
+            ->whereHas('invoices', fn ($q) => $q->where('user_id', $user->id))
             ->leftJoin('issuer_nicknames', function ($join) use ($user) {
                 $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
                     ->where('issuer_nicknames.user_id', '=', $user->id);

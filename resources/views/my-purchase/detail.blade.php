@@ -351,6 +351,7 @@
                                             <div class="flex items-center gap-1.5">
                                                 <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category->color ?? '#94a3b8' }}"></span>
                                                 <select data-action="assign-category" data-item-id="{{ $item->id }}"
+                                                        data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Sem categoria"
                                                         class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
                                                     <option value="" data-color="#94a3b8">Sem categoria</option>
                                                     @foreach($categories as $cat)
@@ -415,6 +416,7 @@
                             <div class="flex items-center gap-1.5 item-category-cell">
                                 <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category->color ?? '#94a3b8' }}"></span>
                                 <select data-action="assign-category" data-item-id="{{ $item->id }}"
+                                        data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Sem categoria"
                                         class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
                                     <option value="" data-color="#94a3b8">Sem categoria</option>
                                     @foreach($categories as $cat)

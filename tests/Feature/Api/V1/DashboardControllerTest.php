@@ -24,12 +24,14 @@ class DashboardControllerTest extends TestCase
             ->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
+                    'filters' => ['start_date', 'end_date'],
                     'totalExpenses',
                     'totalTaxes',
                     'totalPurchases',
                     'averageTicket',
-                    'currentMonthExpenses',
-                    'lastMonthExpenses',
+                    'periodExpenses',
+                    'previousPeriodExpenses',
+                    'periodVariation',
                     'monthlyExpenses',
                     'topIssuers',
                     'topProducts',
@@ -38,6 +40,18 @@ class DashboardControllerTest extends TestCase
                     'budgets',
                 ],
             ]);
+    }
+
+    public function test_index_filters_by_start_and_end_date(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/dashboard?start_date=2026-01-01&end_date=2026-01-31')
+            ->assertStatus(200);
+
+        $response->assertJsonPath('data.filters.start_date', '2026-01-01');
+        $response->assertJsonPath('data.filters.end_date', '2026-01-31');
     }
 
     public function test_index_does_not_leak_raw_xml(): void

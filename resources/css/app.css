@@ -32,4 +32,54 @@
     .grid > * {
         min-width: 0;
     }
+
+    /*
+     * O painel do KTSelect (dropdown) herda a largura do wrapper/gatilho — ótimo pros
+     * selects de filtro (w-full, já largos o bastante), mas trunca o texto das opções
+     * nos selects compactos de atribuir categoria (célula de tabela, ~90px). O painel
+     * precisa poder crescer além da largura do campo pra mostrar o nome inteiro.
+     *
+     * !important porque o modifier "sameWidth" do Popper (usado internamente pelo
+     * KTSelect) seta a largura via JS inline (style="width: ...px", igual à largura
+     * do gatilho) — inline vence stylesheet normal, só !important consegue sobrepor.
+     *
+     * min-width em rem fixo (não %) de propósito: com dropdown-strategy=fixed (ver
+     * data-kt-select-dropdown-strategy nos selects), o containing block vira a
+     * viewport — min-width:100% ali significaria "100% da tela", não do gatilho.
+     */
+    [data-kt-select-dropdown] {
+        width: max-content !important;
+        min-width: 10rem;
+        max-width: 16rem;
+    }
+
+    /*
+     * O KTSelect não gera sozinho a setinha de dropdown (a classe .kt-select-arrow
+     * existe no CSS do tema, mas o componente JS não insere esse elemento — é algo
+     * que o markup de demo do Metronic adiciona manualmente). Sem ela, o campo vira
+     * uma caixa de texto qualquer, sem indicar que é um select. Usamos mask-image
+     * (em vez de background-image) pra herdar a cor do tema via currentColor/var().
+     *
+     * :not(.kt-select) — quando o <select> original já tinha a classe kt-select,
+     * _createHtmlStructure() do KTUI move essa classe pro elemento de display, que
+     * já vem com seu próprio chevron via background-image (ver regra .kt-select
+     * mais acima) — sem essa exclusão a seta duplicava.
+     */
+    [data-kt-select-display]:not(.kt-select)::after {
+        content: '';
+        display: block;
+        flex-shrink: 0;
+        margin-inline-start: auto;
+        width: 0.875rem;
+        height: 0.875rem;
+        background-color: var(--muted-foreground);
+        -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+    }
 }

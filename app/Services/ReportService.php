@@ -14,8 +14,10 @@ class ReportService
 
     public function buildReportData(int $userId, array $filters): array
     {
-        $startDate = $filters['start_date'] ?? Carbon::now()->startOfMonth()->format('Y-m-d');
-        $endDate = $filters['end_date'] ?? Carbon::now()->format('Y-m-d');
+        // ?: (não só ??) pra tratar tanto ausência quanto string vazia (campo de data
+        // limpo e reenviado no form) como "usar o padrão".
+        $startDate = ($filters['start_date'] ?? '') ?: Carbon::now()->startOfMonth()->format('Y-m-d');
+        $endDate = ($filters['end_date'] ?? '') ?: Carbon::now()->format('Y-m-d');
         $issuerId = $filters['issuer_id'] ?? null;
         $categoryId = $filters['category_id'] ?? null;
 
@@ -27,8 +29,7 @@ class ReportService
                     ->where('issuer_nicknames.user_id', '=', $userId);
             })
             ->where('invoices.user_id', $userId)
-            ->when($startDate, fn ($q) => $q->whereDate('invoices.issued_at', '>=', $startDate))
-            ->when($endDate, fn ($q) => $q->whereDate('invoices.issued_at', '<=', $endDate))
+            ->whereDateBetween('invoices.issued_at', $startDate, $endDate)
             ->when($issuerId, fn ($q) => $q->where('invoices.issuer_id', $issuerId))
             ->when($categoryId, fn ($q) => $q->where('invoices_items.category_id', $categoryId));
 

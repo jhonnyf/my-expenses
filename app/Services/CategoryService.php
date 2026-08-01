@@ -4,19 +4,25 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\InvoiceItem;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CategoryService
 {
-    public function getCategoriesWithSpending(int $userId): Collection
+    public function getCategoriesWithSpending(int $userId, ?string $startDate = null, ?string $endDate = null): Collection
     {
+        $start = $startDate ?: Carbon::now()->startOfMonth()->format('Y-m-d');
+        $end = $endDate ?: Carbon::now()->format('Y-m-d');
+
         $categories = Category::forUser($userId)
-            ->withCount(['items' => fn ($q) => $q->whereHas('invoice', fn ($q2) => $q2->where('user_id', $userId))])
+            ->withCount(['items' => fn ($q) => $q->whereHas('invoice', fn ($q2) => $q2->where('user_id', $userId)
+                ->whereDateBetween('issued_at', $start, $end))])
             ->get();
 
         $spendingByCategory = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->where('invoices.user_id', $userId)
+            ->whereDateBetween('invoices.issued_at', $start, $end)
             ->whereNotNull('invoices_items.category_id')
             ->select('invoices_items.category_id', DB::raw('SUM(invoices_items.total_price) as total'))
             ->groupBy('invoices_items.category_id')
@@ -29,10 +35,14 @@ class CategoryService
         })->sortByDesc('total_spent')->values();
     }
 
-    public function countUncategorizedItems(int $userId): int
+    public function countUncategorizedItems(int $userId, ?string $startDate = null, ?string $endDate = null): int
     {
+        $start = $startDate ?: Carbon::now()->startOfMonth()->format('Y-m-d');
+        $end = $endDate ?: Carbon::now()->format('Y-m-d');
+
         return InvoiceItem::whereNull('category_id')
-            ->whereHas('invoice', fn ($q) => $q->where('user_id', $userId))
+            ->whereHas('invoice', fn ($q) => $q->where('user_id', $userId)
+                ->whereDateBetween('issued_at', $start, $end))
             ->count();
     }
 

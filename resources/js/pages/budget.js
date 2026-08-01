@@ -97,8 +97,8 @@ const Budget = (() => {
 
     const resetForm = () => {
         editingId = null;
-        categorySelect().value = '';
-        categorySelect().disabled = false;
+        Utils.syncSelectValue(categorySelect(), '');
+        Utils.setSelectDisabled(categorySelect(), false);
         amountInput().value = '';
         saveLabel().textContent = 'Salvar Orçamento';
         cancelEditBtn().classList.add('hidden');
@@ -106,8 +106,8 @@ const Budget = (() => {
 
     const editBudget = (id, categoryId, amount) => {
         editingId = id;
-        categorySelect().value = categoryId || '';
-        categorySelect().disabled = true;
+        Utils.syncSelectValue(categorySelect(), categoryId || '');
+        Utils.setSelectDisabled(categorySelect(), true);
         amountInput().value = amount;
         amountInput().focus();
         saveLabel().textContent = 'Atualizar Orçamento';

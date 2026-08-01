@@ -16,31 +16,53 @@ class DashboardService
 {
     public function __construct(private readonly ProductAliasService $aliasService) {}
 
-    public function getViewData(int $userId): array
+    public function getViewData(int $userId, ?string $startDate = null, ?string $endDate = null): array
     {
-        $now = Carbon::now();
-        $startOfMonth = $now->copy()->startOfMonth();
+        $start = $startDate ?: Carbon::now()->startOfMonth()->format('Y-m-d');
+        $end = $endDate ?: Carbon::now()->format('Y-m-d');
 
-        $stats = $this->getOverallStats($userId);
-        $monthComparison = $this->getMonthComparison($userId, $now, $startOfMonth);
-        $currentMonthExpenses = $monthComparison['currentMonthExpenses'];
+        [$previousStart, $previousEnd] = $this->previousPeriod($start, $end);
+
+        $stats = $this->getOverallStats($userId, $start, $end);
+        $periodComparison = $this->getPeriodComparison($userId, $start, $end, $previousStart, $previousEnd);
 
         return [
+            'filters' => [
+                'start_date' => $start,
+                'end_date' => $end,
+            ],
             'totalExpenses' => $stats->totalExpenses,
             'totalTaxes' => $stats->totalTaxes,
             'totalPurchases' => $stats->totalPurchases,
             'averageTicket' => $this->calculateAverageTicket($stats),
-            ...$monthComparison,
-            'lastPurchase' => $this->getLastPurchase($userId),
-            'paymentDistribution' => $this->getPaymentDistribution($userId),
-            'budgets' => $this->getBudgets($userId, $startOfMonth, $currentMonthExpenses),
-            'monthlyExpenses' => $this->getMonthlyExpenses($userId, $now),
-            'spendingByCategory' => $this->getSpendingByCategory($userId),
-            'topIssuers' => $this->getTopIssuers($userId),
-            'topProducts' => $this->getTopProducts($userId),
+            ...$periodComparison,
+            'previousPeriodStart' => $previousStart,
+            'previousPeriodEnd' => $previousEnd,
+            'lastPurchase' => $this->getLastPurchase($userId, $start, $end),
+            'paymentDistribution' => $this->getPaymentDistribution($userId, $start, $end),
+            'budgets' => $this->getBudgets($userId, $start, $end, $periodComparison['periodExpenses']),
+            'monthlyExpenses' => $this->getMonthlyExpenses($userId, Carbon::now()),
+            'spendingByCategory' => $this->getSpendingByCategory($userId, $start, $end),
+            'topIssuers' => $this->getTopIssuers($userId, $start, $end),
+            'topProducts' => $this->getTopProducts($userId, $start, $end),
             'paymentLabels' => $this->paymentLabels(),
             'paymentIcons' => $this->paymentIcons(),
         ];
+    }
+
+    /**
+     * Período imediatamente anterior, com a mesma duração do período selecionado —
+     * permite comparar qualquer intervalo (não só meses fechados) de forma justa.
+     */
+    private function previousPeriod(string $startDate, string $endDate): array
+    {
+        $start = Carbon::parse($startDate);
+        $periodDays = $start->diffInDays(Carbon::parse($endDate)) + 1;
+
+        $previousEnd = $start->copy()->subDay();
+        $previousStart = $previousEnd->copy()->subDays($periodDays - 1);
+
+        return [$previousStart->format('Y-m-d'), $previousEnd->format('Y-m-d')];
     }
 
     private function calculateAverageTicket(OverallStats $stats): float
@@ -50,10 +72,11 @@ class DashboardService
             : 0.0;
     }
 
-    private function getOverallStats(int $userId): OverallStats
+    private function getOverallStats(int $userId, string $start, string $end): OverallStats
     {
-        return Cache::remember("dashboard.overall_stats.{$userId}", 300, function () use ($userId) {
+        return Cache::remember($this->cacheKey('overall_stats', $userId, $start, $end), 300, function () use ($userId, $start, $end) {
             $result = Invoice::where('user_id', $userId)
+                ->whereDateBetween('issued_at', $start, $end)
                 ->selectRaw('
                     COALESCE(SUM(total_amount), 0) as totalExpenses,
                     COALESCE(SUM(total_taxes), 0) as totalTaxes,
@@ -65,52 +88,51 @@ class DashboardService
         });
     }
 
-    private function getMonthComparison(int $userId, Carbon $now, Carbon $startOfMonth): array
+    private function getPeriodComparison(int $userId, string $start, string $end, string $previousStart, string $previousEnd): array
     {
-        $startOfLastMonth = $now->copy()->subMonth()->startOfMonth();
-        $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
-
-        [$currentMonthExpenses, $lastMonthExpenses] = Cache::remember(
-            "dashboard.month_comparison.{$userId}",
+        [$periodExpenses, $previousPeriodExpenses] = Cache::remember(
+            $this->cacheKey('period_comparison', $userId, $start, $end),
             300,
-            function () use ($userId, $startOfMonth, $startOfLastMonth, $endOfLastMonth) {
+            function () use ($userId, $start, $end, $previousStart, $previousEnd) {
                 $result = Invoice::where('user_id', $userId)
-                    ->where('issued_at', '>=', $startOfLastMonth)
+                    ->whereDateBetween('issued_at', $previousStart, $end)
                     ->selectRaw('
-                        COALESCE(SUM(CASE WHEN issued_at >= ? THEN total_amount ELSE 0 END), 0) as current_month,
-                        COALESCE(SUM(CASE WHEN issued_at <= ? THEN total_amount ELSE 0 END), 0) as last_month
-                    ', [$startOfMonth, $endOfLastMonth])
+                        COALESCE(SUM(CASE WHEN issued_at >= ? THEN total_amount ELSE 0 END), 0) as period,
+                        COALESCE(SUM(CASE WHEN issued_at <= ? THEN total_amount ELSE 0 END), 0) as previous_period
+                    ', [$start, $previousEnd.' 23:59:59'])
                     ->first();
 
-                return [(float) $result->current_month, (float) $result->last_month];
+                return [(float) $result->period, (float) $result->previous_period];
             }
         );
 
-        $monthVariation = $lastMonthExpenses > 0
-            ? (($currentMonthExpenses - $lastMonthExpenses) / $lastMonthExpenses) * 100
+        $periodVariation = $previousPeriodExpenses > 0
+            ? (($periodExpenses - $previousPeriodExpenses) / $previousPeriodExpenses) * 100
             : null;
 
         return [
-            'currentMonthExpenses' => $currentMonthExpenses,
-            'lastMonthExpenses' => $lastMonthExpenses,
-            'monthVariation' => $monthVariation,
+            'periodExpenses' => $periodExpenses,
+            'previousPeriodExpenses' => $previousPeriodExpenses,
+            'periodVariation' => $periodVariation,
         ];
     }
 
-    private function getLastPurchase(int $userId): ?Invoice
+    private function getLastPurchase(int $userId, string $start, string $end): ?Invoice
     {
         return Invoice::where('user_id', $userId)
+            ->whereDateBetween('issued_at', $start, $end)
             ->select(['id', 'issuer_id', 'issued_at', 'total_amount'])
             ->with('issuer.nicknameForUser')
             ->orderByDesc('issued_at')
             ->first();
     }
 
-    private function getPaymentDistribution(int $userId): Collection
+    private function getPaymentDistribution(int $userId, string $start, string $end): Collection
     {
-        return Cache::remember("dashboard.payment_distribution.{$userId}", 300, function () use ($userId) {
+        return Cache::remember($this->cacheKey('payment_distribution', $userId, $start, $end), 300, function () use ($userId, $start, $end) {
             return InvoicePayment::join('invoices', 'invoices.id', '=', 'invoices_payments.invoice_id')
                 ->where('invoices.user_id', $userId)
+                ->whereDateBetween('invoices.issued_at', $start, $end)
                 ->select('invoices_payments.method', DB::raw('SUM(invoices_payments.amount) as total'))
                 ->groupBy('invoices_payments.method')
                 ->orderByDesc('total')
@@ -118,21 +140,21 @@ class DashboardService
         });
     }
 
-    private function getBudgets(int $userId, Carbon $startOfMonth, float $currentMonthExpenses): Collection
+    private function getBudgets(int $userId, string $start, string $end, float $periodExpenses): Collection
     {
         $budgets = Budget::where('user_id', $userId)->with('category')->get();
 
-        $monthlySpending = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+        $periodSpending = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->where('invoices.user_id', $userId)
-            ->where('invoices.issued_at', '>=', $startOfMonth)
+            ->whereDateBetween('invoices.issued_at', $start, $end)
             ->select('invoices_items.category_id', DB::raw('SUM(invoices_items.total_price) as total'))
             ->groupBy('invoices_items.category_id')
             ->pluck('total', 'category_id');
 
-        return $budgets->map(function (Budget $budget) use ($monthlySpending, $currentMonthExpenses) {
+        return $budgets->map(function (Budget $budget) use ($periodSpending, $periodExpenses) {
             $budget->spent = $budget->category_id
-                ? (float) ($monthlySpending[$budget->category_id] ?? 0)
-                : (float) $currentMonthExpenses;
+                ? (float) ($periodSpending[$budget->category_id] ?? 0)
+                : (float) $periodExpenses;
             $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0.0;
             $budget->remaining = (float) $budget->amount - $budget->spent;
 
@@ -152,11 +174,12 @@ class DashboardService
         });
     }
 
-    private function getSpendingByCategory(int $userId): Collection
+    private function getSpendingByCategory(int $userId, string $start, string $end): Collection
     {
-        return Cache::remember("dashboard.spending_by_category.{$userId}", 300, function () use ($userId) {
+        return Cache::remember($this->cacheKey('spending_by_category', $userId, $start, $end), 300, function () use ($userId, $start, $end) {
             return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
                 ->where('invoices.user_id', $userId)
+                ->whereDateBetween('invoices.issued_at', $start, $end)
                 ->leftJoin('categories', 'categories.id', '=', 'invoices_items.category_id')
                 ->select(
                     DB::raw("COALESCE(categories.name, 'Sem categoria') as category_name"),
@@ -170,10 +193,11 @@ class DashboardService
         });
     }
 
-    private function getTopIssuers(int $userId): Collection
+    private function getTopIssuers(int $userId, string $start, string $end): Collection
     {
-        return Cache::remember("dashboard.top_issuers.{$userId}", 300, function () use ($userId) {
+        return Cache::remember($this->cacheKey('top_issuers', $userId, $start, $end), 300, function () use ($userId, $start, $end) {
             return Invoice::where('invoices.user_id', $userId)
+                ->whereDateBetween('invoices.issued_at', $start, $end)
                 ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
                 ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
                     $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
@@ -191,11 +215,12 @@ class DashboardService
         });
     }
 
-    private function getTopProducts(int $userId): Collection
+    private function getTopProducts(int $userId, string $start, string $end): Collection
     {
-        return Cache::remember("dashboard.top_products.{$userId}", 300, function () use ($userId) {
+        return Cache::remember($this->cacheKey('top_products', $userId, $start, $end), 300, function () use ($userId, $start, $end) {
             $query = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-                ->where('invoices.user_id', $userId);
+                ->where('invoices.user_id', $userId)
+                ->whereDateBetween('invoices.issued_at', $start, $end);
             $this->aliasService->joinCanonicalNames($query, $userId);
 
             $nameSql = $this->aliasService->canonicalNameSql();
@@ -207,6 +232,11 @@ class DashboardService
                 ->limit(10)
                 ->get();
         });
+    }
+
+    private function cacheKey(string $metric, int $userId, string $start, string $end): string
+    {
+        return "dashboard.{$metric}.{$userId}.{$start}.{$end}";
     }
 
     private function paymentLabels(): array

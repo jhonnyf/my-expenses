@@ -24,6 +24,8 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            @include('partials._period-filter', ['periodFilterAction' => route('dashboard.index'), 'filters' => $filters])
+
             {{-- SEÇÃO 1 — 4 STAT CARDS --}}
             <style>
                 .channel-stats-bg {
@@ -93,18 +95,18 @@
 
                     <div class="kt-card">
                         <div class="kt-card-header">
-                            <h3 class="kt-card-title">Mês Atual</h3>
-                            @if($monthVariation !== null)
+                            <h3 class="kt-card-title">Período Selecionado</h3>
+                            @if($periodVariation !== null)
                                 <div class="kt-card-toolbar">
-                                    @if($monthVariation > 0)
+                                    @if($periodVariation > 0)
                                         <span class="kt-badge kt-badge-outline kt-badge-destructive kt-badge-sm">
                                             <i class="ki-filled ki-arrow-up text-2xs"></i>
-                                            +{{ number_format($monthVariation, 1) }}%
+                                            +{{ number_format($periodVariation, 1) }}%
                                         </span>
-                                    @elseif($monthVariation < 0)
+                                    @elseif($periodVariation < 0)
                                         <span class="kt-badge kt-badge-outline kt-badge-success kt-badge-sm">
                                             <i class="ki-filled ki-arrow-down text-2xs"></i>
-                                            {{ number_format($monthVariation, 1) }}%
+                                            {{ number_format($periodVariation, 1) }}%
                                         </span>
                                     @else
                                         <span class="kt-badge kt-badge-outline kt-badge-secondary kt-badge-sm">Estável</span>
@@ -114,20 +116,21 @@
                         </div>
                         <div class="kt-card-content p-5 lg:p-7.5 lg:pt-4 flex flex-col gap-4">
                             <div class="flex flex-col gap-0.5">
-                                <span class="text-sm font-normal text-secondary-foreground capitalize">
-                                    {{ now()->translatedFormat('F Y') }}
+                                <span class="text-sm font-normal text-secondary-foreground">
+                                    {{ \Carbon\Carbon::parse($filters['start_date'])->format('d/m/Y') }} – {{ \Carbon\Carbon::parse($filters['end_date'])->format('d/m/Y') }}
                                 </span>
                                 <span class="text-3xl font-semibold text-mono tabular-nums">
-                                    R$ {{ number_format($currentMonthExpenses, 2, ',', '.') }}
+                                    R$ {{ number_format($periodExpenses, 2, ',', '.') }}
                                 </span>
                             </div>
                             <div class="border-b border-input"></div>
                             <div class="flex items-center justify-between gap-2">
-                                <span class="text-sm text-secondary-foreground capitalize">
-                                    {{ now()->subMonth()->translatedFormat('F') }}
+                                <span class="text-sm text-secondary-foreground">
+                                    Período anterior
+                                    <span class="block text-xs">{{ \Carbon\Carbon::parse($previousPeriodStart)->format('d/m/Y') }} – {{ \Carbon\Carbon::parse($previousPeriodEnd)->format('d/m/Y') }}</span>
                                 </span>
                                 <span class="text-sm font-semibold text-mono tabular-nums">
-                                    R$ {{ number_format($lastMonthExpenses, 2, ',', '.') }}
+                                    R$ {{ number_format($previousPeriodExpenses, 2, ',', '.') }}
                                 </span>
                             </div>
                         </div>

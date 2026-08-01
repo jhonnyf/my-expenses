@@ -64,6 +64,25 @@ class ReportServiceTest extends TestCase
         $this->assertEquals(50.00, (float) $result['summary']->total_amount);
     }
 
+    public function test_build_report_data_treats_empty_string_dates_as_default(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        // Simula o form de filtro reenviado com os campos de data limpos (string vazia,
+        // não ausentes) — deve cair no padrão (mês atual) em vez de não filtrar nada.
+        $this->createInvoiceWithItem($user, $issuer, ['issued_at' => now()], 50.00);
+        $this->createInvoiceWithItem($user, $issuer, ['issued_at' => now()->subMonths(6)], 999.00);
+
+        $result = $this->service->buildReportData($user->id, [
+            'start_date' => '',
+            'end_date' => '',
+        ]);
+
+        $this->assertEquals(50.00, (float) $result['summary']->total_amount);
+        $this->assertEquals(now()->startOfMonth()->format('Y-m-d'), $result['filters']['startDate']);
+    }
+
     public function test_build_report_data_filters_by_issuer_id(): void
     {
         $user = User::factory()->create();

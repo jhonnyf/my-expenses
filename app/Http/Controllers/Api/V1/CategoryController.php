@@ -17,7 +17,11 @@ class CategoryController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $categories = $this->service->getCategoriesWithSpending($request->user()->id);
+        $categories = $this->service->getCategoriesWithSpending(
+            $request->user()->id,
+            $request->query('start_date'),
+            $request->query('end_date'),
+        );
 
         return $this->success(CategoryResource::collection($categories));
     }
@@ -32,9 +36,9 @@ class CategoryController extends Controller
     public function store(SaveCategoryRequest $request): JsonResponse
     {
         $category = Category::create([
-            'user_id'  => $request->user()->id,
-            'name'     => $request->input('name'),
-            'color'    => $request->input('color', '#94A3B8'),
+            'user_id' => $request->user()->id,
+            'name' => $request->input('name'),
+            'color' => $request->input('color', '#94A3B8'),
             'keywords' => $request->parsedKeywords(),
         ]);
 
@@ -46,8 +50,8 @@ class CategoryController extends Controller
         $this->authorize('update', $category);
 
         $category->update([
-            'name'     => $request->input('name'),
-            'color'    => $request->input('color'),
+            'name' => $request->input('name'),
+            'color' => $request->input('color'),
             'keywords' => $request->parsedKeywords(),
         ]);
 

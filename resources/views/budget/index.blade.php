@@ -75,7 +75,7 @@
                     <div class="grid md:grid-cols-3 gap-4 items-end">
                         <div>
                             <label class="text-xs text-secondary-foreground mb-1 block">Categoria</label>
-                            <select id="budgetCategory" class="kt-select w-full">
+                            <select id="budgetCategory" class="kt-select w-full" data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Geral (todas)">
                                 <option value="">Geral (todas)</option>
                                 @foreach($categories as $cat)
                                     <option value="{{ $cat->id }}">{{ $cat->name }}</option>

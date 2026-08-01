@@ -5,6 +5,7 @@ namespace App\Search\Strategies;
 use App\Contracts\SearchStrategyInterface;
 use App\Models\InvoiceItem;
 use App\Services\ProductAliasService;
+use App\Support\FullTextQuery;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -20,10 +21,9 @@ class ProductSearchStrategy implements SearchStrategyInterface
 
         $nameSql = $this->aliasService->canonicalNameSql();
 
+        FullTextQuery::applyOr($productQuery, $query, ['invoices_items.description', 'product_aliases.canonical_name']);
+
         return $productQuery
-            ->where(fn ($q) => $q
-                ->where('invoices_items.description', 'like', "%{$query}%")
-                ->orWhere('product_aliases.canonical_name', 'like', "%{$query}%"))
             ->select(
                 DB::raw("{$nameSql} as description"),
                 DB::raw('COUNT(*) as count'),

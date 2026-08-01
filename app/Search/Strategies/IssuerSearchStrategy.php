@@ -4,17 +4,18 @@ namespace App\Search\Strategies;
 
 use App\Contracts\SearchStrategyInterface;
 use App\Models\Issuer;
+use App\Support\FullTextQuery;
 use Illuminate\Support\Collection;
 
 class IssuerSearchStrategy implements SearchStrategyInterface
 {
     public function search(string $query, int $userId): Collection
     {
-        return Issuer::whereHas('invoices', fn ($q) => $q->where('user_id', $userId))
-            ->where(fn ($q) => $q
-                ->where('name', 'like', "%{$query}%")
-                ->orWhere('cnpj', 'like', "%{$query}%")
-            )
+        $issuerQuery = Issuer::whereHas('invoices', fn ($q) => $q->where('user_id', $userId));
+
+        FullTextQuery::applyOr($issuerQuery, $query, ['name'], ['cnpj']);
+
+        return $issuerQuery
             ->select('id', 'name', 'cnpj', 'city', 'state')
             ->with('nicknameForUser')
             ->limit(5)

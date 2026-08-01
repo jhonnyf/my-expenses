@@ -1,3 +1,5 @@
+import Utils from '../utils';
+
 const Dashboard = (() => {
     let initialized = false;
 
@@ -150,6 +152,8 @@ const Dashboard = (() => {
 
             const { monthlyExpenses, spendingByCategory, paymentDistribution, paymentLabels } = window.pageConfig;
             const colors = getThemeColors();
+
+            Utils.initPeriodFilter();
 
             if (monthlyExpenses?.length) {
                 renderMonthlyChart(monthlyExpenses, colors);

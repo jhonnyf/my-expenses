@@ -30,13 +30,31 @@ class CategoryControllerTest extends TestCase
             ->assertStatus(200);
     }
 
+    public function test_index_filters_spending_by_date_range(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => '2026-01-15']);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id, 'total_price' => 30.00]);
+
+        $oldInvoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => '2025-01-15']);
+        InvoiceItem::factory()->for($oldInvoice)->create(['category_id' => $category->id, 'total_price' => 70.00]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/categories?start_date=2026-01-01&end_date=2026-01-31')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.total_spent', 30);
+    }
+
     public function test_store_creates_category(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/categories', [
-                'name'  => 'Alimentação',
+                'name' => 'Alimentação',
                 'color' => '#FF0000',
             ])
             ->assertStatus(201)
@@ -44,7 +62,7 @@ class CategoryControllerTest extends TestCase
 
         $this->assertDatabaseHas('categories', [
             'user_id' => $user->id,
-            'name'    => 'Alimentação',
+            'name' => 'Alimentação',
         ]);
     }
 
@@ -57,7 +75,7 @@ class CategoryControllerTest extends TestCase
     public function test_update_returns_403_when_category_belongs_to_another_user(): void
     {
         $category = Category::factory()->create();
-        $other    = User::factory()->create();
+        $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->patchJson("/api/v1/categories/{$category->id}", ['name' => 'Novo nome'])
@@ -66,12 +84,12 @@ class CategoryControllerTest extends TestCase
 
     public function test_update_modifies_own_category(): void
     {
-        $user     = User::factory()->create();
+        $user = User::factory()->create();
         $category = Category::factory()->for($user)->create();
 
         $this->actingAs($user, 'sanctum')
             ->patchJson("/api/v1/categories/{$category->id}", [
-                'name'  => 'Novo nome',
+                'name' => 'Novo nome',
                 'color' => '#00FF00',
             ])
             ->assertStatus(200)
@@ -81,7 +99,7 @@ class CategoryControllerTest extends TestCase
     public function test_destroy_returns_403_when_category_belongs_to_another_user(): void
     {
         $category = Category::factory()->create();
-        $other    = User::factory()->create();
+        $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->deleteJson("/api/v1/categories/{$category->id}")
@@ -90,7 +108,7 @@ class CategoryControllerTest extends TestCase
 
     public function test_destroy_deletes_own_category(): void
     {
-        $user     = User::factory()->create();
+        $user = User::factory()->create();
         $category = Category::factory()->for($user)->create();
 
         $this->actingAs($user, 'sanctum')
@@ -102,7 +120,7 @@ class CategoryControllerTest extends TestCase
 
     public function test_show_returns_category(): void
     {
-        $user     = User::factory()->create();
+        $user = User::factory()->create();
         $category = Category::factory()->for($user)->create();
 
         $this->actingAs($user, 'sanctum')
@@ -114,7 +132,7 @@ class CategoryControllerTest extends TestCase
     public function test_show_returns_403_for_other_users_category(): void
     {
         $category = Category::factory()->create();
-        $other    = User::factory()->create();
+        $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->getJson("/api/v1/categories/{$category->id}")
@@ -123,15 +141,15 @@ class CategoryControllerTest extends TestCase
 
     public function test_assign_item_to_category(): void
     {
-        $user     = User::factory()->create();
-        $issuer   = Issuer::factory()->create();
-        $invoice  = Invoice::factory()->for($user)->for($issuer)->create();
-        $item     = InvoiceItem::factory()->for($invoice)->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        $item = InvoiceItem::factory()->for($invoice)->create();
         $category = Category::factory()->for($user)->create();
 
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/categories/assign-item', [
-                'item_id'     => $item->id,
+                'item_id' => $item->id,
                 'category_id' => $category->id,
             ])
             ->assertStatus(200);
@@ -141,16 +159,16 @@ class CategoryControllerTest extends TestCase
 
     public function test_assign_item_returns_403_when_item_belongs_to_another_user(): void
     {
-        $owner   = User::factory()->create();
-        $other   = User::factory()->create();
-        $issuer  = Issuer::factory()->create();
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->for($owner)->for($issuer)->create();
-        $item    = InvoiceItem::factory()->for($invoice)->create();
-        $cat     = Category::factory()->for($other)->create();
+        $item = InvoiceItem::factory()->for($invoice)->create();
+        $cat = Category::factory()->for($other)->create();
 
         $this->actingAs($other, 'sanctum')
             ->postJson('/api/v1/categories/assign-item', [
-                'item_id'     => $item->id,
+                'item_id' => $item->id,
                 'category_id' => $cat->id,
             ])
             ->assertStatus(403);

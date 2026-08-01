@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\InvoiceItem;
+use App\Support\FullTextQuery;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -28,6 +29,8 @@ class ShoppingListService
         $this->aliasService->joinCanonicalNames($itemsQuery, $userId);
         $nameSql = $this->aliasService->canonicalNameSql();
 
+        FullTextQuery::applyOr($itemsQuery, $query, ['invoices_items.description', 'product_aliases.canonical_name']);
+
         return $itemsQuery
             ->select(
                 DB::raw("{$nameSql} as description"),
@@ -40,9 +43,6 @@ class ShoppingListService
             ->selectRaw('COALESCE(issuer_nicknames.nickname, issuers.name) as issuer_name')
             ->selectRaw('IF(issuers.id IN ('.($favoriteIssuerIds->isNotEmpty() ? $favoriteIssuerIds->implode(',') : '0').'), 1, 0) as is_favorite')
             ->selectRaw('IF(invoices.user_id = ?, 1, 0) as is_own', [$userId])
-            ->where(fn ($q) => $q
-                ->where('invoices_items.description', 'like', "%{$query}%")
-                ->orWhere('product_aliases.canonical_name', 'like', "%{$query}%"))
             ->orderByDesc('is_favorite')
             ->orderBy('invoices_items.unit_price', 'asc')
             ->limit(20)

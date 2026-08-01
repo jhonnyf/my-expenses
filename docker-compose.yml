@@ -30,6 +30,7 @@ services:
             - app
         ports:
             - "8000:80"
+            - "8443:443"
         volumes:
             - ./:/var/www
             - ./docker-config/nginx:/etc/nginx/conf.d

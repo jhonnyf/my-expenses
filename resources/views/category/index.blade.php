@@ -23,6 +23,8 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            @include('partials._period-filter', ['periodFilterAction' => route('categories.index'), 'filters' => $filters])
+
             {{-- STAT CARDS --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
 

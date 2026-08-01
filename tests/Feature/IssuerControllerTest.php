@@ -27,6 +27,27 @@ class IssuerControllerTest extends TestCase
             ->assertStatus(200);
     }
 
+    public function test_index_excludes_issuers_the_user_never_bought_from(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $ownIssuer = Issuer::factory()->create();
+        $otherIssuer = Issuer::factory()->create();
+
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $ownIssuer->id]);
+        Invoice::factory()->create(['user_id' => $other->id, 'issuer_id' => $otherIssuer->id]);
+
+        $this->actingAs($user)
+            ->get('/issuers')
+            ->assertStatus(200)
+            ->assertViewHas('records', function ($records) use ($ownIssuer, $otherIssuer) {
+                $collection = $records->getCollection();
+
+                return $collection->contains('id', $ownIssuer->id)
+                    && ! $collection->contains('id', $otherIssuer->id);
+            });
+    }
+
     public function test_index_returns_purchase_stats_scoped_to_current_user(): void
     {
         $user = User::factory()->create();
@@ -52,6 +73,7 @@ class IssuerControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['name' => 'Nome Oficial Ltda']);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
 
         $this->actingAs($user)
             ->get('/issuers')
@@ -69,6 +91,7 @@ class IssuerControllerTest extends TestCase
         $other = User::factory()->create();
         $issuer = Issuer::factory()->create();
 
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
         IssuerNickname::create(['user_id' => $other->id, 'issuer_id' => $issuer->id, 'nickname' => 'Apelido do Outro']);
 
         $this->actingAs($user)

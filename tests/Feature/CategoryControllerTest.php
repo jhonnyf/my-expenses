@@ -32,7 +32,7 @@ class CategoryControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
-        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
 
         $low = Category::factory()->for($user)->create(['name' => 'Baixo']);
         $high = Category::factory()->for($user)->create(['name' => 'Alto']);
@@ -47,5 +47,23 @@ class CategoryControllerTest extends TestCase
             ->assertViewHas('totalSpent', 100.0)
             ->assertViewHas('uncategorizedCount', 1)
             ->assertViewHas('topCategory', fn ($topCategory) => $topCategory->id === $high->id);
+    }
+
+    public function test_index_filters_spending_by_date_range(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => '2026-01-15']);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id, 'total_price' => 30.00]);
+
+        $oldInvoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => '2025-01-15']);
+        InvoiceItem::factory()->for($oldInvoice)->create(['category_id' => $category->id, 'total_price' => 70.00]);
+
+        $this->actingAs($user)
+            ->get('/categories?start_date=2026-01-01&end_date=2026-01-31')
+            ->assertStatus(200)
+            ->assertViewHas('totalSpent', 30.0);
     }
 }

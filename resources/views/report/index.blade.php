@@ -47,7 +47,7 @@
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-secondary-foreground mb-1.5 block">Emissor</label>
-                                <select name="issuer_id" class="kt-input w-full">
+                                <select name="issuer_id" class="kt-input w-full" data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Todos">
                                     <option value="">Todos</option>
                                     @foreach($issuers as $issuer)
                                         <option value="{{ $issuer->id }}"
@@ -59,7 +59,7 @@
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-secondary-foreground mb-1.5 block">Categoria</label>
-                                <select name="category_id" class="kt-input w-full">
+                                <select name="category_id" class="kt-input w-full" data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Todas">
                                     <option value="">Todas</option>
                                     @foreach($categories as $cat)
                                         <option value="{{ $cat->id }}"
@@ -227,6 +227,7 @@
                                                     <div class="flex items-center gap-1.5">
                                                         <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
                                                         <select data-action="assign-category" data-item-id="{{ $item->item_id }}"
+                                                                data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Sem categoria"
                                                                 class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
                                                             <option value="" data-color="#94a3b8" {{ ! $item->category_id ? 'selected' : '' }}>Sem categoria</option>
                                                             @foreach($categories as $cat)
@@ -266,6 +267,7 @@
                                     <div class="flex items-center gap-1.5 item-category-cell">
                                         <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
                                         <select data-action="assign-category" data-item-id="{{ $item->item_id }}"
+                                                data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Sem categoria"
                                                 class="text-xs bg-accent border border-border rounded-md px-2 py-1 cursor-pointer w-full focus:outline-none focus:ring-1 focus:ring-primary">
                                             <option value="" data-color="#94a3b8" {{ ! $item->category_id ? 'selected' : '' }}>Sem categoria</option>
                                             @foreach($categories as $cat)

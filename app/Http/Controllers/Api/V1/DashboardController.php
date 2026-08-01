@@ -13,7 +13,11 @@ class DashboardController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $data = $this->service->getViewData($request->user()->id);
+        $data = $this->service->getViewData(
+            $request->user()->id,
+            $request->query('start_date'),
+            $request->query('end_date'),
+        );
 
         if ($data['lastPurchase']) {
             $data['lastPurchase'] = new InvoiceResource($data['lastPurchase']);

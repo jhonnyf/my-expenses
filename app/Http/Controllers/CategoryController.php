@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\InvoiceItem;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -15,16 +16,18 @@ class CategoryController extends Controller
 {
     public function __construct(private readonly CategoryService $service) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $userId = Auth::id();
-        $categories = $this->service->getCategoriesWithSpending($userId);
+        $filters = $request->only(['start_date', 'end_date']);
+        $categories = $this->service->getCategoriesWithSpending($userId, $filters['start_date'] ?? null, $filters['end_date'] ?? null);
 
         return view('category.index', [
             'categories' => $categories,
             'totalSpent' => $categories->sum('total_spent'),
             'topCategory' => $categories->firstWhere('total_spent', '>', 0),
-            'uncategorizedCount' => $this->service->countUncategorizedItems($userId),
+            'uncategorizedCount' => $this->service->countUncategorizedItems($userId, $filters['start_date'] ?? null, $filters['end_date'] ?? null),
+            'filters' => $filters,
         ]);
     }
 
