@@ -51,8 +51,8 @@ class ReportController extends Controller
 
             fclose($handle);
         }, 200, [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="relatorio.csv"',
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="relatorio_'.now()->format('Y-m-d').'.csv"',
         ]);
     }
 }

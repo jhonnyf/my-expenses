@@ -24,6 +24,12 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            @include('partials._period-filter', [
+                'periodFilterAction' => route('my-purchases.index'),
+                'filters' => $filters,
+                'extraFields' => $search !== '' ? ['search' => $search] : [],
+            ])
+
             {{-- STAT CARDS --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
 
@@ -45,9 +51,9 @@
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
                         <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
-                            R$ {{ number_format($monthAmount, 2, ',', '.') }}
+                            R$ {{ number_format($dailyAverage, 2, ',', '.') }}
                         </span>
-                        <span class="text-xs font-normal text-secondary-foreground capitalize">{{ now()->translatedFormat('F') }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground">Gasto Médio Diário</span>
                     </div>
                 </div>
 
@@ -83,6 +89,8 @@
                     <h3 class="kt-card-title">Lista de Compras</h3>
                     <div class="flex items-center gap-3 w-full lg:w-auto">
                         <form id="myPurchasesSearchForm" method="GET" action="{{ route('my-purchases.index') }}" class="w-full lg:w-auto">
+                            <input type="hidden" name="start_date" value="{{ $filters['start_date'] }}" />
+                            <input type="hidden" name="end_date" value="{{ $filters['end_date'] }}" />
                             <label class="kt-input w-full lg:max-w-56">
                                 <i class="ki-filled ki-magnifier"></i>
                                 <input type="text" name="search" id="myPurchasesSearchInput" value="{{ $search }}"
@@ -225,11 +233,3 @@
     </div>
 
 @endsection
-
-@push('scripts')
-    <script>
-        window.pageConfig = Object.assign(window.pageConfig || {}, {
-            myPurchasesIndexUrl: '{{ route('my-purchases.index') }}',
-        });
-    </script>
-@endpush

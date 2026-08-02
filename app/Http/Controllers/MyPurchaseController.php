@@ -14,6 +14,7 @@ use App\Import\Strategies\XmlFileImportStrategy;
 use App\Models\Category;
 use App\Models\Invoice;
 use App\Services\ProductAliasService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -35,9 +36,12 @@ class MyPurchaseController extends Controller
     {
         $userId = Auth::id();
         $search = trim((string) $request->input('search', ''));
+        $start = $request->query('start_date') ?: Carbon::now()->startOfMonth()->format('Y-m-d');
+        $end = $request->query('end_date') ?: Carbon::now()->format('Y-m-d');
 
         $records = Invoice::where('user_id', $userId)
             ->with('issuer.nicknameForUser')
+            ->whereDateBetween('issued_at', $start, $end)
             ->when($search !== '', fn ($query) => $query->whereHas(
                 'issuer',
                 fn ($query) => $query->where('name', 'like', "%{$search}%")
@@ -47,20 +51,19 @@ class MyPurchaseController extends Controller
             ->withQueryString();
 
         $stats = Invoice::where('user_id', $userId)
+            ->whereDateBetween('issued_at', $start, $end)
             ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(total_amount), 0) as total_amount')
             ->first();
 
-        $monthAmount = Invoice::where('user_id', $userId)
-            ->whereMonth('issued_at', now()->month)
-            ->whereYear('issued_at', now()->year)
-            ->sum('total_amount');
+        $days = Carbon::parse($start)->diffInDays(Carbon::parse($end)) + 1;
 
         return view('my-purchase.index', [
             'records' => $records,
             'search' => $search,
+            'filters' => ['start_date' => $start, 'end_date' => $end],
             'totalAmount' => (float) $stats->total_amount,
             'totalCount' => (int) $stats->total_count,
-            'monthAmount' => (float) $monthAmount,
+            'dailyAverage' => $days > 0 ? $stats->total_amount / $days : 0.0,
             'averageTicket' => $stats->total_count > 0 ? $stats->total_amount / $stats->total_count : 0,
         ]);
     }

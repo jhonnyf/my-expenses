@@ -80,7 +80,31 @@ class ReportServiceTest extends TestCase
         ]);
 
         $this->assertEquals(50.00, (float) $result['summary']->total_amount);
-        $this->assertEquals(now()->startOfMonth()->format('Y-m-d'), $result['filters']['startDate']);
+        $this->assertEquals(now()->startOfMonth()->format('Y-m-d'), $result['filters']['start_date']);
+    }
+
+    public function test_build_report_data_returns_filters_with_snake_case_keys(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $result = $this->service->buildReportData($user->id, [
+            'start_date' => '2026-07-01',
+            'end_date' => '2026-07-31',
+            'issuer_id' => $issuer->id,
+            'category_id' => $category->id,
+        ]);
+
+        // As views (report/index.blade.php, report/pdf.blade.php) leem essas chaves
+        // exatamente assim — um compact('startDate', ...) aqui já causou 500 real no
+        // export em PDF (Carbon::parse(undefined) vira ErrorException).
+        $this->assertSame([
+            'start_date' => '2026-07-01',
+            'end_date' => '2026-07-31',
+            'issuer_id' => $issuer->id,
+            'category_id' => $category->id,
+        ], $result['filters']);
     }
 
     public function test_build_report_data_filters_by_issuer_id(): void

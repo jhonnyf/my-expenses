@@ -3,6 +3,8 @@
     Espera receber:
     - $periodFilterAction: URL de destino do form (GET)
     - $filters: array com 'start_date'/'end_date' (chaves podem estar ausentes)
+    - $extraFields (opcional): ['nome_do_campo' => 'valor'] — outros filtros da página
+      (ex: busca) que precisam sobreviver ao submit deste form, senão se perdem.
 --}}
 @php
     $periodStart = $filters['start_date'] ?? now()->startOfMonth()->format('Y-m-d');
@@ -28,6 +30,9 @@
 <div class="kt-card">
     <div class="kt-card-content p-4">
         <form id="periodFilterForm" method="GET" action="{{ $periodFilterAction }}" class="flex flex-wrap items-center gap-3">
+            @foreach($extraFields ?? [] as $fieldName => $fieldValue)
+                <input type="hidden" name="{{ $fieldName }}" value="{{ $fieldValue }}" />
+            @endforeach
             <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Período">
                 <button type="button" data-action="filter-period" data-period="this_month"
                         class="kt-btn kt-btn-sm {{ $activePeriod === 'this_month' ? 'kt-btn-primary' : 'kt-btn-outline' }}">

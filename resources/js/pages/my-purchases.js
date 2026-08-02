@@ -1,13 +1,20 @@
+import Utils from '../utils';
+
 const MyPurchases = (() => {
     let initialized = false;
     let debounceTimer = null;
 
+    // Parte da URL atual (não da rota base) — preserva start_date/end_date do
+    // filtro de período já aplicado, senão buscar por emissor perderia o filtro.
     const submitSearch = (input) => {
-        const { myPurchasesIndexUrl = '' } = window.pageConfig ?? {};
         const term = input.value.trim();
+        const url = new URL(window.location.href);
 
-        const url = new URL(myPurchasesIndexUrl, window.location.origin);
-        if (term !== '') url.searchParams.set('search', term);
+        if (term !== '') {
+            url.searchParams.set('search', term);
+        } else {
+            url.searchParams.delete('search');
+        }
 
         window.location.href = url.toString();
     };
@@ -22,8 +29,9 @@ const MyPurchases = (() => {
 
     const handleClick = (e) => {
         if (e.target.closest('#myPurchasesSearchClear')) {
-            const { myPurchasesIndexUrl = '' } = window.pageConfig ?? {};
-            window.location.href = myPurchasesIndexUrl;
+            const url = new URL(window.location.href);
+            url.searchParams.delete('search');
+            window.location.href = url.toString();
         }
     };
 
@@ -32,6 +40,7 @@ const MyPurchases = (() => {
             if (initialized) return;
             initialized = true;
 
+            Utils.initPeriodFilter();
             document.addEventListener('input', handleInput);
             document.addEventListener('click', handleClick);
         }

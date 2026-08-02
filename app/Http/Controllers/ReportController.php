@@ -33,7 +33,7 @@ class ReportController extends Controller
             'start_date', 'end_date', 'issuer_id', 'category_id',
         ])));
 
-        return $pdf->download('relatorio.pdf');
+        return $pdf->download('relatorio_'.now()->format('Y-m-d').'.pdf');
     }
 
     public function exportCsv(Request $request): StreamedResponse
@@ -64,8 +64,8 @@ class ReportController extends Controller
 
             fclose($handle);
         }, 200, [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="relatorio.csv"',
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="relatorio_'.now()->format('Y-m-d').'.csv"',
         ]);
     }
 }

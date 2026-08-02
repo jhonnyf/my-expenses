@@ -60,6 +60,14 @@ const IssuerNickname = (() => {
         document.getElementById('issuerOriginalNameWrap')?.classList.toggle('hidden', !nickname);
     };
 
+    const updateInvoiceIssuerCard = (nickname, displayName) => {
+        const nameEl = document.getElementById('invoiceIssuerDisplayName');
+        if (!nameEl) return;
+
+        nameEl.textContent = displayName;
+        document.getElementById('invoiceIssuerOriginalNameWrap')?.classList.toggle('hidden', !nickname);
+    };
+
     const saveNickname = async () => {
         const issuerId = modalEl()?.dataset.issuerId;
         if (!issuerId) {
@@ -86,6 +94,7 @@ const IssuerNickname = (() => {
 
             updateListRow(issuerId, displayName);
             updateDetailPage(savedNickname, displayName);
+            updateInvoiceIssuerCard(savedNickname, displayName);
 
             hideModal();
         } catch (error) {

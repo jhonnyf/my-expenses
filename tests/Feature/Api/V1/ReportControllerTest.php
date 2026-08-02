@@ -39,10 +39,10 @@ class ReportControllerTest extends TestCase
 
     public function test_generate_accepts_date_filters(): void
     {
-        $user    = User::factory()->create();
-        $issuer  = Issuer::factory()->create();
-        $recent  = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(5)]);
-        $old     = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(40)]);
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $recent = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(5)]);
+        $old = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(40)]);
 
         InvoiceItem::factory()->for($recent)->create(['total_price' => 50.00]);
         InvoiceItem::factory()->for($old)->create(['total_price' => 100.00]);
@@ -68,5 +68,9 @@ class ReportControllerTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString(
+            'relatorio_'.now()->format('Y-m-d').'.csv',
+            $response->headers->get('Content-Disposition')
+        );
     }
 }

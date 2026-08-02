@@ -72,7 +72,19 @@ class ReportService
             'items' => $items,
             'summary' => $summary,
             'categoryBreakdown' => $categoryBreakdown,
-            'filters' => compact('startDate', 'endDate', 'issuerId', 'categoryId'),
+            // Chaves snake_case (não startDate/endDate) de propósito: as views
+            // (report/index.blade.php, report/pdf.blade.php) leem $filters['start_date']
+            // etc. — igual ao array de entrada. Chave errada aqui já causou 500 real no
+            // export em PDF (Carbon::parse(undefined) vira ErrorException) e, na tela,
+            // fazia o form "esquecer" silenciosamente o período/emissor/categoria
+            // selecionados após gerar o relatório (o ?? mascarava, sem quebrar nada,
+            // então passou despercebido).
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'issuer_id' => $issuerId,
+                'category_id' => $categoryId,
+            ],
             'issuers' => Issuer::whereHas('invoices', fn ($q) => $q->where('user_id', $userId))
                 ->with('nicknameForUser')
                 ->orderBy('name')

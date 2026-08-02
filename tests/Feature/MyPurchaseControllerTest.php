@@ -38,8 +38,8 @@ class MyPurchaseControllerTest extends TestCase
         $other = User::factory()->create();
         $issuer = Issuer::factory()->create();
 
-        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
-        Invoice::factory()->create(['user_id' => $other->id, 'issuer_id' => $issuer->id]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'issued_at' => now()]);
+        Invoice::factory()->create(['user_id' => $other->id, 'issuer_id' => $issuer->id, 'issued_at' => now()]);
 
         $this->actingAs($user)
             ->get('/my-purchases')
@@ -53,8 +53,8 @@ class MyPurchaseControllerTest extends TestCase
         $market = Issuer::factory()->create(['name' => 'Mercado Bom Preço']);
         $pharmacy = Issuer::factory()->create(['name' => 'Farmácia Saúde']);
 
-        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $market->id]);
-        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $pharmacy->id]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $market->id, 'issued_at' => now()]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $pharmacy->id, 'issued_at' => now()]);
 
         $this->actingAs($user)
             ->get('/my-purchases?search=Mercado')
@@ -78,16 +78,70 @@ class MyPurchaseControllerTest extends TestCase
             'user_id' => $user->id,
             'issuer_id' => $issuer->id,
             'total_amount' => 50,
-            'issued_at' => now()->subYear(),
+            'issued_at' => now(),
         ]);
+
+        // O controller compara strings 'Y-m-d' (meia-noite implícita) — precisa zerar a
+        // hora aqui também, senão diffInDays() retorna fração de dia (não truncada).
+        $days = now()->startOfMonth()->startOfDay()->diffInDays(now()->startOfDay()) + 1;
 
         $this->actingAs($user)
             ->get('/my-purchases')
             ->assertStatus(200)
             ->assertViewHas('totalCount', 2)
             ->assertViewHas('totalAmount', 150.0)
-            ->assertViewHas('monthAmount', 100.0)
+            ->assertViewHas('dailyAverage', 150.0 / $days)
             ->assertViewHas('averageTicket', 75.0);
+    }
+
+    public function test_index_default_period_excludes_invoices_outside_current_month(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 100, 'issued_at' => now()]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 50, 'issued_at' => now()->subYear()]);
+
+        $this->actingAs($user)
+            ->get('/my-purchases')
+            ->assertStatus(200)
+            ->assertViewHas('totalCount', 1)
+            ->assertViewHas('totalAmount', 100.0);
+    }
+
+    public function test_index_filters_by_date_range(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 100, 'issued_at' => now()->subDays(5)]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 50, 'issued_at' => now()->subDays(40)]);
+
+        $startDate = now()->subDays(10)->format('Y-m-d');
+        $endDate = now()->format('Y-m-d');
+
+        $this->actingAs($user)
+            ->get("/my-purchases?start_date={$startDate}&end_date={$endDate}")
+            ->assertStatus(200)
+            ->assertViewHas('totalCount', 1)
+            ->assertViewHas('totalAmount', 100.0)
+            ->assertViewHas('filters', ['start_date' => $startDate, 'end_date' => $endDate]);
+    }
+
+    public function test_index_combines_search_and_date_range_filters(): void
+    {
+        $user = User::factory()->create();
+        $market = Issuer::factory()->create(['name' => 'Mercado Bom Preço']);
+        $pharmacy = Issuer::factory()->create(['name' => 'Farmácia Saúde']);
+
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $market->id, 'issued_at' => now()]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $pharmacy->id, 'issued_at' => now()]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $market->id, 'issued_at' => now()->subYear()]);
+
+        $this->actingAs($user)
+            ->get('/my-purchases?search=Mercado')
+            ->assertStatus(200)
+            ->assertViewHas('records', fn ($records) => $records->total() === 1);
     }
 
     // ─── uploadForm ──────────────────────────────────────────────────────────
@@ -152,6 +206,19 @@ class MyPurchaseControllerTest extends TestCase
             ->get("/my-purchases/detail/{$invoice->id}")
             ->assertStatus(200)
             ->assertSee('Arroz Branco 5kg');
+    }
+
+    public function test_detail_shows_edit_nickname_button_for_issuer(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
+
+        $this->actingAs($user)
+            ->get("/my-purchases/detail/{$invoice->id}")
+            ->assertStatus(200)
+            ->assertSee('data-action="edit-nickname"', false)
+            ->assertSee('data-issuer-id="'.$issuer->id.'"', false);
     }
 
     // ─── upload (XML) ────────────────────────────────────────────────────────

@@ -132,11 +132,22 @@
                         <i class="ki-filled ki-shop text-primary me-1"></i> Emitente
                     </h3>
                     @if($invoice->issuer)
-                        <button data-favorite-id="{{ $invoice->issuer_id }}" id="btnFavoriteIssuer"
-                                class="text-lg transition-colors {{ $isIssuerFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500' }}"
-                                title="{{ $isIssuerFavorite ? 'Remover dos favoritos' : 'Favoritar emitente' }}">
-                            <i class="ki-filled ki-star"></i>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button
+                                data-action="edit-nickname"
+                                data-kt-modal-toggle="#nicknameModal"
+                                data-issuer-id="{{ $invoice->issuer_id }}"
+                                data-issuer-name="{{ $invoice->issuer->name }}"
+                                data-issuer-nickname="{{ $invoice->issuer->nickname }}"
+                                class="text-lg text-muted-foreground hover:text-primary transition-colors" title="Editar apelido">
+                                <i class="ki-filled ki-pencil"></i>
+                            </button>
+                            <button data-favorite-id="{{ $invoice->issuer_id }}" id="btnFavoriteIssuer"
+                                    class="text-lg transition-colors {{ $isIssuerFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-yellow-500' }}"
+                                    title="{{ $isIssuerFavorite ? 'Remover dos favoritos' : 'Favoritar emitente' }}">
+                                <i class="ki-filled ki-star"></i>
+                            </button>
+                        </div>
                     @endif
                 </div>
                 <div class="kt-card-content pb-5">
@@ -146,10 +157,10 @@
                                 <i class="ki-filled ki-shop text-primary"></i>
                             </div>
                             <div class="min-w-0">
-                                <p class="font-semibold text-foreground truncate">{{ $invoice->issuer->display_name ?? '—' }}</p>
-                                @if($invoice->issuer?->nickname)
-                                    <p class="text-xs text-secondary-foreground truncate">Nome oficial: {{ $invoice->issuer->name }}</p>
-                                @endif
+                                <p class="font-semibold text-foreground truncate" id="invoiceIssuerDisplayName">{{ $invoice->issuer->display_name ?? '—' }}</p>
+                                <p class="text-xs text-secondary-foreground truncate {{ $invoice->issuer?->nickname ? '' : 'hidden' }}" id="invoiceIssuerOriginalNameWrap">
+                                    Nome oficial: <span id="invoiceIssuerOriginalName">{{ $invoice->issuer->name ?? '' }}</span>
+                                </p>
                                 <p class="text-xs text-secondary-foreground font-mono">{{ $invoice->issuer->cnpj ?? '—' }}</p>
                             </div>
                         </div>
@@ -440,8 +451,9 @@
     </div>
 
     @include('product-alias._alias-modal')
+    @include('issuer._nickname-modal')
 
-    @section('page-module', 'issuer-favorite,invoice-detail,product-alias')
+    @section('page-module', 'issuer-favorite,invoice-detail,product-alias,issuer-nickname')
 @endsection
 
 @push('scripts')
