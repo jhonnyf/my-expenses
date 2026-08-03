@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Category extends Model
 {
     use HasFactory;
+
     public float $total_spent = 0.0;
 
     protected $fillable = [

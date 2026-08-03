@@ -16,7 +16,7 @@ class RecurringPurchaseController extends Controller
     {
         $userId = $request->user()->id;
 
-        $recurring   = $this->service->getRecurringItems($userId);
+        $recurring = $this->service->getRecurringItems($userId);
         $bestIssuers = $this->service->getBestIssuers($userId, $recurring->take(30)->pluck('description'));
 
         $shoppingLists = ShoppingList::where('user_id', $userId)
@@ -24,8 +24,8 @@ class RecurringPurchaseController extends Controller
             ->get(['id', 'name']);
 
         return $this->success([
-            'recurring'      => $recurring,
-            'best_issuers'   => $bestIssuers,
+            'recurring' => $recurring,
+            'best_issuers' => $bestIssuers,
             'shopping_lists' => $shoppingLists,
         ]);
     }
@@ -37,10 +37,10 @@ class RecurringPurchaseController extends Controller
 
         $item = $shoppingList->items()->create([
             'description' => $request->input('description'),
-            'unit_price'  => $request->input('unit_price'),
-            'issuer_id'   => $request->input('issuer_id'),
-            'unit'        => $request->input('unit'),
-            'quantity'    => 1,
+            'unit_price' => $request->input('unit_price'),
+            'issuer_id' => $request->input('issuer_id'),
+            'unit' => $request->input('unit'),
+            'quantity' => 1,
         ]);
 
         return $this->success(['item_id' => $item->id], 201);

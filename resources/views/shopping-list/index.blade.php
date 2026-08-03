@@ -52,6 +52,49 @@
                         </div>
                     </div>
 
+                    {{-- Localização --}}
+                    <div class="kt-card">
+                        <div class="kt-card-content py-3.5 px-5">
+                            <div class="flex flex-wrap items-center justify-between gap-2" id="locationBar">
+                                @if($profileCity)
+                                    <div class="flex items-center gap-2 text-sm" id="locationDefault">
+                                        <i class="ki-filled ki-geolocation text-primary"></i>
+                                        <span class="text-secondary-foreground">
+                                            Comprando perto de <span class="font-semibold text-foreground">{{ $profileCity }}/{{ $profileState }}</span> (raio de 15km)
+                                        </span>
+                                    </div>
+                                @else
+                                    <div class="flex items-center gap-2 text-sm" id="locationDefault">
+                                        <i class="ki-filled ki-information-2 text-primary"></i>
+                                        <span class="text-secondary-foreground">
+                                            <a href="{{ route('account.index') }}" class="link">Preencha sua cidade em Minha Conta</a>
+                                            para ver produtos perto de você.
+                                        </span>
+                                    </div>
+                                @endif
+                                <div class="hidden items-center gap-2 text-sm" id="locationOverride">
+                                    <i class="ki-filled ki-geolocation text-warning"></i>
+                                    <span class="text-secondary-foreground">
+                                        Comparando preços em <span class="font-semibold text-foreground" id="locationOverrideLabel"></span>
+                                    </span>
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" id="btnClearLocationOverride">
+                                        Voltar pra minha cidade
+                                    </button>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-action="use-my-location">
+                                        <i class="ki-filled ki-geolocation"></i>
+                                        Usar minha localização
+                                    </button>
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" id="btnCompareCity" data-kt-modal-toggle="#locationModal">
+                                        <i class="ki-filled ki-arrow-right-left"></i>
+                                        Comparar outra cidade
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Busca de produto --}}
                     <div class="kt-card">
                         <div class="kt-card-header">
@@ -177,6 +220,7 @@
     </div>
 
     @include('shopping-list._directions-modal')
+    @include('shopping-list._location-modal')
 
 @endsection
 

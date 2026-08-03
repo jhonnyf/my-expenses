@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\UpdateUserLocationAction;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -19,13 +20,15 @@ class RegisterController extends Controller
         return view('register.index');
     }
 
-    public function store(RegisterRequest $request): RedirectResponse
+    public function store(RegisterRequest $request, UpdateUserLocationAction $locationAction): RedirectResponse
     {
         $user = User::create([
-            'name'     => $request->input('name'),
-            'email'    => $request->input('email'),
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
             'password' => $request->input('password'),
         ]);
+
+        $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));
 
         Auth::login($user);
         $request->session()->regenerate();

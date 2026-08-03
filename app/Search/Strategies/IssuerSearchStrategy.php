@@ -9,11 +9,15 @@ use Illuminate\Support\Collection;
 
 class IssuerSearchStrategy implements SearchStrategyInterface
 {
-    public function search(string $query, int $userId): Collection
+    public function search(string $query, int $userId, ?string $city = null, ?string $state = null): Collection
     {
         $issuerQuery = Issuer::whereHas('invoices', fn ($q) => $q->where('user_id', $userId));
 
         FullTextQuery::applyOr($issuerQuery, $query, ['name'], ['cnpj']);
+
+        if ($city !== null && $state !== null) {
+            $issuerQuery->where('city', $city)->where('state', $state);
+        }
 
         return $issuerQuery
             ->select('id', 'name', 'cnpj', 'city', 'state')

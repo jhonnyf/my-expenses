@@ -14,8 +14,8 @@ class SaveCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'     => ['required', 'string', 'max:255'],
-            'color'    => ['nullable', 'string', 'max:7'],
+            'name' => ['required', 'string', 'max:255'],
+            'color' => ['nullable', 'string', 'max:7'],
             'keywords' => ['nullable'],
         ];
     }
@@ -24,7 +24,7 @@ class SaveCategoryRequest extends FormRequest
     {
         $raw = $this->input('keywords');
 
-        if (!$raw) {
+        if (! $raw) {
             return [];
         }
 

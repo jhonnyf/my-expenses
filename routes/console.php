@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Remove tokens Sanctum expirados (retém os últimos 30 dias = 720h)
 Schedule::command('sanctum:prune-expired --hours=720')->daily();
+
+// Notifica quedas de preço em produtos favoritados pelos usuários
+Schedule::command('prices:check-favorite-drops')->daily();

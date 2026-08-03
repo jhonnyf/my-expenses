@@ -13,7 +13,7 @@ class ProductSearchStrategy implements SearchStrategyInterface
 {
     public function __construct(private readonly ProductAliasService $aliasService) {}
 
-    public function search(string $query, int $userId): Collection
+    public function search(string $query, int $userId, ?string $city = null, ?string $state = null): Collection
     {
         $productQuery = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->where('invoices.user_id', $userId);
@@ -22,6 +22,13 @@ class ProductSearchStrategy implements SearchStrategyInterface
         $nameSql = $this->aliasService->canonicalNameSql();
 
         FullTextQuery::applyOr($productQuery, $query, ['invoices_items.description', 'product_aliases.canonical_name']);
+
+        if ($city !== null && $state !== null) {
+            $productQuery
+                ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
+                ->where('issuers.city', $city)
+                ->where('issuers.state', $state);
+        }
 
         return $productQuery
             ->select(

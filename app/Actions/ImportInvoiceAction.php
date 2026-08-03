@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Jobs\GeocodeIssuerJob;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
@@ -42,7 +43,7 @@ class ImportInvoiceAction
             return null;
         }
 
-        return Issuer::firstOrCreate(
+        $issuer = Issuer::firstOrCreate(
             ['cnpj' => $cnpj],
             [
                 'name' => Arr::get($emitente, 'nome', ''),
@@ -54,6 +55,12 @@ class ImportInvoiceAction
                 'zip_code' => Arr::get($emitente, 'cep', ''),
             ]
         );
+
+        if ($issuer->wasRecentlyCreated && $issuer->city !== '' && $issuer->state !== '') {
+            GeocodeIssuerJob::dispatch($issuer->id);
+        }
+
+        return $issuer;
     }
 
     private function invoiceAttributes(array $parsed, ?Issuer $issuer, string $rawContent, int $userId): array

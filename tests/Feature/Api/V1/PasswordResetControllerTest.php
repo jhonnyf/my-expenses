@@ -45,22 +45,22 @@ class PasswordResetControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->postJson('/api/v1/auth/reset-password', [
-            'token'                 => 'invalid-token',
-            'email'                 => $user->email,
-            'password'              => 'newpassword1',
+            'token' => 'invalid-token',
+            'email' => $user->email,
+            'password' => 'newpassword1',
             'password_confirmation' => 'newpassword1',
         ])->assertStatus(422);
     }
 
     public function test_reset_password_succeeds_with_valid_token(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $token = Password::broker()->createToken($user);
 
         $this->postJson('/api/v1/auth/reset-password', [
-            'token'                 => $token,
-            'email'                 => $user->email,
-            'password'              => 'newpassword1',
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'newpassword1',
             'password_confirmation' => 'newpassword1',
         ])->assertStatus(200)
             ->assertJsonStructure(['message']);

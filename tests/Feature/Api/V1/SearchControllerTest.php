@@ -45,7 +45,7 @@ class SearchControllerTest extends TestCase
 
     public function test_search_finds_issuer_by_name(): void
     {
-        $user   = User::factory()->create();
+        $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['name' => 'SUPERMERCADO TUDO BOM']);
         Invoice::factory()->for($user)->for($issuer)->create();
 

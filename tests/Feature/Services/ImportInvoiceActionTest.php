@@ -3,9 +3,11 @@
 namespace Tests\Feature\Services;
 
 use App\Actions\ImportInvoiceAction;
+use App\Jobs\GeocodeIssuerJob;
 use App\Models\Issuer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class ImportInvoiceActionTest extends TestCase
@@ -147,5 +149,30 @@ class ImportInvoiceActionTest extends TestCase
         $this->assertEquals($first->id, $second->id);
         $this->assertDatabaseCount('invoices', 1);
         $this->assertDatabaseHas('invoices', ['id' => $first->id, 'total_amount' => 30.00]);
+    }
+
+    public function test_execute_dispatches_geocode_job_when_issuer_is_created_with_city_and_state(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+        $action = app(ImportInvoiceAction::class);
+
+        $action->execute($this->parsedData, '<nfeProc/>', $user->id);
+
+        Queue::assertPushed(GeocodeIssuerJob::class);
+    }
+
+    public function test_execute_does_not_dispatch_geocode_job_when_issuer_already_exists(): void
+    {
+        Queue::fake();
+
+        Issuer::factory()->create(['cnpj' => '11222333000181']);
+        $user = User::factory()->create();
+        $action = app(ImportInvoiceAction::class);
+
+        $action->execute($this->parsedData, '<nfeProc/>', $user->id);
+
+        Queue::assertNotPushed(GeocodeIssuerJob::class);
     }
 }

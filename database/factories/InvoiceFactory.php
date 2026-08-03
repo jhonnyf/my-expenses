@@ -15,19 +15,19 @@ class InvoiceFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id'         => User::factory(),
-            'issuer_id'       => Issuer::factory(),
-            'access_key'      => fake()->numerify(str_repeat('#', 44)),
-            'number'          => fake()->numerify('######'),
-            'series'          => '001',
-            'issued_at'       => fake()->dateTimeBetween('-1 year', 'now'),
-            'environment'     => 'production',
+            'user_id' => User::factory(),
+            'issuer_id' => Issuer::factory(),
+            'access_key' => fake()->numerify(str_repeat('#', 44)),
+            'number' => fake()->numerify('######'),
+            'series' => '001',
+            'issued_at' => fake()->dateTimeBetween('-1 year', 'now'),
+            'environment' => 'production',
             'total_icms_base' => fake()->randomFloat(2, 0, 100),
-            'total_icms'      => fake()->randomFloat(2, 0, 10),
-            'total_products'  => fake()->randomFloat(2, 10, 500),
-            'total_amount'    => fake()->randomFloat(2, 10, 500),
-            'total_taxes'     => fake()->randomFloat(2, 0, 50),
-            'raw_xml'         => '<nfeProc/>',
+            'total_icms' => fake()->randomFloat(2, 0, 10),
+            'total_products' => fake()->randomFloat(2, 10, 500),
+            'total_amount' => fake()->randomFloat(2, 10, 500),
+            'total_taxes' => fake()->randomFloat(2, 0, 50),
+            'raw_xml' => '<nfeProc/>',
         ];
     }
 }

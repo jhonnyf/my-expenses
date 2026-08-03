@@ -229,7 +229,7 @@ class NFCeService
     private function validarUrlSefaz(string $url): void
     {
         $scheme = strtolower(parse_url($url, PHP_URL_SCHEME) ?? '');
-        $host   = parse_url($url, PHP_URL_HOST);
+        $host = parse_url($url, PHP_URL_HOST);
 
         if (! $host || ! in_array($scheme, ['http', 'https'], true)) {
             throw new \InvalidArgumentException('URL inválida.');

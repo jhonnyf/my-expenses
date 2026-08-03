@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Invoice;
 use App\Models\Issuer;
 use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,6 +25,29 @@ class DashboardControllerTest extends TestCase
         $this->actingAs($user)
             ->get('/dashboard')
             ->assertStatus(200);
+    }
+
+    public function test_index_passes_profile_city_state_to_view(): void
+    {
+        $user = User::factory()->create();
+        UserProfile::factory()->for($user)->create(['cidade' => 'Curitiba', 'estado' => 'PR']);
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertStatus(200)
+            ->assertViewHas('profileCity', 'Curitiba')
+            ->assertViewHas('profileState', 'PR')
+            ->assertSee('Curitiba/PR');
+    }
+
+    public function test_index_shows_no_location_message_without_profile(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertStatus(200)
+            ->assertViewHas('profileCity', null);
     }
 
     public function test_index_filters_by_start_and_end_date(): void

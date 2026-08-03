@@ -56,4 +56,9 @@ return [
         'private_key' => env('APPLE_PRIVATE_KEY'),
     ],
 
+    'nominatim' => [
+        'url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
+        'user_agent' => env('NOMINATIM_USER_AGENT', 'my-expenses (contato@example.com)'),
+    ],
+
 ];

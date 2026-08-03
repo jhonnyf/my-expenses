@@ -7,11 +7,34 @@ const ShoppingList = (() => {
     let currentListId = null;
     let shoppingItems = [];
     let debounceTimer = null;
+    let locationOverride = null;
 
     let searchInput, searchResults, resultsList, shoppingListContainer, btnNew, listNameCard;
+    let locationDefault, locationOverrideEl, locationOverrideLabel, locationModalCitySelect;
+
+    const handleLocationUpdated = (e) => {
+        const { cidade, estado } = e.detail;
+
+        locationDefault.innerHTML = `
+            <i class="ki-filled ki-geolocation text-primary"></i>
+            <span class="text-secondary-foreground">
+                Comprando perto de <span class="font-semibold text-foreground">${Utils.escapeHtml(cidade)}/${Utils.escapeHtml(estado)}</span> (raio de 15km)
+            </span>`;
+
+        refreshCurrentSearch();
+    };
+
+    const buildSearchUrl = (query) => {
+        const params = new URLSearchParams({ q: query });
+        if (locationOverride) {
+            params.set('city', locationOverride.city);
+            params.set('state', locationOverride.state);
+        }
+        return `${searchUrl}?${params.toString()}`;
+    };
 
     const fetchResults = (query) => {
-        Utils.http(`${searchUrl}?q=${encodeURIComponent(query)}`)
+        Utils.http(buildSearchUrl(query))
             .then(data => {
                 if (data.length === 0) {
                     resultsList.innerHTML = '<div class="px-4 py-3 text-sm text-secondary-foreground">Nenhum produto encontrado.</div>';
@@ -40,6 +63,11 @@ const ShoppingList = (() => {
                                 </div>
                                 <div class="flex items-center gap-3 shrink-0">
                                     <span class="font-semibold font-mono text-sm text-primary">R$ ${price}</span>
+                                    <button type="button" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm"
+                                            data-action="favorite-product" data-description="${description}" data-unit="${item.unit || ''}"
+                                            title="Avisar quando o preço cair">
+                                        <i class="ki-filled ki-heart text-base text-muted-foreground"></i>
+                                    </button>
                                     <i class="ki-filled ki-plus-squared text-lg text-muted-foreground hover:text-primary"></i>
                                 </div>
                             </div>`;
@@ -63,6 +91,34 @@ const ShoppingList = (() => {
         }
 
         debounceTimer = setTimeout(() => fetchResults(query), 300);
+    };
+
+    const refreshCurrentSearch = () => {
+        const query = searchInput.value.trim();
+        if (query.length >= 2) fetchResults(query);
+    };
+
+    const applyLocationOverride = () => {
+        const value = locationModalCitySelect.value;
+        if (!value) return;
+
+        const [city, state] = value.split('|');
+        locationOverride = { city, state };
+
+        locationDefault.classList.add('hidden');
+        locationOverrideEl.classList.remove('hidden');
+        locationOverrideLabel.textContent = `${city}/${state}`;
+
+        refreshCurrentSearch();
+    };
+
+    const clearLocationOverride = () => {
+        locationOverride = null;
+
+        locationOverrideEl.classList.add('hidden');
+        locationDefault.classList.remove('hidden');
+
+        refreshCurrentSearch();
     };
 
     const ensureListExists = async () => {
@@ -116,6 +172,11 @@ const ShoppingList = (() => {
     };
 
     const handleResultsClick = (e) => {
+        // O botão de favoritar produto é tratado globalmente por
+        // Utils.initFavoriteProduct() via data-action="favorite-product" — aqui só
+        // ignoramos o clique nele pra não também disparar o "adicionar à lista".
+        if (e.target.closest('[data-action="favorite-product"]')) return;
+
         const row = e.target.closest('[data-add-item]');
         if (!row || !resultsList._lastData) return;
 
@@ -480,11 +541,18 @@ const ShoppingList = (() => {
             shoppingListContainer = document.getElementById('shoppingListContainer');
             btnNew = document.getElementById('btnNew');
             listNameCard = document.getElementById('listNameCard');
+            locationDefault = document.getElementById('locationDefault');
+            locationOverrideEl = document.getElementById('locationOverride');
+            locationOverrideLabel = document.getElementById('locationOverrideLabel');
+            locationModalCitySelect = document.getElementById('locationModalCitySelect');
 
             searchInput.addEventListener('input', handleSearchInput);
             resultsList.addEventListener('click', handleResultsClick);
             shoppingListContainer.addEventListener('click', handleListContainerClick);
             document.getElementById('savedLists').addEventListener('click', handleSavedListsClick);
+            document.getElementById('btnApplyLocationOverride').addEventListener('click', applyLocationOverride);
+            document.getElementById('btnClearLocationOverride').addEventListener('click', clearLocationOverride);
+            document.addEventListener('location:updated', handleLocationUpdated);
             document.addEventListener('click', handleDocumentClick);
         }
     };

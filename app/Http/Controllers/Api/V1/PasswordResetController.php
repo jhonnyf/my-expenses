@@ -15,7 +15,7 @@ class PasswordResetController extends Controller
             'email' => ['required', 'email'],
         ], [
             'email.required' => 'O e-mail é obrigatório.',
-            'email.email'    => 'Informe um e-mail válido.',
+            'email.email' => 'Informe um e-mail válido.',
         ]);
 
         Password::broker()->sendResetLink($request->only('email'));
@@ -27,15 +27,15 @@ class PasswordResetController extends Controller
     public function resetPassword(Request $request): JsonResponse
     {
         $request->validate([
-            'token'                 => ['required', 'string'],
-            'email'                 => ['required', 'email'],
-            'password'              => ['required', 'confirmed', PasswordRule::min(8)],
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)],
         ], [
-            'token.required'             => 'O token é obrigatório.',
-            'email.required'             => 'O e-mail é obrigatório.',
-            'email.email'                => 'Informe um e-mail válido.',
-            'password.required'          => 'A nova senha é obrigatória.',
-            'password.confirmed'         => 'A confirmação de senha não confere.',
+            'token.required' => 'O token é obrigatório.',
+            'email.required' => 'O e-mail é obrigatório.',
+            'email.email' => 'Informe um e-mail válido.',
+            'password.required' => 'A nova senha é obrigatória.',
+            'password.confirmed' => 'A confirmação de senha não confere.',
         ]);
 
         $status = Password::broker()->reset(

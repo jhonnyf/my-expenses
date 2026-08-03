@@ -32,9 +32,9 @@ class ResetPasswordControllerTest extends TestCase
         $token = Password::broker()->createToken($user);
 
         $this->post('/reset-password', [
-            'token'                 => $token,
-            'email'                 => 'user@example.com',
-            'password'              => 'newpassword123',
+            'token' => $token,
+            'email' => 'user@example.com',
+            'password' => 'newpassword123',
             'password_confirmation' => 'newpassword123',
         ])->assertRedirect(route('dashboard.index'));
 
@@ -47,9 +47,9 @@ class ResetPasswordControllerTest extends TestCase
         User::factory()->create(['email' => 'user@example.com']);
 
         $this->post('/reset-password', [
-            'token'                 => 'invalid-token',
-            'email'                 => 'user@example.com',
-            'password'              => 'newpassword123',
+            'token' => 'invalid-token',
+            'email' => 'user@example.com',
+            'password' => 'newpassword123',
             'password_confirmation' => 'newpassword123',
         ])->assertSessionHasErrors(['email']);
 
@@ -68,9 +68,9 @@ class ResetPasswordControllerTest extends TestCase
         $token = Password::broker()->createToken($user);
 
         $this->post('/reset-password', [
-            'token'                 => $token,
-            'email'                 => 'user@example.com',
-            'password'              => '123',
+            'token' => $token,
+            'email' => 'user@example.com',
+            'password' => '123',
             'password_confirmation' => '123',
         ])->assertSessionHasErrors(['password']);
     }
@@ -81,9 +81,9 @@ class ResetPasswordControllerTest extends TestCase
         $token = Password::broker()->createToken($user);
 
         $this->post('/reset-password', [
-            'token'                 => $token,
-            'email'                 => 'user@example.com',
-            'password'              => 'newpassword123',
+            'token' => $token,
+            'email' => 'user@example.com',
+            'password' => 'newpassword123',
             'password_confirmation' => 'differentpassword',
         ])->assertSessionHasErrors(['password']);
     }

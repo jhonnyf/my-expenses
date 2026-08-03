@@ -19,6 +19,11 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
-        return response()->json($this->service->search($query, Auth::id()));
+        return response()->json($this->service->search(
+            $query,
+            Auth::id(),
+            $request->input('city'),
+            $request->input('state')
+        ));
     }
 }

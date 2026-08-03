@@ -48,7 +48,7 @@ class NFCeServiceTest extends TestCase
         $this->assertNull($result);
     }
 
-    public function test_extrair_chave_de_url_extracts_from_chNFe_param(): void
+    public function test_extrair_chave_de_url_extracts_from_ch_n_fe_param(): void
     {
         $key = str_repeat('1', 44);
         $url = 'https://nfce.sefaz.sp.gov.br/consulta?chNFe='.$key;

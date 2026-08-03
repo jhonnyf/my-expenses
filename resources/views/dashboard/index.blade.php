@@ -25,6 +25,7 @@
         <div class="grid gap-5 lg:gap-7.5">
 
             @include('partials._period-filter', ['periodFilterAction' => route('dashboard.index'), 'filters' => $filters])
+            @include('partials._location-bar', ['profileCity' => $profileCity, 'profileState' => $profileState])
 
             {{-- SEÇÃO 1 — 4 STAT CARDS --}}
             <style>

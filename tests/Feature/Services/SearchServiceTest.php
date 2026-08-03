@@ -85,4 +85,36 @@ class SearchServiceTest extends TestCase
 
         $this->assertEmpty($result['emissores']);
     }
+
+    public function test_search_filters_issuers_by_city_state(): void
+    {
+        $user = User::factory()->create();
+        $curitiba = Issuer::factory()->create(['name' => 'MERCADO CENTRAL', 'city' => 'Curitiba', 'state' => 'PR']);
+        $saoPaulo = Issuer::factory()->create(['name' => 'MERCADO CENTRAL', 'city' => 'São Paulo', 'state' => 'SP']);
+        Invoice::factory()->for($user)->for($curitiba)->create();
+        Invoice::factory()->for($user)->for($saoPaulo)->create();
+
+        $result = $this->service->search('MERCADO', $user->id, 'São Paulo', 'SP');
+
+        $this->assertCount(1, $result['emissores']);
+    }
+
+    public function test_search_filters_products_by_city_state(): void
+    {
+        $user = User::factory()->create();
+        $curitiba = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        $saoPaulo = Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP']);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($curitiba)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($saoPaulo)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $resultFiltered = $this->service->search('ARROZ', $user->id, 'São Paulo', 'SP');
+        $resultUnfiltered = $this->service->search('ARROZ', $user->id);
+
+        // Sem filtro, os dois itens (Curitiba + São Paulo) caem no mesmo nome
+        // canônico e são contados juntos (2x); filtrando por São Paulo/SP, só 1.
+        $this->assertStringContainsString('2x', $resultUnfiltered['produtos']->first()['subtitle']);
+        $this->assertStringContainsString('1x', $resultFiltered['produtos']->first()['subtitle']);
+    }
 }

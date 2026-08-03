@@ -62,5 +62,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('ai-suggestions', function (Request $request) {
             return Limit::perMinute(15)->by($request->user()?->id ?: $request->ip());
         });
+
+        // Nominatim (OpenStreetMap) exige no máximo 1 requisição/segundo por política de uso.
+        RateLimiter::for('geocoding', fn () => Limit::perSecond(1));
     }
 }

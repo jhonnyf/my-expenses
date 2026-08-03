@@ -14,12 +14,12 @@ class SearchService
         private readonly ProductSearchStrategy $productStrategy,
     ) {}
 
-    public function search(string $query, int $userId): array
+    public function search(string $query, int $userId, ?string $city = null, ?string $state = null): array
     {
         return [
-            'emissores'    => $this->issuerStrategy->search($query, $userId),
-            'notas_fiscais' => $this->invoiceStrategy->search($query, $userId),
-            'produtos'     => $this->productStrategy->search($query, $userId),
+            'emissores' => $this->issuerStrategy->search($query, $userId, $city, $state),
+            'notas_fiscais' => $this->invoiceStrategy->search($query, $userId, $city, $state),
+            'produtos' => $this->productStrategy->search($query, $userId, $city, $state),
         ];
     }
 }

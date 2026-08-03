@@ -18,6 +18,11 @@ class SearchController extends Controller
             return $this->success([]);
         }
 
-        return $this->success($this->service->search($query, $request->user()->id));
+        return $this->success($this->service->search(
+            $query,
+            $request->user()->id,
+            $request->input('city'),
+            $request->input('state')
+        ));
     }
 }

@@ -48,6 +48,25 @@
                         <span class="text-xs text-destructive">{{ $message }}</span>
                     @enderror
                 </div>
+                <div class="flex gap-3">
+                    <div class="flex flex-col gap-1 grow">
+                        <label class="kt-form-label font-normal text-mono">Cidade <span class="text-muted-foreground font-normal">(opcional)</span></label>
+                        <input type="text" name="cidade" class="kt-input @error('cidade') border-destructive @enderror" placeholder="Sua cidade" value="{{ old('cidade') }}" />
+                        @error('cidade')
+                            <span class="text-xs text-destructive">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="flex flex-col gap-1 w-28 shrink-0">
+                        <label class="kt-form-label font-normal text-mono">Estado</label>
+                        <select name="estado" class="kt-select w-full @error('estado') border-destructive @enderror" data-kt-select="true" data-kt-select-placeholder="UF">
+                            <option value="">UF</option>
+                            @include('partials._uf-options', ['selectedUf' => old('estado')])
+                        </select>
+                        @error('estado')
+                            <span class="text-xs text-destructive">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
                 <div class="flex flex-col gap-1">
                     <label class="kt-form-label font-normal text-mono">Senha</label>
                     <div class="kt-input @error('password') border-destructive @enderror" data-kt-toggle-password="true">

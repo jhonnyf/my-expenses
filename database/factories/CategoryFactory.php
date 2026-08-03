@@ -14,10 +14,10 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id'  => User::factory(),
-            'name'     => fake()->word(),
-            'color'    => fake()->hexColor(),
-            'icon'     => 'ki-tag',
+            'user_id' => User::factory(),
+            'name' => fake()->word(),
+            'color' => fake()->hexColor(),
+            'icon' => 'ki-tag',
             'keywords' => [],
         ];
     }

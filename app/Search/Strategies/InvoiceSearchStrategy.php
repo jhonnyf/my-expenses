@@ -8,8 +8,10 @@ use Illuminate\Support\Collection;
 
 class InvoiceSearchStrategy implements SearchStrategyInterface
 {
-    public function search(string $query, int $userId): Collection
+    public function search(string $query, int $userId, ?string $city = null, ?string $state = null): Collection
     {
+        // Busca por número/chave da nota não tem relação com localização — os
+        // parâmetros existem só pra manter a interface uniforme com as demais estratégias.
         return Invoice::where('user_id', $userId)
             ->with(['issuer:id,name', 'issuer.nicknameForUser'])
             ->where(fn ($q) => $q

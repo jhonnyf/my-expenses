@@ -111,6 +111,12 @@
                   <td class="text-sm text-mono pb-3.5">{{ $user->profile->cpf }}</td>
                 </tr>
                 @endif
+                @if($user->profile?->cidade)
+                <tr>
+                  <td class="text-sm text-secondary-foreground pb-3.5 pe-3 whitespace-nowrap">Cidade/Estado:</td>
+                  <td class="text-sm text-mono pb-3.5">{{ $user->profile->cidade }}/{{ $user->profile->estado }}</td>
+                </tr>
+                @endif
                 <tr>
                   @php $since = $memberSince ? \Carbon\Carbon::parse($memberSince) : $user->created_at; @endphp
                   <td class="text-sm text-secondary-foreground pb-3.5 pe-3 whitespace-nowrap">Membro desde:</td>
@@ -167,6 +173,36 @@
 
       {{-- TAB: Visão Geral --}}
       <div id="tab_overview">
+
+        @if($locationSuggestion)
+        <div class="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 mb-5 lg:mb-7.5">
+          <div class="flex items-center gap-3">
+            <i class="ki-filled ki-geolocation text-primary text-lg shrink-0"></i>
+            <span class="text-sm text-foreground">
+              Notamos que você compra frequentemente em
+              <strong>{{ $locationSuggestion['city'] }}/{{ $locationSuggestion['state'] }}</strong>.
+              Deseja atualizar sua localização cadastrada?
+            </span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <form method="POST" action="{{ route('account.update') }}">
+              @csrf
+              @method('PATCH')
+              <input type="hidden" name="name" value="{{ $user->name }}">
+              <input type="hidden" name="email" value="{{ $user->email }}">
+              <input type="hidden" name="cidade" value="{{ $locationSuggestion['city'] }}">
+              <input type="hidden" name="estado" value="{{ $locationSuggestion['state'] }}">
+              <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary">Atualizar</button>
+            </form>
+            <form method="POST" action="{{ route('account.location-suggestion.dismiss') }}">
+              @csrf
+              <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost kt-btn-icon" title="Dispensar">
+                <i class="ki-filled ki-cross text-sm"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+        @endif
 
         {{-- Card boas-vindas --}}
         <div class="kt-card mb-5 lg:mb-7.5">
@@ -349,6 +385,50 @@
                   @error('email')
                     <div class="kt-form-message text-destructive">{{ $message }}</div>
                   @enderror
+                </div>
+                <div class="flex gap-3">
+                  <div class="kt-form-item grow">
+                    <label class="kt-form-label" for="cidade">Cidade <span class="text-muted-foreground font-normal">(opcional)</span></label>
+                    <div class="kt-form-control">
+                      <input
+                        type="text"
+                        id="cidade"
+                        name="cidade"
+                        class="kt-input @error('cidade') border-destructive @enderror"
+                        value="{{ old('cidade', $user->profile?->cidade) }}"
+                        placeholder="Sua cidade"
+                      />
+                    </div>
+                    @error('cidade')
+                      <div class="kt-form-message text-destructive">{{ $message }}</div>
+                    @enderror
+                  </div>
+                  <div class="kt-form-item w-32 shrink-0">
+                    <label class="kt-form-label" for="estado">Estado</label>
+                    <div class="kt-form-control">
+                      <select id="estado" name="estado" class="kt-select w-full @error('estado') border-destructive @enderror" data-kt-select="true" data-kt-select-placeholder="UF">
+                        <option value="">UF</option>
+                        @include('partials._uf-options', ['selectedUf' => old('estado', $user->profile?->estado)])
+                      </select>
+                    </div>
+                    @error('estado')
+                      <div class="kt-form-message text-destructive">{{ $message }}</div>
+                    @enderror
+                  </div>
+                </div>
+                <p class="text-xs text-secondary-foreground">
+                  <i class="ki-filled ki-information-2 text-primary me-0.5"></i>
+                  Usada na Lista de Compras para mostrar produtos num raio de 15km perto de você.
+                </p>
+                <div class="flex items-center gap-2.5">
+                  <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-action="use-my-location">
+                    <i class="ki-filled ki-geolocation"></i>
+                    Usar minha localização
+                  </button>
+                  <span id="locationCaptureStatus" class="text-xs text-success hidden">
+                    <i class="ki-filled ki-check-circle me-0.5"></i>
+                    Localização salva
+                  </span>
                 </div>
                 <div class="pt-2">
                   <button type="submit" class="kt-btn kt-btn-primary">

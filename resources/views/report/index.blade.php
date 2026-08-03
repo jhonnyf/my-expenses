@@ -222,7 +222,19 @@
                                                     {{ \Carbon\Carbon::parse($item->issued_at)->format('d/m/Y') }}
                                                 </td>
                                                 <td class="text-sm truncate">{{ $item->issuer_name }}</td>
-                                                <td class="text-sm font-medium text-foreground truncate">{{ $item->description }}</td>
+                                                <td class="text-sm font-medium text-foreground">
+                                                    <div class="flex items-center gap-1.5 min-w-0">
+                                                        <span class="truncate">{{ $item->description }}</span>
+                                                        <button type="button"
+                                                                data-action="favorite-product"
+                                                                data-description="{{ $item->description }}"
+                                                                data-unit="{{ $item->unit }}"
+                                                                class="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                                                                title="Avisar quando o preço cair">
+                                                            <i class="ki-filled ki-heart text-xs"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
                                                 <td class="item-category-cell">
                                                     <div class="flex items-center gap-1.5">
                                                         <span class="category-dot size-2 rounded-full shrink-0" style="background-color: {{ $item->category_color }}"></span>
@@ -259,7 +271,17 @@
                             @foreach($items as $item)
                                 <div class="rounded-xl border border-border p-4 flex flex-col gap-2">
                                     <div class="flex items-start justify-between gap-2">
-                                        <p class="text-sm font-medium text-foreground min-w-0 truncate">{{ $item->description }}</p>
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            <p class="text-sm font-medium text-foreground truncate">{{ $item->description }}</p>
+                                            <button type="button"
+                                                    data-action="favorite-product"
+                                                    data-description="{{ $item->description }}"
+                                                    data-unit="{{ $item->unit }}"
+                                                    class="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                                                    title="Avisar quando o preço cair">
+                                                <i class="ki-filled ki-heart text-xs"></i>
+                                            </button>
+                                        </div>
                                         <span class="text-sm font-mono font-semibold text-foreground shrink-0">
                                             R$ {{ number_format($item->total_price, 2, ',', '.') }}
                                         </span>

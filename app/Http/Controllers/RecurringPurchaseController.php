@@ -25,8 +25,8 @@ class RecurringPurchaseController extends Controller
             ->get();
 
         return view('recurring-purchase.index', [
-            'recurring'     => $recurring,
-            'bestIssuers'   => $bestIssuers,
+            'recurring' => $recurring,
+            'bestIssuers' => $bestIssuers,
             'shoppingLists' => $shoppingLists,
         ]);
     }
@@ -38,10 +38,10 @@ class RecurringPurchaseController extends Controller
 
         $item = $shoppingList->items()->create([
             'description' => $request->input('description'),
-            'unit_price'  => $request->input('unit_price'),
-            'issuer_id'   => $request->input('issuer_id'),
-            'unit'        => $request->input('unit'),
-            'quantity'    => 1,
+            'unit_price' => $request->input('unit_price'),
+            'issuer_id' => $request->input('issuer_id'),
+            'unit' => $request->input('unit'),
+            'quantity' => 1,
         ]);
 
         return response()->json(['success' => true, 'item_id' => $item->id]);

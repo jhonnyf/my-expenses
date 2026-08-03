@@ -25,7 +25,7 @@ class ForgotPasswordController extends Controller
             'email' => ['required', 'email'],
         ], [
             'email.required' => 'O e-mail é obrigatório.',
-            'email.email'    => 'Informe um e-mail válido.',
+            'email.email' => 'Informe um e-mail válido.',
         ]);
 
         Password::broker()->sendResetLink($request->only('email'));

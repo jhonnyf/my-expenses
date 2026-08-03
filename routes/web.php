@@ -4,10 +4,13 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FavoriteProductController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MyPurchaseController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PriceComparisonController;
 use App\Http\Controllers\PriceHistoryController;
 use App\Http\Controllers\ProductAliasController;
 use App\Http\Controllers\RecurringPurchaseController;
@@ -81,6 +84,13 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('show', [PriceHistoryController::class, 'show'])->name('show');
     });
 
+    Route::group(['prefix' => 'price-comparison', 'as' => 'price-comparison.'], function () {
+        Route::get('/', [PriceComparisonController::class, 'index'])->name('index');
+        Route::get('search-products', [PriceComparisonController::class, 'searchProducts'])->name('search-products');
+        Route::get('by-city', [PriceComparisonController::class, 'byCity'])->name('by-city');
+        Route::get('by-issuer', [PriceComparisonController::class, 'byIssuer'])->name('by-issuer');
+    });
+
     Route::group(['prefix' => 'product-aliases', 'as' => 'product-aliases.'], function () {
         Route::get('review', [ProductAliasController::class, 'review'])->name('review');
         Route::get('suggestions', [ProductAliasController::class, 'suggestions'])->name('suggestions');
@@ -117,6 +127,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::group(['prefix' => 'shopping-list', 'as' => 'shopping-list.'], function () {
         Route::get('/', [ShoppingListController::class, 'index'])->name('index');
         Route::get('search', [ShoppingListController::class, 'search'])->name('search');
+        Route::get('cities', [ShoppingListController::class, 'cities'])->name('cities');
         Route::post('/', [ShoppingListController::class, 'store'])->name('store');
         Route::get('{shoppingList}', [ShoppingListController::class, 'show'])->name('show');
         Route::patch('{shoppingList}', [ShoppingListController::class, 'update'])->name('update');
@@ -132,6 +143,19 @@ Route::group(['middleware' => 'auth'], function () {
         Route::patch('/', [AccountController::class, 'update'])->name('update');
         Route::patch('password', [AccountController::class, 'updatePassword'])->name('password');
         Route::post('avatar', [AccountController::class, 'updateAvatar'])->name('avatar');
+        Route::post('location-suggestion/dismiss', [AccountController::class, 'dismissLocationSuggestion'])->name('location-suggestion.dismiss');
+        Route::post('location/capture', [AccountController::class, 'captureLocation'])->middleware('throttle:10,1')->name('location.capture');
+    });
+
+    Route::group(['prefix' => 'favorite-products', 'as' => 'favorite-products.'], function () {
+        Route::get('/', [FavoriteProductController::class, 'index'])->name('index');
+        Route::post('/', [FavoriteProductController::class, 'store'])->name('store');
+        Route::delete('{favoriteProduct}', [FavoriteProductController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::post('{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
     });
 
 });

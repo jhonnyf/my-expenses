@@ -13,10 +13,17 @@ class DashboardController extends Controller
 
     public function index(Request $request): View
     {
-        return view('dashboard.index', $this->service->getViewData(
+        $profile = Auth::user()->profile;
+
+        $viewData = array_merge($this->service->getViewData(
             Auth::id(),
             $request->query('start_date'),
             $request->query('end_date'),
-        ));
+        ), [
+            'profileCity' => $profile?->cidade,
+            'profileState' => $profile?->estado,
+        ]);
+
+        return view('dashboard.index', $viewData);
     }
 }

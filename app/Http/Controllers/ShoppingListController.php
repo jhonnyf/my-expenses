@@ -27,7 +27,14 @@ class ShoppingListController extends Controller
             ->orderByDesc('updated_at')
             ->get();
 
-        return view('shopping-list.index', ['lists' => $lists]);
+        $profile = Auth::user()->profile;
+
+        return view('shopping-list.index', [
+            'lists' => $lists,
+            'profileCity' => $profile?->cidade,
+            'profileState' => $profile?->estado,
+            'cities' => $this->service->availableCities(),
+        ]);
     }
 
     public function search(Request $request): JsonResponse
@@ -38,10 +45,27 @@ class ShoppingListController extends Controller
             return response()->json([]);
         }
 
-        $userId = Auth::id();
-        $favoriteIds = Auth::user()->favoriteIssuers()->pluck('issuers.id');
+        $user = Auth::user();
+        $favoriteIds = $user->favoriteIssuers()->pluck('issuers.id');
 
-        return response()->json($this->service->searchProducts($userId, $query, $favoriteIds));
+        $filterCity = $request->input('city');
+        $filterState = $request->input('state');
+        $profile = $filterCity === null && $filterState === null ? $user->profile : null;
+
+        return response()->json($this->service->searchProducts(
+            $user->id,
+            $query,
+            $favoriteIds,
+            $filterCity,
+            $filterState,
+            $profile?->latitude,
+            $profile?->longitude
+        ));
+    }
+
+    public function cities(): JsonResponse
+    {
+        return response()->json($this->service->availableCities());
     }
 
     public function store(Request $request): JsonResponse

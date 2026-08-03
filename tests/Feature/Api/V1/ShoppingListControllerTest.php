@@ -164,6 +164,38 @@ class ShoppingListControllerTest extends TestCase
         $this->assertEquals(0, $response->json('data.0.is_own'));
     }
 
+    public function test_search_with_city_state_override_filters_results(): void
+    {
+        $user = User::factory()->create();
+        $curitiba = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        $saoPaulo = Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP']);
+
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($curitiba)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($saoPaulo)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/shopping-lists/search?q=ARROZ&city='.urlencode('São Paulo').'&state=SP');
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+        $this->assertEquals($saoPaulo->id, $response->json('data.0.issuer_id'));
+    }
+
+    public function test_cities_returns_distinct_city_state_pairs(): void
+    {
+        $user = User::factory()->create();
+        Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP']);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/shopping-lists/cities');
+
+        $response->assertStatus(200);
+        $this->assertCount(2, $response->json('data'));
+    }
+
     public function test_add_item_returns_403_for_other_users_list(): void
     {
         $list = ShoppingList::factory()->create();

@@ -15,7 +15,7 @@ trait ApiResponder
     {
         $payload = ['message' => $message];
 
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             $payload['errors'] = $errors;
         }
 

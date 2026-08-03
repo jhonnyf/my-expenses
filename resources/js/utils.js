@@ -70,6 +70,80 @@ const Utils = (() => {
         });
     };
 
+    // Botão de "favoritar produto" (alerta de queda de preço) — mesmo padrão de
+    // initCategoryAssignment: delegação em document, funciona em qualquer página
+    // que renderize `[data-action="favorite-product"]` (Lista de Compras, detalhe
+    // de nota, relatório), estático ou montado via JS.
+    const initFavoriteProduct = (favoriteProductsUrl) => {
+        document.addEventListener('click', (e) => {
+            if (!(e.target instanceof Element)) return;
+
+            const btn = e.target.closest('[data-action="favorite-product"]');
+            if (!btn || btn.disabled) return;
+
+            const { description, unit } = btn.dataset;
+
+            http(favoriteProductsUrl, {
+                method: 'POST',
+                body: { canonical_name: description, unit: unit || null },
+            }).then(() => {
+                const icon = btn.querySelector('i');
+                icon?.classList.remove('text-muted-foreground');
+                icon?.classList.add('text-destructive');
+                btn.disabled = true;
+                btn.title = 'Você será avisado quando o preço cair';
+            });
+        });
+    };
+
+    // Botão "Usar minha localização" — captura a posição pelo navegador
+    // (Geolocation API), envia pro backend fazer o reverse geocoding e salvar
+    // no perfil, e dispara um evento `location:updated` em document pra cada
+    // página atualizar sua própria UI (badge, campos de formulário, etc) —
+    // mesmo padrão de delegação de initFavoriteProduct/initCategoryAssignment.
+    const initLocationCapture = (captureLocationUrl) => {
+        document.addEventListener('click', (e) => {
+            if (!(e.target instanceof Element)) return;
+
+            const btn = e.target.closest('[data-action="use-my-location"]');
+            if (!btn || btn.disabled) return;
+
+            if (!navigator.geolocation) {
+                alert('Seu navegador não suporta geolocalização.');
+                return;
+            }
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ki-filled ki-loading animate-spin"></i> Localizando...';
+
+            const restoreButton = () => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+
+                    http(captureLocationUrl, { method: 'POST', body: { latitude, longitude } })
+                        .then((data) => {
+                            document.dispatchEvent(new CustomEvent('location:updated', { detail: data }));
+                        })
+                        .catch(() => {
+                            alert('Não foi possível identificar sua cidade a partir da localização. Tente preencher manualmente.');
+                        })
+                        .finally(restoreButton);
+                },
+                () => {
+                    restoreButton();
+                    alert('Não foi possível acessar sua localização. Verifique a permissão do navegador.');
+                },
+                { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+            );
+        });
+    };
+
     const QUICK_PERIODS = {
         this_month: () => {
             const now = new Date();
@@ -119,7 +193,10 @@ const Utils = (() => {
         });
     };
 
-    return { http, formatCurrency, escapeHtml, initCategoryAssignment, initPeriodFilter, syncSelectValue, setSelectDisabled };
+    return {
+        http, formatCurrency, escapeHtml, initCategoryAssignment, initFavoriteProduct,
+        initLocationCapture, initPeriodFilter, syncSelectValue, setSelectDisabled,
+    };
 })();
 
 export default Utils;

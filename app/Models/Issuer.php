@@ -23,6 +23,13 @@ class Issuer extends Model
         'city',
         'state',
         'zip_code',
+        'latitude',
+        'longitude',
+    ];
+
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     public function invoices(): HasMany

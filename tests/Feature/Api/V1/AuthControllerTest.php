@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Jobs\GeocodeUserProfileJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class AuthControllerTest extends TestCase
@@ -15,7 +17,7 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create(['password' => 'password']);
 
         $this->postJson('/api/v1/auth/login', [
-            'email'    => $user->email,
+            'email' => $user->email,
             'password' => 'password',
         ])
             ->assertStatus(200)
@@ -27,7 +29,7 @@ class AuthControllerTest extends TestCase
         User::factory()->create(['email' => 'test@example.com']);
 
         $this->postJson('/api/v1/auth/login', [
-            'email'    => 'test@example.com',
+            'email' => 'test@example.com',
             'password' => 'wrong-password',
         ])->assertStatus(401);
     }
@@ -42,9 +44,9 @@ class AuthControllerTest extends TestCase
     public function test_register_creates_user_and_returns_token(): void
     {
         $this->postJson('/api/v1/auth/register', [
-            'name'                  => 'João Silva',
-            'email'                 => 'joao@example.com',
-            'password'              => 'password123',
+            'name' => 'João Silva',
+            'email' => 'joao@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ])
             ->assertStatus(201)
@@ -58,9 +60,9 @@ class AuthControllerTest extends TestCase
         User::factory()->create(['email' => 'joao@example.com']);
 
         $this->postJson('/api/v1/auth/register', [
-            'name'                  => 'Outro João',
-            'email'                 => 'joao@example.com',
-            'password'              => 'password123',
+            'name' => 'Outro João',
+            'email' => 'joao@example.com',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
         ])->assertStatus(422)->assertJsonValidationErrors(['email']);
     }
@@ -82,7 +84,7 @@ class AuthControllerTest extends TestCase
 
     public function test_logout_revokes_token(): void
     {
-        $user  = User::factory()->create();
+        $user = User::factory()->create();
         $token = $user->createToken('test')->plainTextToken;
 
         $this->withToken($token)
@@ -90,5 +92,38 @@ class AuthControllerTest extends TestCase
             ->assertStatus(200);
 
         $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_register_creates_profile_with_cidade_estado_when_provided(): void
+    {
+        Queue::fake();
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Maria Silva',
+            'email' => 'maria@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'cidade' => 'Curitiba',
+            'estado' => 'PR',
+        ])->assertStatus(201);
+
+        $user = User::where('email', 'maria@example.com')->firstOrFail();
+        $this->assertDatabaseHas('users_profiles', [
+            'user_id' => $user->id,
+            'cidade' => 'Curitiba',
+            'estado' => 'PR',
+        ]);
+        Queue::assertPushed(GeocodeUserProfileJob::class);
+    }
+
+    public function test_register_rejects_estado_with_invalid_length(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'estado' => 'PRR',
+        ])->assertStatus(422)->assertJsonValidationErrors(['estado']);
     }
 }

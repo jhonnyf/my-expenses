@@ -16,18 +16,18 @@ class UpdatePasswordRequest extends FormRequest
     {
         return [
             'current_password' => ['required', 'string', 'current_password'],
-            'password'         => ['required', 'string', 'confirmed', Password::min(8)],
+            'password' => ['required', 'string', 'confirmed', Password::min(8)],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'current_password.required'         => 'A senha atual é obrigatória.',
+            'current_password.required' => 'A senha atual é obrigatória.',
             'current_password.current_password' => 'A senha atual está incorreta.',
-            'password.required'                 => 'A nova senha é obrigatória.',
-            'password.confirmed'                => 'A confirmação da nova senha não confere.',
-            'password.min'                      => 'A nova senha deve ter pelo menos 8 caracteres.',
+            'password.required' => 'A nova senha é obrigatória.',
+            'password.confirmed' => 'A confirmação da nova senha não confere.',
+            'password.min' => 'A nova senha deve ter pelo menos 8 caracteres.',
         ];
     }
 }

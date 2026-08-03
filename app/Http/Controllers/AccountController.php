@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CaptureUserLocationFromBrowserAction;
 use App\Actions\UpdateUserAvatarAction;
+use App\Actions\UpdateUserLocationAction;
+use App\Http\Requests\CaptureLocationRequest;
 use App\Http\Requests\UpdateAccountRequest;
 use App\Http\Requests\UpdateAvatarRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Models\InvoiceItem;
+use App\Services\LocationSuggestionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +19,8 @@ use Illuminate\View\View;
 
 class AccountController extends Controller
 {
+    public function __construct(private readonly LocationSuggestionService $locationSuggestionService) {}
+
     public function index(): View
     {
         $user = Auth::user();
@@ -41,15 +48,18 @@ class AccountController extends Controller
             'totalSpent' => (float) $totalSpent,
             'memberSince' => $memberSince,
             'recentInvoices' => $recentInvoices,
+            'locationSuggestion' => $this->locationSuggestionService->suggestionFor($user),
         ]);
     }
 
-    public function update(UpdateAccountRequest $request): RedirectResponse
+    public function update(UpdateAccountRequest $request, UpdateUserLocationAction $locationAction): RedirectResponse
     {
         $user = Auth::user();
 
         $user->fill($request->only('name', 'email'));
         $user->save();
+
+        $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));
 
         return redirect()
             ->route('account.index')
@@ -75,5 +85,34 @@ class AccountController extends Controller
         return redirect()
             ->route('account.index')
             ->with('success_avatar', 'Foto de perfil atualizada com sucesso.');
+    }
+
+    public function dismissLocationSuggestion(): RedirectResponse
+    {
+        Auth::user()->profile()->updateOrCreate([], ['location_suggestion_dismissed_at' => now()]);
+
+        return redirect()->route('account.index');
+    }
+
+    public function captureLocation(CaptureLocationRequest $request, CaptureUserLocationFromBrowserAction $action): JsonResponse
+    {
+        $profile = $action->execute(
+            Auth::user(),
+            (float) $request->input('latitude'),
+            (float) $request->input('longitude')
+        );
+
+        if ($profile === null) {
+            return response()->json([
+                'message' => 'Não foi possível identificar sua cidade a partir da localização informada.',
+            ], 422);
+        }
+
+        return response()->json([
+            'cidade' => $profile->cidade,
+            'estado' => $profile->estado,
+            'latitude' => $profile->latitude,
+            'longitude' => $profile->longitude,
+        ]);
     }
 }

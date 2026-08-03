@@ -89,4 +89,48 @@ class ShoppingListServiceTest extends TestCase
 
         $this->assertEquals('REFRIG COCA COLA 350ML LAT', $results->first()->description);
     }
+
+    public function test_search_products_with_city_state_override_only_returns_matching_city(): void
+    {
+        $user = User::factory()->create();
+        $curitiba = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        $saoPaulo = Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP']);
+
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($curitiba)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($saoPaulo)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $results = $this->service->searchProducts($user->id, 'ARROZ', new Collection, 'São Paulo', 'SP');
+
+        $this->assertCount(1, $results);
+        $this->assertEquals($saoPaulo->id, $results->first()->issuer_id);
+    }
+
+    public function test_search_products_ignores_radius_filter_outside_mysql(): void
+    {
+        // A suíte roda em SQLite — DistanceCalculator::isMySql() é false, então o
+        // raio de 15km é ignorado e o comportamento cai pro "sem filtro" atual,
+        // mesmo passando lat/lng de usuário.
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR', 'latitude' => null, 'longitude' => null]);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+            ->create(['description' => 'FEIJAO PRETO 1KG']);
+
+        $results = $this->service->searchProducts($user->id, 'FEIJAO', new Collection, null, null, -25.4284, -49.2733);
+
+        $this->assertCount(1, $results);
+    }
+
+    public function test_available_cities_returns_distinct_city_state_pairs(): void
+    {
+        Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP']);
+        Issuer::factory()->create(['city' => null, 'state' => null]);
+
+        $cities = $this->service->availableCities();
+
+        $this->assertCount(2, $cities);
+    }
 }

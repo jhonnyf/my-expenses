@@ -22,16 +22,16 @@ class ResetPasswordController extends Controller
     public function reset(Request $request): RedirectResponse
     {
         $request->validate([
-            'token'    => ['required', 'string'],
-            'email'    => ['required', 'email'],
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', PasswordRule::min(8)],
         ], [
-            'token.required'             => 'O token é obrigatório.',
-            'email.required'             => 'O e-mail é obrigatório.',
-            'email.email'                => 'Informe um e-mail válido.',
-            'password.required'          => 'A nova senha é obrigatória.',
-            'password.confirmed'         => 'A confirmação de senha não confere.',
-            'password.min'               => 'A senha deve ter pelo menos 8 caracteres.',
+            'token.required' => 'O token é obrigatório.',
+            'email.required' => 'O e-mail é obrigatório.',
+            'email.email' => 'Informe um e-mail válido.',
+            'password.required' => 'A nova senha é obrigatória.',
+            'password.confirmed' => 'A confirmação de senha não confere.',
+            'password.min' => 'A senha deve ter pelo menos 8 caracteres.',
         ]);
 
         $status = Password::broker()->reset(

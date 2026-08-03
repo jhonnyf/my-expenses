@@ -11,6 +11,8 @@ import IssuerFavorite from './pages/issuer-favorite';
 import IssuerList from './pages/issuer-list';
 import IssuerNickname from './pages/issuer-nickname';
 import MyPurchases from './pages/my-purchases';
+import Notifications from './pages/notifications';
+import PriceComparison from './pages/price-comparison';
 import PriceHistory from './pages/price-history';
 import ProductAlias from './pages/product-alias';
 import RecurringPurchase from './pages/recurring-purchase';
@@ -18,6 +20,7 @@ import Report from './pages/report';
 import ShoppingList from './pages/shopping-list';
 import Upload from './pages/upload';
 import Pwa from './pwa';
+import Utils from './utils';
 
 const pages = {
     'account': Account,
@@ -31,6 +34,7 @@ const pages = {
     'issuer-list': IssuerList,
     'issuer-nickname': IssuerNickname,
     'my-purchases': MyPurchases,
+    'price-comparison': PriceComparison,
     'price-history': PriceHistory,
     'product-alias': ProductAlias,
     'recurring-purchase': RecurringPurchase,
@@ -42,6 +46,15 @@ const pages = {
 document.addEventListener('DOMContentLoaded', () => {
     Pwa.init();
     GlobalSearch.init();
+    Notifications.init();
+
+    if (window.pageConfig?.favoriteProductsUrl) {
+        Utils.initFavoriteProduct(window.pageConfig.favoriteProductsUrl);
+    }
+
+    if (window.pageConfig?.captureLocationUrl) {
+        Utils.initLocationCapture(window.pageConfig.captureLocationUrl);
+    }
 
     const pageAttr = document.body.dataset.page;
     if (!pageAttr) return;

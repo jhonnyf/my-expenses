@@ -17,7 +17,7 @@ class SocialAuthController extends Controller
     public function login(Request $request, string $provider, FindOrCreateSocialUser $action): JsonResponse
     {
         if (! in_array($provider, self::ALLOWED_PROVIDERS, strict: true)) {
-            throw new NotFoundHttpException();
+            throw new NotFoundHttpException;
         }
 
         $request->validate([
@@ -36,7 +36,7 @@ class SocialAuthController extends Controller
                 'user' => new UserResource($user),
             ]);
         } catch (\Throwable $e) {
-            Log::error("Social API login error [{$provider}]: " . $e->getMessage());
+            Log::error("Social API login error [{$provider}]: ".$e->getMessage());
 
             return $this->error(__('auth.social_failed'), 422);
         }

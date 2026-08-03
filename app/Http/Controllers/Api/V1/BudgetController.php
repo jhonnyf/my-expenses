@@ -19,7 +19,7 @@ class BudgetController extends Controller
         $data = $this->service->getBudgetsWithSpending($request->user()->id);
 
         return $this->success([
-            'budgets'    => BudgetResource::collection($data['budgets']),
+            'budgets' => BudgetResource::collection($data['budgets']),
             'categories' => CategoryResource::collection($data['categories']),
         ]);
     }
@@ -28,7 +28,7 @@ class BudgetController extends Controller
     {
         $budget = Budget::updateOrCreate(
             [
-                'user_id'     => $request->user()->id,
+                'user_id' => $request->user()->id,
                 'category_id' => $request->input('category_id'),
             ],
             ['amount' => $request->input('amount')]

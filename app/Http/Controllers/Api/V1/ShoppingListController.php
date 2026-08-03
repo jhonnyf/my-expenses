@@ -39,7 +39,24 @@ class ShoppingListController extends Controller
         $user = $request->user();
         $favoriteIds = $user->favoriteIssuers()->pluck('issuers.id');
 
-        return $this->success($this->service->searchProducts($user->id, $query, $favoriteIds));
+        $filterCity = $request->input('city');
+        $filterState = $request->input('state');
+        $profile = $filterCity === null && $filterState === null ? $user->profile : null;
+
+        return $this->success($this->service->searchProducts(
+            $user->id,
+            $query,
+            $favoriteIds,
+            $filterCity,
+            $filterState,
+            $profile?->latitude,
+            $profile?->longitude
+        ));
+    }
+
+    public function cities(): JsonResponse
+    {
+        return $this->success($this->service->availableCities());
     }
 
     public function store(Request $request): JsonResponse

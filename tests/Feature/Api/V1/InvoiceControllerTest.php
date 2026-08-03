@@ -5,8 +5,8 @@ namespace Tests\Feature\Api\V1;
 use App\Models\Invoice;
 use App\Models\Issuer;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class InvoiceControllerTest extends TestCase
@@ -41,7 +41,7 @@ class InvoiceControllerTest extends TestCase
     public function test_show_returns_403_when_invoice_belongs_to_another_user(): void
     {
         $invoice = Invoice::factory()->create();
-        $other   = User::factory()->create();
+        $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->getJson("/api/v1/invoices/{$invoice->id}")
@@ -50,7 +50,7 @@ class InvoiceControllerTest extends TestCase
 
     public function test_show_returns_invoice_for_owner(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $invoice = Invoice::factory()->for($user)->create();
 
         $this->actingAs($user, 'sanctum')
@@ -83,8 +83,8 @@ class InvoiceControllerTest extends TestCase
 
     public function test_import_xml_returns_409_for_duplicate_invoice(): void
     {
-        $user    = User::factory()->create();
-        $issuer  = Issuer::factory()->create(['cnpj' => '00000000000191']);
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['cnpj' => '00000000000191']);
         Invoice::factory()->for($user)->for($issuer)->create([
             'access_key' => '35260600000000000191650010000012341234567890',
         ]);

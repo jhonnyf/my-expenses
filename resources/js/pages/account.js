@@ -1,3 +1,5 @@
+import Utils from '../utils';
+
 const TAB_TOGGLE_SELECTORS = {
     settings: '[data-kt-tab-toggle="#tab_settings"]',
     security: '[data-kt-tab-toggle="#tab_security"]',
@@ -8,6 +10,23 @@ const Account = (() => {
 
     const openTab = (tab) => {
         document.querySelector(TAB_TOGGLE_SELECTORS[tab])?.click();
+    };
+
+    const handleLocationUpdated = (e) => {
+        const { cidade, estado } = e.detail;
+
+        const cidadeInput = document.getElementById('cidade');
+        const estadoSelect = document.getElementById('estado');
+        if (!cidadeInput || !estadoSelect) return;
+
+        cidadeInput.value = cidade;
+        Utils.syncSelectValue(estadoSelect, estado);
+
+        const status = document.getElementById('locationCaptureStatus');
+        if (status) {
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 4000);
+        }
     };
 
     const previewAvatar = (input) => {
@@ -34,6 +53,8 @@ const Account = (() => {
             document.getElementById('avatar')?.addEventListener('change', function () {
                 previewAvatar(this);
             });
+
+            document.addEventListener('location:updated', handleLocationUpdated);
 
             const { openTab: tab } = window.pageConfig ?? {};
             if (tab) openTab(tab);

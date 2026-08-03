@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ShoppingListItem extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'shopping_list_id',
         'issuer_id',

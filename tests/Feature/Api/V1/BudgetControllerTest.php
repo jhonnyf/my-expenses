@@ -31,19 +31,19 @@ class BudgetControllerTest extends TestCase
 
     public function test_store_creates_budget(): void
     {
-        $user     = User::factory()->create();
+        $user = User::factory()->create();
         $category = Category::factory()->for($user)->create();
 
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/budgets', [
                 'category_id' => $category->id,
-                'amount'      => 500.00,
+                'amount' => 500.00,
             ])
             ->assertStatus(201)
             ->assertJsonPath('data.amount', '500.00');
 
         $this->assertDatabaseHas('budgets', [
-            'user_id'     => $user->id,
+            'user_id' => $user->id,
             'category_id' => $category->id,
         ]);
     }
@@ -58,7 +58,7 @@ class BudgetControllerTest extends TestCase
     public function test_destroy_returns_403_when_budget_belongs_to_another_user(): void
     {
         $budget = Budget::factory()->create();
-        $other  = User::factory()->create();
+        $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->deleteJson("/api/v1/budgets/{$budget->id}")
@@ -67,7 +67,7 @@ class BudgetControllerTest extends TestCase
 
     public function test_destroy_deletes_own_budget(): void
     {
-        $user   = User::factory()->create();
+        $user = User::factory()->create();
         $budget = Budget::factory()->for($user)->create();
 
         $this->actingAs($user, 'sanctum')

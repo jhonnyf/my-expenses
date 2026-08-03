@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Budget extends Model
 {
     use HasFactory;
+
     public float $spent = 0.0;
 
     public float $percentage = 0.0;

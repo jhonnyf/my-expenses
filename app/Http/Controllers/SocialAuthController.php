@@ -32,7 +32,7 @@ class SocialAuthController extends Controller
 
             return redirect()->intended(route('dashboard.index'));
         } catch (\Throwable $e) {
-            Log::error("Social login error [{$provider}]: " . $e->getMessage());
+            Log::error("Social login error [{$provider}]: ".$e->getMessage());
 
             return redirect()->route('login.index')->withErrors([
                 'email' => __('auth.social_failed'),
@@ -43,7 +43,7 @@ class SocialAuthController extends Controller
     private function ensureProviderAllowed(string $provider): void
     {
         if (! in_array($provider, self::ALLOWED_PROVIDERS, strict: true)) {
-            throw new NotFoundHttpException();
+            throw new NotFoundHttpException;
         }
     }
 }

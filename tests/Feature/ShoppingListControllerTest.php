@@ -9,6 +9,7 @@ use App\Models\ProductAlias;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
 use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -114,5 +115,48 @@ class ShoppingListControllerTest extends TestCase
         $this->assertEquals('Avenida Paulista', $response->json('items.0.issuer.street'));
         $this->assertEquals('São Paulo', $response->json('items.0.issuer.city'));
         $this->assertEquals('01310100', $response->json('items.0.issuer.zip_code'));
+    }
+
+    public function test_search_with_city_state_override_filters_results(): void
+    {
+        $user = User::factory()->create();
+        $curitiba = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        $saoPaulo = Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP']);
+
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($curitiba)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($saoPaulo)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $response = $this->actingAs($user)->getJson('/shopping-list/search?q=ARROZ&city='.urlencode('São Paulo').'&state=SP');
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json());
+        $this->assertEquals($saoPaulo->id, $response->json('0.issuer_id'));
+    }
+
+    public function test_cities_returns_distinct_city_state_pairs(): void
+    {
+        $user = User::factory()->create();
+        Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
+        Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP']);
+
+        $response = $this->actingAs($user)->getJson('/shopping-list/cities');
+
+        $response->assertStatus(200);
+        $this->assertCount(2, $response->json());
+    }
+
+    public function test_index_passes_profile_city_state_to_view(): void
+    {
+        $user = User::factory()->create();
+        UserProfile::factory()->for($user)->create(['cidade' => 'Curitiba', 'estado' => 'PR']);
+
+        $this->actingAs($user)
+            ->get('/shopping-list')
+            ->assertStatus(200)
+            ->assertViewHas('profileCity', 'Curitiba')
+            ->assertViewHas('profileState', 'PR');
     }
 }

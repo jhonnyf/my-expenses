@@ -16,6 +16,18 @@ const Dashboard = (() => {
 
     const formatBRL = (value) => parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+    const handleLocationUpdated = (e) => {
+        const { cidade, estado } = e.detail;
+        const el = document.getElementById('dashboardLocationDefault');
+        if (!el) return;
+
+        el.innerHTML = `
+            <i class="ki-filled ki-geolocation text-primary"></i>
+            <span class="text-secondary-foreground">
+                Sua localização: <span class="font-semibold text-foreground">${Utils.escapeHtml(cidade)}/${Utils.escapeHtml(estado)}</span>
+            </span>`;
+    };
+
     const renderMonthlyChart = (data, colors) => {
         const el = document.getElementById('monthlyExpensesChart');
         if (!el) return;
@@ -154,6 +166,7 @@ const Dashboard = (() => {
             const colors = getThemeColors();
 
             Utils.initPeriodFilter();
+            document.addEventListener('location:updated', handleLocationUpdated);
 
             if (monthlyExpenses?.length) {
                 renderMonthlyChart(monthlyExpenses, colors);

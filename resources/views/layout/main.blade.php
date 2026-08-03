@@ -92,6 +92,25 @@
                             </div>
                         </div>
                         <!-- End of Global Search -->
+                        <!-- Notifications -->
+                        <div class="shrink-0" data-kt-dropdown="true" data-kt-dropdown-offset="10px, 10px" data-kt-dropdown-placement="bottom-end" data-kt-dropdown-trigger="click">
+                            <div class="cursor-pointer shrink-0 relative" data-kt-dropdown-toggle="true" id="notificationsToggle">
+                                <button type="button" class="kt-btn kt-btn-icon kt-btn-ghost">
+                                    <i class="ki-filled ki-notification-status text-lg"></i>
+                                </button>
+                                <span id="notificationBadge" class="hidden absolute top-0.5 end-0.5 size-2 rounded-full bg-destructive"></span>
+                            </div>
+                            <div class="kt-dropdown-menu w-[320px]" data-kt-dropdown-menu="true">
+                                <div class="flex items-center justify-between px-3 py-2.5">
+                                    <span class="text-sm font-semibold text-foreground">Notificações</span>
+                                </div>
+                                <div class="kt-dropdown-menu-separator"></div>
+                                <div id="notificationsList" class="max-h-80 overflow-y-auto divide-y divide-border">
+                                    <div class="px-3 py-4 text-xs text-secondary-foreground text-center">Nenhuma notificação.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End of Notifications -->
                         <!-- User -->
                         <div class="shrink-0" data-kt-dropdown="true" data-kt-dropdown-offset="10px, 10px" data-kt-dropdown-offset-rtl="-20px, 10px" data-kt-dropdown-placement="bottom-end" data-kt-dropdown-placement-rtl="bottom-start" data-kt-dropdown-trigger="click">
                             <div class="cursor-pointer shrink-0" data-kt-dropdown-toggle="true">
@@ -171,7 +190,14 @@
     @stack('scripts')
 
     @auth
-    <script>window.pageConfig = window.pageConfig || {}; window.pageConfig.globalSearchUrl = '{{ route("search") }}';
+    <script>
+        window.pageConfig = window.pageConfig || {};
+        window.pageConfig.globalSearchUrl = '{{ route("search") }}';
+        window.pageConfig.notificationsUrl = '{{ route("notifications.index") }}';
+        window.pageConfig.notificationsReadUrl = '{{ url("notifications") }}';
+        window.pageConfig.favoriteProductsUrl = '{{ route("favorite-products.store") }}';
+        window.pageConfig.captureLocationUrl = '{{ route("account.location.capture") }}';
+    </script>
     @endauth
 </body>
 </html>

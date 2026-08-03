@@ -15,7 +15,7 @@ class ShoppingListFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'name'    => 'Lista ' . fake()->word(),
+            'name' => 'Lista '.fake()->word(),
         ];
     }
 }

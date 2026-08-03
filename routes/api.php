@@ -5,9 +5,12 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\FavoriteProductController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\IssuerController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
+use App\Http\Controllers\Api\V1\PriceComparisonController;
 use App\Http\Controllers\Api\V1\PriceHistoryController;
 use App\Http\Controllers\Api\V1\ProductAliasController;
 use App\Http\Controllers\Api\V1\RecurringPurchaseController;
@@ -89,6 +92,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('timeline', [PriceHistoryController::class, 'timeline'])->name('timeline');
         });
 
+        // Comparativo de preços por cidade/mercado
+        Route::prefix('price-comparison')->name('price-comparison.')->group(function () {
+            Route::get('search-products', [PriceComparisonController::class, 'searchProducts'])->name('search-products');
+            Route::get('by-city', [PriceComparisonController::class, 'byCity'])->name('by-city');
+            Route::get('by-issuer', [PriceComparisonController::class, 'byIssuer'])->name('by-issuer');
+        });
+
         // Apelidos de produto (unificação de nome entre lojas)
         Route::prefix('product-aliases')->name('product-aliases.')->group(function () {
             Route::get('suggestions', [ProductAliasController::class, 'suggestions'])->name('suggestions');
@@ -108,8 +118,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('add-to-list', [RecurringPurchaseController::class, 'addToShoppingList'])->name('add-to-list');
         });
 
-        // Listas de compras — rota de busca ANTES do apiResource
+        // Listas de compras — rotas específicas ANTES do apiResource
         Route::get('shopping-lists/search', [ShoppingListController::class, 'search'])->name('shopping-lists.search');
+        Route::get('shopping-lists/cities', [ShoppingListController::class, 'cities'])->name('shopping-lists.cities');
         Route::apiResource('shopping-lists', ShoppingListController::class);
         Route::prefix('shopping-lists/{shoppingList}')->name('shopping-lists.')->group(function () {
             Route::post('items', [ShoppingListController::class, 'addItem'])->name('items.add');
@@ -124,6 +135,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::patch('/', [AccountController::class, 'update'])->name('update');
             Route::patch('password', [AccountController::class, 'updatePassword'])->name('password');
             Route::post('avatar', [AccountController::class, 'updateAvatar'])->name('avatar');
+            Route::post('location-suggestion/dismiss', [AccountController::class, 'dismissLocationSuggestion'])->name('location-suggestion.dismiss');
+            Route::post('location/capture', [AccountController::class, 'captureLocation'])->middleware('throttle:10,1')->name('location.capture');
+        });
+
+        // Produtos favoritos (alerta de queda de preço)
+        Route::prefix('favorite-products')->name('favorite-products.')->group(function () {
+            Route::get('/', [FavoriteProductController::class, 'index'])->name('index');
+            Route::post('/', [FavoriteProductController::class, 'store'])->name('store');
+            Route::delete('{favoriteProduct}', [FavoriteProductController::class, 'destroy'])->name('destroy');
+        });
+
+        // Notificações
+        Route::prefix('notifications')->name('notifications.')->group(function () {
+            Route::get('/', [NotificationController::class, 'index'])->name('index');
+            Route::post('{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
         });
     });
 });

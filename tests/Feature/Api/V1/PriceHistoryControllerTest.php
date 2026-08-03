@@ -30,13 +30,13 @@ class PriceHistoryControllerTest extends TestCase
 
     public function test_search_returns_matching_products(): void
     {
-        $user    = User::factory()->create();
-        $issuer  = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->for($user)->for($issuer)->create();
 
         InvoiceItem::factory()->for($invoice)->create([
             'description' => 'LEITE INTEGRAL 1L',
-            'unit_price'  => 5.50,
+            'unit_price' => 5.50,
         ]);
 
         $response = $this->actingAs($user, 'sanctum')
@@ -63,13 +63,13 @@ class PriceHistoryControllerTest extends TestCase
 
     public function test_timeline_returns_price_history_for_description(): void
     {
-        $user    = User::factory()->create();
-        $issuer  = Issuer::factory()->create();
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
 
         InvoiceItem::factory()->for($invoice)->create([
             'description' => 'ARROZ TIPO 1 5KG',
-            'unit_price'  => 22.90,
+            'unit_price' => 22.90,
         ]);
 
         $response = $this->actingAs($user, 'sanctum')

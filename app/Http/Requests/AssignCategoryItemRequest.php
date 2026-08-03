@@ -14,7 +14,7 @@ class AssignCategoryItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'item_id'     => ['required', 'integer', 'exists:invoices_items,id'],
+            'item_id' => ['required', 'integer', 'exists:invoices_items,id'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
         ];
     }

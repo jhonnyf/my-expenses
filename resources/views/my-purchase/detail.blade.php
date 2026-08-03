@@ -341,6 +341,14 @@
                                                     <i class="ki-filled ki-pencil text-xs"></i>
                                                 </button>
                                                 <button type="button"
+                                                        data-action="favorite-product"
+                                                        data-description="{{ $item->canonical_name ?? $item->description }}"
+                                                        data-unit="{{ $item->unit }}"
+                                                        class="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                                                        title="Avisar quando o preço cair">
+                                                    <i class="ki-filled ki-heart text-xs"></i>
+                                                </button>
+                                                <button type="button"
                                                         class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                                                         data-kt-tooltip="true" data-kt-tooltip-placement="top">
                                                     <i class="ki-filled ki-information-2 text-sm"></i>
@@ -404,6 +412,14 @@
                                                 class="shrink-0 text-muted-foreground hover:text-primary transition-colors"
                                                 title="Unificar nome do produto">
                                             <i class="ki-filled ki-pencil text-xs"></i>
+                                        </button>
+                                        <button type="button"
+                                                data-action="favorite-product"
+                                                data-description="{{ $item->canonical_name ?? $item->description }}"
+                                                data-unit="{{ $item->unit }}"
+                                                class="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                                                title="Avisar quando o preço cair">
+                                            <i class="ki-filled ki-heart text-xs"></i>
                                         </button>
                                     </div>
                                     @if($item->canonical_name)
