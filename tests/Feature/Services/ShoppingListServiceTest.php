@@ -122,6 +122,73 @@ class ShoppingListServiceTest extends TestCase
         $this->assertCount(1, $results);
     }
 
+    public function test_search_products_default_mode_includes_city_match_without_coordinates(): void
+    {
+        // Modo padrão (não-override) real: cidade/estado do perfil acompanhados de
+        // lat/lng do perfil (mesmo que o emitente em si não tenha coordenadas).
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP', 'latitude' => null, 'longitude' => null]);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $results = $this->service->searchProducts($user->id, 'ARROZ', new Collection, 'São Paulo', 'SP', -23.5505, -46.6333);
+
+        $this->assertCount(1, $results);
+    }
+
+    public function test_search_products_default_mode_includes_issuer_with_no_location_data(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['city' => null, 'state' => null, 'latitude' => null, 'longitude' => null]);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $results = $this->service->searchProducts($user->id, 'ARROZ', new Collection, 'São Paulo', 'SP', -23.5505, -46.6333);
+
+        $this->assertCount(1, $results);
+    }
+
+    public function test_search_products_default_mode_excludes_issuer_from_different_known_city(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR', 'latitude' => null, 'longitude' => null]);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $results = $this->service->searchProducts($user->id, 'ARROZ', new Collection, 'São Paulo', 'SP', -23.5505, -46.6333);
+
+        $this->assertCount(0, $results);
+    }
+
+    public function test_search_products_combined_mode_degrades_to_city_and_unknown_location_on_sqlite(): void
+    {
+        // A suíte roda em SQLite — DistanceCalculator::isMySql() é false, então o
+        // branch de raio fica inerte mesmo passando lat/lng junto com cidade/estado
+        // (a chamada real que o controller faz no modo padrão). Só cidade-exata e
+        // "sem dado de localização" valem aqui; o raio em si só é validado manualmente
+        // contra o MySQL real (ver plano).
+        $user = User::factory()->create();
+
+        $sameCity = Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP', 'latitude' => null, 'longitude' => null]);
+        $differentCityWithCoords = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR', 'latitude' => -25.4284, 'longitude' => -49.2733]);
+        $unknownLocation = Issuer::factory()->create(['city' => null, 'state' => null, 'latitude' => null, 'longitude' => null]);
+
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($sameCity)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($differentCityWithCoords)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($unknownLocation)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $results = $this->service->searchProducts($user->id, 'ARROZ', new Collection, 'São Paulo', 'SP', -23.5505, -46.6333);
+
+        $this->assertCount(2, $results);
+        $this->assertEqualsCanonicalizing(
+            [$sameCity->id, $unknownLocation->id],
+            $results->pluck('issuer_id')->all()
+        );
+    }
+
     public function test_available_cities_returns_distinct_city_state_pairs(): void
     {
         Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);

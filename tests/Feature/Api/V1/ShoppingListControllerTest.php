@@ -9,6 +9,7 @@ use App\Models\ProductAlias;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
 use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -181,6 +182,21 @@ class ShoppingListControllerTest extends TestCase
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('data'));
         $this->assertEquals($saoPaulo->id, $response->json('data.0.issuer_id'));
+    }
+
+    public function test_search_default_mode_includes_city_match_from_profile(): void
+    {
+        $user = User::factory()->create();
+        UserProfile::factory()->for($user)->withCoordinates(-23.5505, -46.6333)->create(['cidade' => 'São Paulo', 'estado' => 'SP']);
+        $issuer = Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP', 'latitude' => null, 'longitude' => null]);
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+            ->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/shopping-lists/search?q=ARROZ');
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+        $this->assertEquals($issuer->id, $response->json('data.0.issuer_id'));
     }
 
     public function test_cities_returns_distinct_city_state_pairs(): void

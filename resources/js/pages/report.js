@@ -87,6 +87,14 @@ const Report = (() => {
         chart.render();
     };
 
+    const handleAliasUpdated = (e) => {
+        const { description, display_name: displayName } = e.detail;
+
+        document.querySelectorAll(`.item-alias-name[data-item-description="${CSS.escape(description)}"]`).forEach(el => {
+            el.textContent = displayName;
+        });
+    };
+
     const handleClick = (e) => {
         const submitBtn = e.target.closest('[data-action="submit-report"]');
         if (submitBtn) {
@@ -108,6 +116,7 @@ const Report = (() => {
             ({ generateUrl } = window.pageConfig);
 
             document.addEventListener('click', handleClick);
+            document.addEventListener('product-alias:updated', handleAliasUpdated);
 
             const { categoryBreakdown, assignCategoryUrl } = window.pageConfig;
             Utils.initCategoryAssignment(assignCategoryUrl);

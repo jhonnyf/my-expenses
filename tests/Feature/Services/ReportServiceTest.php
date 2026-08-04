@@ -172,6 +172,24 @@ class ReportServiceTest extends TestCase
 
         $result = $this->service->buildReportData($user->id, []);
 
-        $this->assertEquals('Arroz Branco 5kg', $result['items']->first()->description);
+        $item = $result['items']->first();
+        $this->assertEquals('Arroz Branco 5kg', $item->description);
+        $this->assertEquals('ARROZ 5KG', $item->raw_description);
+        $this->assertEquals('Arroz Branco 5kg', $item->canonical_name);
+    }
+
+    public function test_build_report_data_exposes_raw_description_when_not_aliased(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        $this->createInvoiceWithItem($user, $issuer, [], 10.00, ['description' => 'FEIJAO 1KG']);
+
+        $result = $this->service->buildReportData($user->id, []);
+
+        $item = $result['items']->first();
+        $this->assertEquals('FEIJAO 1KG', $item->description);
+        $this->assertEquals('FEIJAO 1KG', $item->raw_description);
+        $this->assertNull($item->canonical_name);
     }
 }

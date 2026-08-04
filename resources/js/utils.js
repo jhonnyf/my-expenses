@@ -26,7 +26,11 @@ const Utils = (() => {
     const syncSelectValue = (select, value) => {
         const instance = window.KTSelect?.getInstance(select);
         if (instance) {
-            instance.setSelectedOptions(value ? [value] : []);
+            // setSelectedOptions espera elementos <option> reais (lê .value de
+            // cada item), não a string do valor — passar a string faz o KTUI
+            // guardar [undefined] e a seleção falha silenciosamente.
+            const option = value ? select.querySelector(`option[value="${CSS.escape(value)}"]`) : null;
+            instance.setSelectedOptions(option ? [option] : []);
             instance.updateSelectedOptionDisplay();
         } else {
             select.value = value;

@@ -60,7 +60,7 @@
                                     <div class="flex items-center gap-2 text-sm" id="locationDefault">
                                         <i class="ki-filled ki-geolocation text-primary"></i>
                                         <span class="text-secondary-foreground">
-                                            Comprando perto de <span class="font-semibold text-foreground">{{ $profileCity }}/{{ $profileState }}</span> (raio de 15km)
+                                            Comprando perto de <span class="font-semibold text-foreground">{{ $profileCity }}/{{ $profileState }}</span>
                                         </span>
                                     </div>
                                 @else
@@ -106,7 +106,7 @@
                                 <input type="text"
                                        id="searchInput"
                                        placeholder="Digite o nome do produto (mín. 2 caracteres)"
-                                       autocomplete="off" />
+                                       autocomplete="nope" />
                             </label>
                             <div id="searchResults" class="hidden mt-3">
                                 <div class="border border-border rounded-lg overflow-hidden">

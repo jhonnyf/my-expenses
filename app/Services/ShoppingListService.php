@@ -73,16 +73,59 @@ class ShoppingListService
 
     private function applyLocationFilter($query, ?string $filterCity, ?string $filterState, ?float $userLatitude, ?float $userLongitude): void
     {
-        if ($filterCity !== null && $filterState !== null) {
+        $hasCity = $filterCity !== null && $filterState !== null;
+        $hasCoordinates = $userLatitude !== null && $userLongitude !== null;
+
+        // "Outra cidade": override explícito (ver controllers) — nunca vem acompanhado
+        // de lat/lng. Igualdade exata, sem carve-out de "sem dado" nem raio.
+        if ($hasCity && ! $hasCoordinates) {
             $query->where('issuers.city', $filterCity)->where('issuers.state', $filterState);
 
             return;
         }
 
-        if ($userLatitude === null || $userLongitude === null || ! DistanceCalculator::isMySql()) {
+        $hasRadius = $hasCoordinates && DistanceCalculator::isMySql();
+
+        if (! $hasCity && ! $hasRadius) {
             return;
         }
 
+        if ($hasRadius) {
+            $distanceExpression = DistanceCalculator::mysqlHaversineExpression(
+                'issuers.latitude',
+                'issuers.longitude',
+                $userLatitude,
+                $userLongitude
+            );
+            $query->selectRaw("{$distanceExpression} as distance_km");
+        }
+
+        $query->where(function ($sub) use ($hasCity, $filterCity, $filterState, $hasRadius, $userLatitude, $userLongitude) {
+            if ($hasCity) {
+                $sub->orWhere(function ($q) use ($filterCity, $filterState) {
+                    $q->where('issuers.city', $filterCity)->where('issuers.state', $filterState);
+                });
+            }
+
+            if ($hasRadius) {
+                $sub->orWhere(function ($q) use ($userLatitude, $userLongitude) {
+                    $this->applyRadiusCondition($q, $userLatitude, $userLongitude);
+                });
+            }
+
+            // Sem nenhum dado de localização (nem cidade/estado, nem lat/lng) — não dá
+            // pra saber se está longe, então não escondemos o produto.
+            $sub->orWhere(function ($q) {
+                $q->where(fn ($q2) => $q2->whereNull('issuers.city')->orWhere('issuers.city', ''))
+                    ->where(fn ($q2) => $q2->whereNull('issuers.state')->orWhere('issuers.state', ''))
+                    ->whereNull('issuers.latitude')
+                    ->whereNull('issuers.longitude');
+            });
+        });
+    }
+
+    private function applyRadiusCondition($query, float $userLatitude, float $userLongitude): void
+    {
         $distanceExpression = DistanceCalculator::mysqlHaversineExpression(
             'issuers.latitude',
             'issuers.longitude',
@@ -93,8 +136,7 @@ class ShoppingListService
         $query
             ->whereNotNull('issuers.latitude')
             ->whereNotNull('issuers.longitude')
-            ->selectRaw("{$distanceExpression} as distance_km")
-            ->having('distance_km', '<=', self::RADIUS_KM);
+            ->whereRaw("{$distanceExpression} <= ?", [self::RADIUS_KM]);
     }
 
     /**

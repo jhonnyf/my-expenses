@@ -1,5 +1,5 @@
 @extends('layout.main')
-@section('page-module', 'report')
+@section('page-module', 'report,product-alias')
 
 @section('content')
 
@@ -15,6 +15,26 @@
         </div>
     </div>
 
+    @php
+        $rangeStart = $filters['start_date'] ?? now()->startOfMonth()->format('Y-m-d');
+        $rangeEnd = $filters['end_date'] ?? now()->format('Y-m-d');
+
+        $thisMonthStart = now()->startOfMonth()->format('Y-m-d');
+        $thisMonthEnd = now()->format('Y-m-d');
+        $lastMonthStart = now()->startOfMonth()->subMonth()->format('Y-m-d');
+        $lastMonthEnd = now()->startOfMonth()->subDay()->format('Y-m-d');
+        $last3MonthsStart = now()->startOfMonth()->subMonths(2)->format('Y-m-d');
+        $thisYearStart = now()->startOfYear()->format('Y-m-d');
+
+        $activeRange = match(true) {
+            $rangeStart === $thisMonthStart && $rangeEnd === $thisMonthEnd => 'this-month',
+            $rangeStart === $lastMonthStart && $rangeEnd === $lastMonthEnd => 'last-month',
+            $rangeStart === $last3MonthsStart && $rangeEnd === $thisMonthEnd => 'last-3-months',
+            $rangeStart === $thisYearStart && $rangeEnd === $thisMonthEnd => 'this-year',
+            default => null,
+        };
+    @endphp
+
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
@@ -23,10 +43,10 @@
                 <div class="kt-card-header flex-col sm:flex-row items-start sm:items-center gap-3 py-3 lg:py-0">
                     <h3 class="kt-card-title">Filtros</h3>
                     <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-                        <button type="button" data-action="quick-range" data-range="this-month" class="kt-btn kt-btn-outline kt-btn-sm">Este mês</button>
-                        <button type="button" data-action="quick-range" data-range="last-month" class="kt-btn kt-btn-outline kt-btn-sm">Mês passado</button>
-                        <button type="button" data-action="quick-range" data-range="last-3-months" class="kt-btn kt-btn-outline kt-btn-sm">Últimos 3 meses</button>
-                        <button type="button" data-action="quick-range" data-range="this-year" class="kt-btn kt-btn-outline kt-btn-sm">Este ano</button>
+                        <button type="button" data-action="quick-range" data-range="this-month" class="kt-btn kt-btn-sm {{ $activeRange === 'this-month' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Este mês</button>
+                        <button type="button" data-action="quick-range" data-range="last-month" class="kt-btn kt-btn-sm {{ $activeRange === 'last-month' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Mês passado</button>
+                        <button type="button" data-action="quick-range" data-range="last-3-months" class="kt-btn kt-btn-sm {{ $activeRange === 'last-3-months' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Últimos 3 meses</button>
+                        <button type="button" data-action="quick-range" data-range="this-year" class="kt-btn kt-btn-sm {{ $activeRange === 'this-year' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Este ano</button>
                     </div>
                 </div>
                 <div class="kt-card-content pb-5">
@@ -224,7 +244,16 @@
                                                 <td class="text-sm truncate">{{ $item->issuer_name }}</td>
                                                 <td class="text-sm font-medium text-foreground">
                                                     <div class="flex items-center gap-1.5 min-w-0">
-                                                        <span class="truncate">{{ $item->description }}</span>
+                                                        <span class="truncate item-alias-name" data-item-description="{{ $item->raw_description }}">{{ $item->description }}</span>
+                                                        <button type="button"
+                                                                data-action="edit-product-alias"
+                                                                data-kt-modal-toggle="#productAliasModal"
+                                                                data-description="{{ $item->raw_description }}"
+                                                                data-canonical-name="{{ $item->canonical_name }}"
+                                                                class="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                                                                title="Unificar nome do produto">
+                                                            <i class="ki-filled ki-pencil text-xs"></i>
+                                                        </button>
                                                         <button type="button"
                                                                 data-action="favorite-product"
                                                                 data-description="{{ $item->description }}"
@@ -272,7 +301,16 @@
                                 <div class="rounded-xl border border-border p-4 flex flex-col gap-2">
                                     <div class="flex items-start justify-between gap-2">
                                         <div class="flex items-center gap-1.5 min-w-0">
-                                            <p class="text-sm font-medium text-foreground truncate">{{ $item->description }}</p>
+                                            <p class="text-sm font-medium text-foreground truncate item-alias-name" data-item-description="{{ $item->raw_description }}">{{ $item->description }}</p>
+                                            <button type="button"
+                                                    data-action="edit-product-alias"
+                                                    data-kt-modal-toggle="#productAliasModal"
+                                                    data-description="{{ $item->raw_description }}"
+                                                    data-canonical-name="{{ $item->canonical_name }}"
+                                                    class="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                                                    title="Unificar nome do produto">
+                                                <i class="ki-filled ki-pencil text-xs"></i>
+                                            </button>
                                             <button type="button"
                                                     data-action="favorite-product"
                                                     data-description="{{ $item->description }}"
@@ -318,6 +356,8 @@
         </div>
     </div>
 
+    @include('product-alias._alias-modal')
+
 @endsection
 
 @push('scripts')
@@ -326,6 +366,8 @@
         generateUrl: '{{ route("reports.generate") }}',
         assignCategoryUrl: '{{ route("categories.assign-item") }}',
         categoryBreakdown: @json($categoryBreakdown ?? []),
+        productAliasStoreUrl: '{{ route("product-aliases.store") }}',
+        productAliasAiSuggestUrl: '{{ route("product-aliases.ai-suggest-name") }}',
     });
 </script>
 @endpush

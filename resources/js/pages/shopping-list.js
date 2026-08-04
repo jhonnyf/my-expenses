@@ -18,7 +18,7 @@ const ShoppingList = (() => {
         locationDefault.innerHTML = `
             <i class="ki-filled ki-geolocation text-primary"></i>
             <span class="text-secondary-foreground">
-                Comprando perto de <span class="font-semibold text-foreground">${Utils.escapeHtml(cidade)}/${Utils.escapeHtml(estado)}</span> (raio de 15km)
+                Comprando perto de <span class="font-semibold text-foreground">${Utils.escapeHtml(cidade)}/${Utils.escapeHtml(estado)}</span>
             </span>`;
 
         refreshCurrentSearch();

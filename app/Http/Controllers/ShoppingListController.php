@@ -56,8 +56,8 @@ class ShoppingListController extends Controller
             $user->id,
             $query,
             $favoriteIds,
-            $filterCity,
-            $filterState,
+            $filterCity ?? $profile?->cidade,
+            $filterState ?? $profile?->estado,
             $profile?->latitude,
             $profile?->longitude
         ));

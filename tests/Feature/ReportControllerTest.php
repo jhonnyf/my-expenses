@@ -28,6 +28,29 @@ class ReportControllerTest extends TestCase
             ->assertStatus(200);
     }
 
+    public function test_index_highlights_this_month_quick_range_button_by_default(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/reports');
+
+        $response->assertSee('data-range="this-month" class="kt-btn kt-btn-sm kt-btn-primary"', false);
+        $response->assertSee('data-range="last-month" class="kt-btn kt-btn-sm kt-btn-outline"', false);
+    }
+
+    public function test_generate_highlights_last_month_quick_range_button_when_filtered(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/reports/generate', [
+            'start_date' => now()->startOfMonth()->subMonth()->format('Y-m-d'),
+            'end_date' => now()->startOfMonth()->subDay()->format('Y-m-d'),
+        ]);
+
+        $response->assertSee('data-range="last-month" class="kt-btn kt-btn-sm kt-btn-primary"', false);
+        $response->assertSee('data-range="this-month" class="kt-btn kt-btn-sm kt-btn-outline"', false);
+    }
+
     public function test_generate_returns_200_for_last_month_filter(): void
     {
         $user = User::factory()->create();

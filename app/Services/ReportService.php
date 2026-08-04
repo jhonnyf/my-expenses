@@ -40,6 +40,8 @@ class ReportService
         $items = $itemsQuery->select(
             'invoices_items.id as item_id',
             'invoices_items.category_id',
+            'invoices_items.description as raw_description',
+            'product_aliases.canonical_name',
             DB::raw("{$nameSql} as description"),
             'invoices_items.quantity',
             'invoices_items.unit',
