@@ -1,5 +1,6 @@
 # my-expenses
 
+
 Aplicação Laravel 12 para controle de gastos pessoais a partir da importação de NFC-e (Nota Fiscal de Consumidor Eletrônica). Permite importar notas via upload de XML, QR Code ou chave de acesso (consulta SEFAZ), categorizar itens automaticamente, acompanhar orçamentos, histórico de preços, listas de compras e gerar relatórios.
 
 ## Stack
