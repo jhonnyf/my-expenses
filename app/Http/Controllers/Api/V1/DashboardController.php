@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Resources\Api\V1\BudgetResource;
 use App\Http\Resources\Api\V1\InvoiceResource;
 use App\Services\DashboardService;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,8 @@ class DashboardController extends Controller
         if ($data['lastPurchase']) {
             $data['lastPurchase'] = new InvoiceResource($data['lastPurchase']);
         }
+
+        $data['budgets'] = BudgetResource::collection($data['budgets']);
 
         return $this->success($data);
     }

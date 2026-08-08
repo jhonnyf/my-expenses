@@ -129,7 +129,7 @@ class MyPurchaseController extends Controller
             $invoice = $this->importAction->execute($payload->parsed, $payload->rawContent, $userId);
             InvoiceImported::dispatch($invoice);
 
-            if ($request->wantsJson()) {
+            if ($this->shouldRespondWithJson($request)) {
                 return response()->json(['redirect' => route('my-purchases.detail', $invoice->id)]);
             }
 
@@ -141,10 +141,15 @@ class MyPurchaseController extends Controller
 
     private function importError(Request $request, string $field, string $message): RedirectResponse|JsonResponse
     {
-        if ($request->wantsJson()) {
+        if ($this->shouldRespondWithJson($request)) {
             return response()->json(['errors' => [$field => [$message]]], 422);
         }
 
         return back()->withErrors([$field => $message])->withInput();
+    }
+
+    private function shouldRespondWithJson(Request $request): bool
+    {
+        return $request->wantsJson() || $request->is('api/*');
     }
 }

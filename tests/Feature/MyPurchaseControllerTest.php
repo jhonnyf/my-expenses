@@ -391,4 +391,51 @@ class MyPurchaseControllerTest extends TestCase
         $invoice = Invoice::where('user_id', $user->id)->first();
         $response->assertRedirect(route('my-purchases.detail', $invoice->id));
     }
+
+    // ─── /api/nfce/upload (rota legada exposta sob /api) ────────────────────
+
+    public function test_api_nfce_upload_returns_json_on_success_without_accept_header(): void
+    {
+        $user = User::factory()->create();
+        $file = new UploadedFile(
+            base_path('tests/fixtures/nfce.xml'),
+            'nfce.xml',
+            'text/xml',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($user)->post('/api/nfce/upload', ['xml' => $file]);
+
+        $invoice = Invoice::where('user_id', $user->id)->first();
+        $this->assertNotNull($invoice);
+        $response->assertOk()->assertExactJson(['redirect' => route('my-purchases.detail', $invoice->id)]);
+    }
+
+    public function test_api_nfce_upload_returns_json_error_without_accept_header(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        Invoice::factory()->create([
+            'user_id' => $user->id,
+            'issuer_id' => $issuer->id,
+            'access_key' => '35260600000000000191650010000012341234567890',
+        ]);
+
+        $file = new UploadedFile(
+            base_path('tests/fixtures/nfce.xml'),
+            'nfce.xml',
+            'text/xml',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($user)->post('/api/nfce/upload', ['xml' => $file]);
+
+        $response->assertStatus(422)->assertExactJson([
+            'errors' => ['xml' => ['Esta nota fiscal já foi importada anteriormente.']],
+        ]);
+        $this->assertDatabaseCount('invoices', 1);
+    }
 }
