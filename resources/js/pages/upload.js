@@ -83,6 +83,7 @@ const Upload = (() => {
 
     const resetScannerUi = () => {
         document.getElementById('qrScannerError').classList.add('hidden');
+        document.getElementById('qrScannerFocusControl').classList.add('hidden');
 
         const statusEl = document.getElementById('qrScannerStatus');
         statusEl.classList.remove('hidden');
@@ -114,6 +115,34 @@ const Upload = (() => {
         }
     };
 
+    // Se o dispositivo expõe controle manual de foco com faixa de distância
+    // (focusDistance em getCapabilities — hoje praticamente só Chrome/Android),
+    // mostra um slider para o usuário ajustar o foco na mão. Isso ajuda quando
+    // o cupom fica muito perto da lente e o foco automático/macro não converge.
+    const setupVariableFocus = (video, track, capabilities) => {
+        const control = document.getElementById('qrScannerFocusControl');
+        const range = document.getElementById('qrScannerFocusRange');
+        const focusDistance = capabilities?.focusDistance;
+
+        if (!capabilities?.focusMode?.includes('manual') || !focusDistance) {
+            control.classList.add('hidden');
+            return;
+        }
+
+        range.min = focusDistance.min;
+        range.max = focusDistance.max;
+        range.step = focusDistance.step ?? 'any';
+        range.value = track.getSettings?.().focusDistance ?? focusDistance.min;
+
+        range.oninput = () => {
+            track.applyConstraints({
+                advanced: [{ focusMode: 'manual', focusDistance: Number(range.value) }],
+            }).catch(() => {});
+        };
+
+        control.classList.remove('hidden');
+    };
+
     // QR Codes de cupom fiscal costumam ser lidos bem de perto; a câmera
     // traseira do celular normalmente foca longe por padrão, então tentamos
     // travar o foco em modo macro/contínuo assim que a track fica disponível.
@@ -123,6 +152,8 @@ const Upload = (() => {
         const track = video.srcObject?.getVideoTracks?.()[0];
         const capabilities = track?.getCapabilities?.();
         const focusModes = capabilities?.focusMode ?? [];
+
+        setupVariableFocus(video, track, capabilities);
 
         if (focusModes.includes('macro')) {
             try {

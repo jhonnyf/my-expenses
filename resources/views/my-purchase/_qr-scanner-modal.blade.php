@@ -14,6 +14,17 @@
                 Aponte a câmera para o QR Code do cupom fiscal.
             </p>
             <p id="qrScannerError" class="text-xs text-destructive text-center hidden"></p>
+
+            {{-- Só aparece quando o dispositivo expõe controle manual de foco (ex.: Chrome/Android) --}}
+            <div id="qrScannerFocusControl" class="hidden flex items-center gap-2">
+                <i class="ki-filled ki-eye text-secondary-foreground text-sm shrink-0"></i>
+                <input
+                    type="range"
+                    id="qrScannerFocusRange"
+                    class="w-full h-1.5 rounded-full bg-secondary accent-primary cursor-pointer"
+                    aria-label="Ajustar foco da câmera"
+                >
+            </div>
         </div>
         <div class="kt-modal-footer">
             <button class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="#qrScannerModal">Cancelar</button>
