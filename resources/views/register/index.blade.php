@@ -19,15 +19,6 @@
                         <img alt="" class="size-3.5 shrink-0" src="assets/media/brand-logos/google.svg" />
                         Entrar com Google
                     </a>
-                    <a class="kt-btn kt-btn-outline justify-center" href="{{ route('login.social.redirect', 'facebook') }}">
-                        <img alt="" class="size-3.5 shrink-0" src="assets/media/brand-logos/facebook.svg" />
-                        Entrar com Facebook
-                    </a>
-                    <a class="kt-btn kt-btn-outline justify-center" href="{{ route('login.social.redirect', 'apple') }}">
-                        <img alt="" class="size-3.5 shrink-0 dark:hidden" src="assets/media/brand-logos/apple-black.svg" />
-                        <img alt="" class="size-3.5 shrink-0 light:hidden" src="assets/media/brand-logos/apple-white.svg" />
-                        Entrar com Apple
-                    </a>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="border-t border-border w-full"></span>
