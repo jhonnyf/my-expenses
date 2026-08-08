@@ -114,6 +114,34 @@ const Upload = (() => {
         }
     };
 
+    // QR Codes de cupom fiscal costumam ser lidos bem de perto; a câmera
+    // traseira do celular normalmente foca longe por padrão, então tentamos
+    // travar o foco em modo macro/contínuo assim que a track fica disponível.
+    // getCapabilities()/focusMode ainda são experimentais (suporte real só em
+    // Chrome/Android), por isso cada tentativa é isolada e silenciosa.
+    const enableCloseFocus = async (video) => {
+        const track = video.srcObject?.getVideoTracks?.()[0];
+        const capabilities = track?.getCapabilities?.();
+        const focusModes = capabilities?.focusMode ?? [];
+
+        if (focusModes.includes('macro')) {
+            try {
+                await track.applyConstraints({ advanced: [{ focusMode: 'macro' }] });
+                return;
+            } catch (error) {
+                // segue para o fallback abaixo
+            }
+        }
+
+        if (focusModes.includes('continuous')) {
+            try {
+                await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+            } catch (error) {
+                // sem suporte real do dispositivo, mantém o foco automático padrão
+            }
+        }
+    };
+
     const startCamera = async () => {
         resetScannerUi();
 
@@ -126,6 +154,7 @@ const Upload = (() => {
 
         try {
             await scanner.start();
+            await enableCloseFocus(video);
         } catch (error) {
             showScannerError(QR_ERROR_MESSAGES[error?.name] ?? 'Não foi possível iniciar a câmera. Tente novamente.');
         }
