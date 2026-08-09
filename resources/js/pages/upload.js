@@ -260,23 +260,29 @@ const Upload = (() => {
         btn.onclick = () => capturePhoto(video);
     };
 
+    // Tudo aqui dentro do try, incluindo resetScannerUi e a construção do
+    // QrScanner: startCamera roda como callback do evento 'shown' do modal, sem
+    // ninguém para dar await/catch nela — um erro fora do try vira uma rejeição
+    // de Promise não tratada, silenciosa (tela preta sem nenhum feedback).
     const startCamera = async () => {
-        resetScannerUi();
-
         const video = document.getElementById('qrScannerVideo');
-        scanner = new QrScanner(video, handleQrDecoded, {
-            preferredCamera: 'environment',
-            highlightScanRegion: true,
-            highlightCodeOutline: true,
-        });
 
         try {
+            resetScannerUi();
+
+            scanner = new QrScanner(video, handleQrDecoded, {
+                preferredCamera: 'environment',
+                highlightScanRegion: true,
+                highlightCodeOutline: true,
+            });
+
             await scanner.start();
             await enableCloseFocus(video);
             await enableHigherResolution(video);
             setupPhotoCapture(video);
             scheduleDistanceHint();
         } catch (error) {
+            console.error('[upload] erro ao iniciar câmera do QR Code:', error);
             showScannerError(QR_ERROR_MESSAGES[error?.name] ?? 'Não foi possível iniciar a câmera. Tente novamente.');
         }
     };
