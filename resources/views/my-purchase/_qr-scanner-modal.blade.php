@@ -15,6 +15,18 @@
             </p>
             <p id="qrScannerError" class="text-xs text-destructive text-center hidden"></p>
 
+            {{-- Aparece depois de alguns segundos sem leitura, sugerindo ajuste de distância --}}
+            <p id="qrScannerDistanceHint" class="text-xs text-secondary-foreground text-center hidden">
+                Não conseguindo focar? Tente afastar um pouco o QR Code da câmera.
+            </p>
+
+            {{-- Só aparece em navegadores com suporte a ImageCapture (ex.: Chrome/Android) --}}
+            <button type="button" id="qrScannerCaptureBtn" class="kt-btn kt-btn-outline kt-btn-sm w-full hidden">
+                <i class="ki-filled ki-scan-barcode"></i>
+                Tirar foto para focar melhor
+            </button>
+            <p id="qrScannerCaptureFeedback" class="text-xs text-destructive text-center hidden"></p>
+
             {{-- Só aparece quando o dispositivo expõe controle manual de foco (ex.: Chrome/Android) --}}
             <div id="qrScannerFocusControl" class="hidden flex items-center gap-2">
                 <i class="ki-filled ki-eye text-secondary-foreground text-sm shrink-0"></i>

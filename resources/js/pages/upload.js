@@ -9,6 +9,7 @@ const QR_ERROR_MESSAGES = {
 const Upload = (() => {
     let initialized = false;
     let scanner = null;
+    let distanceHintTimer = null;
 
     const clearFieldError = (form, field) => {
         form.querySelector(`[name="${field}"]`)?.removeAttribute('aria-invalid');
@@ -81,13 +82,34 @@ const Upload = (() => {
         });
     };
 
+    const clearDistanceHintTimer = () => {
+        clearTimeout(distanceHintTimer);
+        distanceHintTimer = null;
+    };
+
     const resetScannerUi = () => {
+        clearDistanceHintTimer();
+
         document.getElementById('qrScannerError').classList.add('hidden');
         document.getElementById('qrScannerFocusControl').classList.add('hidden');
+        document.getElementById('qrScannerDistanceHint').classList.add('hidden');
+        document.getElementById('qrScannerCaptureBtn').classList.add('hidden');
+        document.getElementById('qrScannerCaptureFeedback').classList.add('hidden');
 
         const statusEl = document.getElementById('qrScannerStatus');
         statusEl.classList.remove('hidden');
         statusEl.textContent = 'Aponte a câmera para o QR Code do cupom fiscal.';
+    };
+
+    // QR Codes de cupom fiscal costumam falhar por falta de foco, principalmente
+    // no iPhone (Safari não expõe nenhum controle de foco via Web API). Depois de
+    // alguns segundos sem sucesso, sugerimos afastar o código da câmera — foco
+    // "macro" (bem de perto) costuma ser o modo menos confiável nas câmeras.
+    const scheduleDistanceHint = () => {
+        clearDistanceHintTimer();
+        distanceHintTimer = setTimeout(() => {
+            document.getElementById('qrScannerDistanceHint').classList.remove('hidden');
+        }, 6000);
     };
 
     const showScannerError = (message) => {
@@ -99,6 +121,7 @@ const Upload = (() => {
     };
 
     const handleQrDecoded = async (result) => {
+        clearDistanceHintTimer();
         scanner?.stop();
 
         document.getElementById('qrScannerStatus').textContent = 'QR Code detectado, importando...';
@@ -173,6 +196,70 @@ const Upload = (() => {
         }
     };
 
+    // Pede uma resolução maior à câmera depois que o stream já está ativo — a lib
+    // não expõe essa opção no construtor (só preferredCamera). Quadros maiores
+    // ajudam o decoder com QR Codes pequenos mesmo sem foco perfeito. Melhor
+    // esforço: se o dispositivo não suportar, mantém a resolução já negociada.
+    const enableHigherResolution = async (video) => {
+        const track = video.srcObject?.getVideoTracks?.()[0];
+        if (!track) return;
+
+        try {
+            await track.applyConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 } });
+        } catch (error) {
+            // silencioso, mesma convenção usada em enableCloseFocus
+        }
+    };
+
+    const showCaptureFeedback = (message) => {
+        const feedback = document.getElementById('qrScannerCaptureFeedback');
+        feedback.textContent = message;
+        feedback.classList.remove('hidden');
+        setTimeout(() => feedback.classList.add('hidden'), 4000);
+    };
+
+    // Tira uma foto parada em vez de usar o frame de vídeo contínuo. ImageCapture
+    // dispara um ciclo de autofoco+captura igual ao app de câmera nativo — ao
+    // contrário de grabFrame(), que só pega o frame atual do buffer sem refocar.
+    // É o principal ganho esperado no iPhone, onde a Web API não dá nenhum
+    // controle de foco sobre o preview de vídeo contínuo.
+    const capturePhoto = async (video) => {
+        const btn = document.getElementById('qrScannerCaptureBtn');
+        const track = video.srcObject?.getVideoTracks?.()[0];
+        if (!track || btn.disabled) return;
+
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ki-filled ki-loading animate-spin"></i> Focando...';
+
+        try {
+            const imageCapture = new ImageCapture(track);
+            const blob = await imageCapture.takePhoto();
+            const result = await QrScanner.scanImage(blob, { returnDetailedScanResult: true });
+
+            await handleQrDecoded(result);
+        } catch (error) {
+            // Cobre tanto QrScanner.NO_QR_CODE_FOUND (string) quanto falhas reais
+            // de takePhoto(). Não paramos o scanner contínuo, que segue tentando.
+            showCaptureFeedback('Não conseguimos identificar o QR Code na foto. Tente novamente ou ajuste a distância.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    };
+
+    const setupPhotoCapture = (video) => {
+        const btn = document.getElementById('qrScannerCaptureBtn');
+
+        if (!window.ImageCapture) {
+            btn.classList.add('hidden');
+            return;
+        }
+
+        btn.classList.remove('hidden');
+        btn.onclick = () => capturePhoto(video);
+    };
+
     const startCamera = async () => {
         resetScannerUi();
 
@@ -186,12 +273,16 @@ const Upload = (() => {
         try {
             await scanner.start();
             await enableCloseFocus(video);
+            await enableHigherResolution(video);
+            setupPhotoCapture(video);
+            scheduleDistanceHint();
         } catch (error) {
             showScannerError(QR_ERROR_MESSAGES[error?.name] ?? 'Não foi possível iniciar a câmera. Tente novamente.');
         }
     };
 
     const stopCamera = () => {
+        clearDistanceHintTimer();
         scanner?.stop();
         scanner?.destroy();
         scanner = null;
