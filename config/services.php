@@ -58,7 +58,7 @@ return [
 
     'nominatim' => [
         'url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
-        'user_agent' => env('NOMINATIM_USER_AGENT', 'my-expenses (contato@example.com)'),
+        'user_agent' => env('NOMINATIM_USER_AGENT', 'cestazen (contato@example.com)'),
     ],
 
 ];

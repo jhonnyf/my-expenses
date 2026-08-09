@@ -27,8 +27,8 @@ const digest = hash.digest('hex').slice(0, 10);
 const sw = readFileSync(swPath, 'utf8');
 const stamped = sw.replace(
     /const CACHE_NAME = '[^']*';/,
-    `const CACHE_NAME = 'my-expenses-static-${digest}';`
+    `const CACHE_NAME = 'cestazen-static-${digest}';`
 );
 
 writeFileSync(swPath, stamped);
-console.log(`sw.js CACHE_NAME atualizado para my-expenses-static-${digest}`);
+console.log(`sw.js CACHE_NAME atualizado para cestazen-static-${digest}`);

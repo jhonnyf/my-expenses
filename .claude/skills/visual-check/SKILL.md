@@ -1,9 +1,9 @@
 ---
 name: visual-check
-description: Tira screenshots reais da aplicação my-expenses (Laravel + Blade + KTUI) rodando localmente, usando um Chromium headless já instalado via Playwright. Use esta skill sempre que precisar ver com os próprios olhos como uma página, componente ou correção de CSS/layout está renderizando de verdade no navegador — não apenas ler o código-fonte — especialmente quando o usuário pedir explicitamente um print, um teste visual, ou disser que algo "está estranho", "feio", "desalinhado" ou "quebrado" visualmente. Também use para confirmar que uma correção de bug visual (ex: CSS, Tailwind, Blade, JS de página) realmente resolveu o problema antes de reportar como concluído. Não use para rodar a suíte de testes automatizados (isso é `docker exec my-expenses php artisan test`) nem para tarefas que não envolvem renderização visual.
+description: Tira screenshots reais da aplicação cestazen (Laravel + Blade + KTUI) rodando localmente, usando um Chromium headless já instalado via Playwright. Use esta skill sempre que precisar ver com os próprios olhos como uma página, componente ou correção de CSS/layout está renderizando de verdade no navegador — não apenas ler o código-fonte — especialmente quando o usuário pedir explicitamente um print, um teste visual, ou disser que algo "está estranho", "feio", "desalinhado" ou "quebrado" visualmente. Também use para confirmar que uma correção de bug visual (ex: CSS, Tailwind, Blade, JS de página) realmente resolveu o problema antes de reportar como concluído. Não use para rodar a suíte de testes automatizados (isso é `docker exec my-expenses php artisan test`) nem para tarefas que não envolvem renderização visual.
 ---
 
-# Visual Check — my-expenses
+# Visual Check — cestazen
 
 Este projeto já tem toda a infraestrutura de teste visual pronta e configurada.
 Não reinstale nada do zero — use o que já existe.

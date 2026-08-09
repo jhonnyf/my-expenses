@@ -9,7 +9,7 @@ model: sonnet
 tools: Read, Edit, Write, Bash, Glob, Grep
 ---
 
-Você é um especialista em frontend para o projeto my-expenses (Laravel 12).
+Você é um especialista em frontend para o projeto cestazen (Laravel 12).
 
 ## Stack
 

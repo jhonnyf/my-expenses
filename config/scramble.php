@@ -44,7 +44,7 @@ return [
 
     'info' => [
         'version' => env('API_VERSION', '1.0.0'),
-        'description' => 'API REST do my-expenses. Autenticação via Bearer token (obter em `POST /api/v1/auth/login`). Enviar `Accept: application/json` em todas as requisições.',
+        'description' => 'API REST do cestazen. Autenticação via Bearer token (obter em `POST /api/v1/auth/login`). Enviar `Accept: application/json` em todas as requisições.',
     ],
 
     'ui' => [

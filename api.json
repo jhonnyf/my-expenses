@@ -1,9 +1,9 @@
 {
     "openapi": "3.1.0",
     "info": {
-        "title": "my-expenses",
+        "title": "cestazen",
         "version": "1.0.0",
-        "description": "API REST do my-expenses. Autentica\u00e7\u00e3o via Bearer token (obter em `POST /api/v1/auth/login`). Enviar `Accept: application/json` em todas as requisi\u00e7\u00f5es."
+        "description": "API REST do cestazen. Autentica\u00e7\u00e3o via Bearer token (obter em `POST /api/v1/auth/login`). Enviar `Accept: application/json` em todas as requisi\u00e7\u00f5es."
     },
     "servers": [
         {
