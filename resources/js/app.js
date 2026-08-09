@@ -48,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
     GlobalSearch.init();
     Notifications.init();
 
-    if (window.pageConfig?.favoriteProductsUrl) {
-        Utils.initFavoriteProduct(window.pageConfig.favoriteProductsUrl);
+    if (window.pageConfig?.favoriteProductToggleUrl) {
+        Utils.initFavoriteProduct(window.pageConfig.favoriteProductToggleUrl);
     }
 
     if (window.pageConfig?.captureLocationUrl) {

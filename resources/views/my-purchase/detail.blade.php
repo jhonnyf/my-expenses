@@ -323,7 +323,10 @@
                             </thead>
                             <tbody>
                                 @foreach($invoice->items as $item)
-                                    @php $share = ($item->total_price / $itemsTotal) * 100; @endphp
+                                    @php
+                                        $share = ($item->total_price / $itemsTotal) * 100;
+                                        $isFavoriteProduct = $favoriteProductNames->contains($item->canonical_name ?? $item->description);
+                                    @endphp
                                     <tr class="transition-colors duration-150 hover:bg-accent/40">
                                         <td class="text-center text-secondary-foreground">{{ $item->item_number }}</td>
                                         <td class="py-2.5">
@@ -345,8 +348,8 @@
                                                         data-description="{{ $item->canonical_name ?? $item->description }}"
                                                         data-unit="{{ $item->unit }}"
                                                         class="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                                                        title="Avisar quando o preço cair">
-                                                    <i class="ki-filled ki-heart text-xs"></i>
+                                                        title="{{ $isFavoriteProduct ? 'Remover aviso de queda de preço' : 'Avisar quando o preço cair' }}">
+                                                    <i class="ki-filled ki-heart text-xs {{ $isFavoriteProduct ? 'text-destructive' : '' }}"></i>
                                                 </button>
                                                 <button type="button"
                                                         class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
@@ -395,7 +398,10 @@
                 {{-- MOBILE (< lg): cards --}}
                 <div class="kt-card-content lg:hidden grid gap-3 p-5">
                     @foreach($invoice->items as $item)
-                        @php $share = ($item->total_price / $itemsTotal) * 100; @endphp
+                        @php
+                            $share = ($item->total_price / $itemsTotal) * 100;
+                            $isFavoriteProduct = $favoriteProductNames->contains($item->canonical_name ?? $item->description);
+                        @endphp
                         <div class="rounded-xl border border-border p-4 flex flex-col gap-2">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0 flex-1">
@@ -418,8 +424,8 @@
                                                 data-description="{{ $item->canonical_name ?? $item->description }}"
                                                 data-unit="{{ $item->unit }}"
                                                 class="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                                                title="Avisar quando o preço cair">
-                                            <i class="ki-filled ki-heart text-xs"></i>
+                                                title="{{ $isFavoriteProduct ? 'Remover aviso de queda de preço' : 'Avisar quando o preço cair' }}">
+                                            <i class="ki-filled ki-heart text-xs {{ $isFavoriteProduct ? 'text-destructive' : '' }}"></i>
                                         </button>
                                     </div>
                                     @if($item->canonical_name)

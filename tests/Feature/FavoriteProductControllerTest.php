@@ -79,4 +79,56 @@ class FavoriteProductControllerTest extends TestCase
 
         $this->assertDatabaseMissing('favorite_products', ['id' => $favorite->id]);
     }
+
+    public function test_toggle_creates_favorite_when_not_favorited(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/favorite-products/toggle', ['canonical_name' => 'Arroz Branco 5kg', 'unit' => 'UN'])
+            ->assertStatus(200)
+            ->assertJson(['is_favorite' => true]);
+
+        $this->assertDatabaseHas('favorite_products', [
+            'user_id' => $user->id,
+            'canonical_name' => 'Arroz Branco 5kg',
+        ]);
+    }
+
+    public function test_toggle_removes_favorite_when_already_favorited(): void
+    {
+        $user = User::factory()->create();
+        FavoriteProduct::factory()->for($user)->create(['canonical_name' => 'Arroz Branco 5kg']);
+
+        $this->actingAs($user)
+            ->post('/favorite-products/toggle', ['canonical_name' => 'Arroz Branco 5kg'])
+            ->assertStatus(200)
+            ->assertJson(['is_favorite' => false]);
+
+        $this->assertDatabaseMissing('favorite_products', [
+            'user_id' => $user->id,
+            'canonical_name' => 'Arroz Branco 5kg',
+        ]);
+    }
+
+    public function test_toggle_only_affects_authenticated_users_favorite(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        FavoriteProduct::factory()->for($owner)->create(['canonical_name' => 'Arroz Branco 5kg']);
+
+        $this->actingAs($other)
+            ->post('/favorite-products/toggle', ['canonical_name' => 'Arroz Branco 5kg'])
+            ->assertStatus(200)
+            ->assertJson(['is_favorite' => true]);
+
+        $this->assertDatabaseHas('favorite_products', [
+            'user_id' => $owner->id,
+            'canonical_name' => 'Arroz Branco 5kg',
+        ]);
+        $this->assertDatabaseHas('favorite_products', [
+            'user_id' => $other->id,
+            'canonical_name' => 'Arroz Branco 5kg',
+        ]);
+    }
 }

@@ -12,6 +12,7 @@ use App\Import\Strategies\AccessKeyImportStrategy;
 use App\Import\Strategies\QrCodeImportStrategy;
 use App\Import\Strategies\XmlFileImportStrategy;
 use App\Models\Category;
+use App\Models\FavoriteProduct;
 use App\Models\Invoice;
 use App\Services\ProductAliasService;
 use Carbon\Carbon;
@@ -85,11 +86,14 @@ class MyPurchaseController extends Controller
             ? $user->favoriteIssuers()->where('issuers.id', $invoice->issuer_id)->exists()
             : false;
 
+        $favoriteProductNames = FavoriteProduct::where('user_id', $user->id)->pluck('canonical_name');
+
         $categories = Category::forUser($user->id)->orderBy('name')->get();
 
         return view('my-purchase.detail', [
             'invoice' => $invoice,
             'isIssuerFavorite' => $isIssuerFavorite,
+            'favoriteProductNames' => $favoriteProductNames,
             'categories' => $categories,
         ]);
     }

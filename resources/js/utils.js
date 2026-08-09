@@ -77,8 +77,17 @@ const Utils = (() => {
     // Botão de "favoritar produto" (alerta de queda de preço) — mesmo padrão de
     // initCategoryAssignment: delegação em document, funciona em qualquer página
     // que renderize `[data-action="favorite-product"]` (Lista de Compras, detalhe
-    // de nota, relatório), estático ou montado via JS.
-    const initFavoriteProduct = (favoriteProductsUrl) => {
+    // de nota, relatório), estático ou montado via JS. O backend alterna
+    // favoritado/desfavoritado a cada clique (identificando o produto pelo nome
+    // canônico), então aqui só refletimos o `is_favorite` retornado — sem manter
+    // estado local — e sincronizamos todos os botões do mesmo produto na página
+    // (ex: mesma descrição aparecendo na tabela desktop e no card mobile).
+    const applyFavoriteProductState = (btn, isFavorite) => {
+        btn.querySelector('i')?.classList.toggle('text-destructive', isFavorite);
+        btn.title = isFavorite ? 'Remover aviso de queda de preço' : 'Avisar quando o preço cair';
+    };
+
+    const initFavoriteProduct = (favoriteProductToggleUrl) => {
         document.addEventListener('click', (e) => {
             if (!(e.target instanceof Element)) return;
 
@@ -87,15 +96,16 @@ const Utils = (() => {
 
             const { description, unit } = btn.dataset;
 
-            http(favoriteProductsUrl, {
+            btn.disabled = true;
+
+            http(favoriteProductToggleUrl, {
                 method: 'POST',
                 body: { canonical_name: description, unit: unit || null },
-            }).then(() => {
-                const icon = btn.querySelector('i');
-                icon?.classList.remove('text-muted-foreground');
-                icon?.classList.add('text-destructive');
-                btn.disabled = true;
-                btn.title = 'Você será avisado quando o preço cair';
+            }).then(({ is_favorite: isFavorite }) => {
+                document.querySelectorAll(`[data-action="favorite-product"][data-description="${CSS.escape(description)}"]`)
+                    .forEach((b) => applyFavoriteProductState(b, isFavorite));
+            }).finally(() => {
+                btn.disabled = false;
             });
         });
     };

@@ -34,6 +34,27 @@ class FavoriteProductController extends Controller
         return $this->success($favorite, 201);
     }
 
+    public function toggle(StoreFavoriteProductRequest $request): JsonResponse
+    {
+        $favorite = FavoriteProduct::where('user_id', $request->user()->id)
+            ->where('canonical_name', $request->input('canonical_name'))
+            ->first();
+
+        if ($favorite) {
+            $favorite->delete();
+
+            return $this->success(['is_favorite' => false]);
+        }
+
+        FavoriteProduct::create([
+            'user_id' => $request->user()->id,
+            'canonical_name' => $request->input('canonical_name'),
+            'unit' => $request->input('unit'),
+        ]);
+
+        return $this->success(['is_favorite' => true]);
+    }
+
     public function destroy(Request $request, FavoriteProduct $favoriteProduct): JsonResponse
     {
         $this->authorize('interact', $favoriteProduct);

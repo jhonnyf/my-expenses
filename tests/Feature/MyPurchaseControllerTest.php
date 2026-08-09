@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\FavoriteProduct;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Issuer;
@@ -206,6 +207,21 @@ class MyPurchaseControllerTest extends TestCase
             ->get("/my-purchases/detail/{$invoice->id}")
             ->assertStatus(200)
             ->assertSee('Arroz Branco 5kg');
+    }
+
+    public function test_detail_shows_favorited_product_icon_as_active(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'ARROZ BRANCO 5KG']);
+        FavoriteProduct::factory()->for($user)->create(['canonical_name' => 'ARROZ BRANCO 5KG']);
+
+        $this->actingAs($user)
+            ->get("/my-purchases/detail/{$invoice->id}")
+            ->assertStatus(200)
+            ->assertSee('ki-filled ki-heart text-xs text-destructive', false)
+            ->assertSee('Remover aviso de queda de preço');
     }
 
     public function test_detail_shows_edit_nickname_button_for_issuer(): void

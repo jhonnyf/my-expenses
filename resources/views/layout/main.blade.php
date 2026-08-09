@@ -195,7 +195,7 @@
         window.pageConfig.globalSearchUrl = '{{ route("search") }}';
         window.pageConfig.notificationsUrl = '{{ route("notifications.index") }}';
         window.pageConfig.notificationsReadUrl = '{{ url("notifications") }}';
-        window.pageConfig.favoriteProductsUrl = '{{ route("favorite-products.store") }}';
+        window.pageConfig.favoriteProductToggleUrl = '{{ route("favorite-products.toggle") }}';
         window.pageConfig.captureLocationUrl = '{{ route("account.location.capture") }}';
     </script>
     @endauth

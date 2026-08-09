@@ -143,6 +143,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::prefix('favorite-products')->name('favorite-products.')->group(function () {
             Route::get('/', [FavoriteProductController::class, 'index'])->name('index');
             Route::post('/', [FavoriteProductController::class, 'store'])->name('store');
+            Route::post('toggle', [FavoriteProductController::class, 'toggle'])->name('toggle');
             Route::delete('{favoriteProduct}', [FavoriteProductController::class, 'destroy'])->name('destroy');
         });
 

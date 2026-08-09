@@ -150,6 +150,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::group(['prefix' => 'favorite-products', 'as' => 'favorite-products.'], function () {
         Route::get('/', [FavoriteProductController::class, 'index'])->name('index');
         Route::post('/', [FavoriteProductController::class, 'store'])->name('store');
+        Route::post('toggle', [FavoriteProductController::class, 'toggle'])->name('toggle');
         Route::delete('{favoriteProduct}', [FavoriteProductController::class, 'destroy'])->name('destroy');
     });
 
