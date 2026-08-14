@@ -27,6 +27,12 @@
             </button>
             <p id="qrScannerCaptureFeedback" class="text-xs text-destructive text-center hidden"></p>
 
+            {{-- Só aparece quando o dispositivo expõe mais de uma câmera (ex.: notebooks/celulares com frontal e traseira) --}}
+            <button type="button" id="qrScannerSwitchCameraBtn" class="kt-btn kt-btn-outline kt-btn-sm w-full hidden">
+                <i class="ki-filled ki-arrow-right-left"></i>
+                Alternar câmera
+            </button>
+
             {{-- Só aparece quando o dispositivo expõe controle manual de foco (ex.: Chrome/Android) --}}
             <div id="qrScannerFocusControl" class="hidden flex items-center gap-2">
                 <i class="ki-filled ki-eye text-secondary-foreground text-sm shrink-0"></i>

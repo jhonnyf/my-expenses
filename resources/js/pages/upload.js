@@ -10,6 +10,7 @@ const Upload = (() => {
     let initialized = false;
     let scanner = null;
     let distanceHintTimer = null;
+    let currentFacingMode = 'environment';
 
     const clearFieldError = (form, field) => {
         form.querySelector(`[name="${field}"]`)?.removeAttribute('aria-invalid');
@@ -95,6 +96,7 @@ const Upload = (() => {
         document.getElementById('qrScannerDistanceHint').classList.add('hidden');
         document.getElementById('qrScannerCaptureBtn').classList.add('hidden');
         document.getElementById('qrScannerCaptureFeedback').classList.add('hidden');
+        document.getElementById('qrScannerSwitchCameraBtn').classList.add('hidden');
 
         const statusEl = document.getElementById('qrScannerStatus');
         statusEl.classList.remove('hidden');
@@ -260,6 +262,59 @@ const Upload = (() => {
         btn.onclick = () => capturePhoto(video);
     };
 
+    // Só faz sentido alternar câmera se o dispositivo expõe mais de uma. Em
+    // iOS Safari e alguns navegadores, listCameras() pode falhar ou devolver
+    // uma lista incompleta sem prompt de permissão — nesse caso o botão
+    // simplesmente permanece escondido, sem afetar o scanner contínuo.
+    const setupCameraSwitch = async (video) => {
+        const btn = document.getElementById('qrScannerSwitchCameraBtn');
+
+        try {
+            const cameras = await QrScanner.listCameras();
+            if (cameras.length < 2) {
+                btn.classList.add('hidden');
+                return;
+            }
+        } catch (error) {
+            btn.classList.add('hidden');
+            return;
+        }
+
+        btn.classList.remove('hidden');
+        btn.onclick = () => switchCamera(video);
+    };
+
+    // setCamera() troca a track do stream já ativo, sem precisar destruir e
+    // recriar o QrScanner. Como a track muda, os ajustes que dependem dela
+    // (foco macro, resolução, captura por foto) precisam ser refeitos para a
+    // nova câmera — senão continuam presos aos parâmetros da câmera anterior.
+    const switchCamera = async (video) => {
+        const btn = document.getElementById('qrScannerSwitchCameraBtn');
+        if (!scanner || btn.disabled) return;
+
+        const nextFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ki-filled ki-loading animate-spin"></i> Alternando...';
+
+        try {
+            await scanner.setCamera(nextFacingMode);
+            currentFacingMode = nextFacingMode;
+
+            await enableCloseFocus(video);
+            await enableHigherResolution(video);
+            setupPhotoCapture(video);
+        } catch (error) {
+            // Dispositivo pode não ter de fato a câmera oposta disponível
+            // (ex.: listCameras() contou uma câmera virtual/duplicada).
+            // Não bloqueia o scanner: ele continua ativo na câmera atual.
+            showCaptureFeedback('Não foi possível alternar a câmera neste dispositivo.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    };
+
     // Tudo aqui dentro do try, incluindo resetScannerUi e a construção do
     // QrScanner: startCamera roda como callback do evento 'shown' do modal, sem
     // ninguém para dar await/catch nela — um erro fora do try vira uma rejeição
@@ -280,6 +335,7 @@ const Upload = (() => {
             await enableCloseFocus(video);
             await enableHigherResolution(video);
             setupPhotoCapture(video);
+            setupCameraSwitch(video);
             scheduleDistanceHint();
         } catch (error) {
             console.error('[upload] erro ao iniciar câmera do QR Code:', error);
@@ -292,6 +348,7 @@ const Upload = (() => {
         scanner?.stop();
         scanner?.destroy();
         scanner = null;
+        currentFacingMode = 'environment';
     };
 
     const initQrScannerModal = () => {
