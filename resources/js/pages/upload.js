@@ -1,4 +1,5 @@
-import QrScanner from 'qr-scanner';
+import { BrowserQRCodeReader, BrowserCodeReader } from '@zxing/browser';
+import { NotFoundException, ChecksumException, FormatException } from '@zxing/library';
 
 const QR_ERROR_MESSAGES = {
     NotAllowedError: 'Permissão de câmera negada. Habilite o acesso à câmera nas configurações do navegador.',
@@ -8,9 +9,12 @@ const QR_ERROR_MESSAGES = {
 
 const Upload = (() => {
     let initialized = false;
-    let scanner = null;
+    let codeReader = null;
+    let controls = null;
     let distanceHintTimer = null;
-    let currentFacingMode = 'environment';
+    let currentDeviceId = null;
+    let videoInputDevices = [];
+    let overlayCtx = null;
 
     const clearFieldError = (form, field) => {
         form.querySelector(`[name="${field}"]`)?.removeAttribute('aria-invalid');
@@ -101,6 +105,75 @@ const Upload = (() => {
         const statusEl = document.getElementById('qrScannerStatus');
         statusEl.classList.remove('hidden');
         statusEl.textContent = 'Aponte a câmera para o QR Code do cupom fiscal.';
+
+        clearOverlay();
+    };
+
+    // Redimensiona o canvas de overlay para casar com o tamanho CSS exibido do
+    // vídeo (não a resolução do stream) e reobserva mudanças de layout do modal.
+    const setupOverlayCanvas = (video) => {
+        const canvas = document.getElementById('qrScannerOverlay');
+        overlayCtx = canvas?.getContext('2d') ?? null;
+        if (!canvas) return;
+
+        const resize = () => {
+            canvas.width = video.clientWidth;
+            canvas.height = video.clientHeight;
+        };
+        resize();
+
+        video._qrResizeObserver?.disconnect();
+        video._qrResizeObserver = new ResizeObserver(resize);
+        video._qrResizeObserver.observe(video);
+    };
+
+    // result.getResultPoints() vem em pixels da resolução real do stream
+    // (video.videoWidth/videoHeight), não do tamanho CSS exibido. Como o vídeo
+    // usa object-cover dentro de um container quadrado, é preciso replicar
+    // manualmente a matemática de crop do object-cover para mapear os pontos
+    // para as coordenadas do canvas exibido.
+    const drawOverlay = (video, points) => {
+        if (!overlayCtx || !points?.length) return;
+
+        const canvas = overlayCtx.canvas;
+        overlayCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const videoW = video.videoWidth;
+        const videoH = video.videoHeight;
+        if (!videoW || !videoH) return;
+
+        const elW = canvas.width;
+        const elH = canvas.height;
+        const videoRatio = videoW / videoH;
+        const elRatio = elW / elH;
+
+        let scale;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        if (videoRatio > elRatio) {
+            scale = elH / videoH;
+            offsetX = (videoW * scale - elW) / 2;
+        } else {
+            scale = elW / videoW;
+            offsetY = (videoH * scale - elH) / 2;
+        }
+
+        overlayCtx.strokeStyle = '#22c55e';
+        overlayCtx.lineWidth = 3;
+        overlayCtx.beginPath();
+        points.forEach((point, index) => {
+            const x = point.getX() * scale - offsetX;
+            const y = point.getY() * scale - offsetY;
+            index === 0 ? overlayCtx.moveTo(x, y) : overlayCtx.lineTo(x, y);
+        });
+        overlayCtx.closePath();
+        overlayCtx.stroke();
+    };
+
+    const clearOverlay = () => {
+        if (!overlayCtx) return;
+        overlayCtx.clearRect(0, 0, overlayCtx.canvas.width, overlayCtx.canvas.height);
     };
 
     // QR Codes de cupom fiscal costumam falhar por falta de foco, principalmente
@@ -124,12 +197,14 @@ const Upload = (() => {
 
     const handleQrDecoded = async (result) => {
         clearDistanceHintTimer();
-        scanner?.stop();
+        controls?.stop();
+        controls = null;
+        clearOverlay();
 
         document.getElementById('qrScannerStatus').textContent = 'QR Code detectado, importando...';
 
         const form = document.querySelector('#panel-qrcode form');
-        document.getElementById('qrcode_url').value = result.data;
+        document.getElementById('qrcode_url').value = result.getText();
 
         const ok = await submitQrCodeForm(form);
 
@@ -237,12 +312,27 @@ const Upload = (() => {
         try {
             const imageCapture = new ImageCapture(track);
             const blob = await imageCapture.takePhoto();
-            const result = await QrScanner.scanImage(blob, { returnDetailedScanResult: true });
+            const bitmap = await createImageBitmap(blob);
+            const canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            canvas.getContext('2d').drawImage(bitmap, 0, 0);
+
+            const result = codeReader.decodeFromCanvas(canvas);
 
             await handleQrDecoded(result);
         } catch (error) {
-            // Cobre tanto QrScanner.NO_QR_CODE_FOUND (string) quanto falhas reais
-            // de takePhoto(). Não paramos o scanner contínuo, que segue tentando.
+            // decodeFromCanvas lança de forma síncrona quando não acha QR na
+            // imagem (NotFoundException e afins) — é o caso normal aqui, não um
+            // erro real. Não paramos o scanner contínuo, que segue tentando.
+            const isNoQrFound = error instanceof NotFoundException
+                || error instanceof ChecksumException
+                || error instanceof FormatException;
+
+            if (!isNoQrFound) {
+                console.error('[upload] erro ao capturar foto do QR Code:', error);
+            }
+
             showCaptureFeedback('Não conseguimos identificar o QR Code na foto. Tente novamente ou ajuste a distância.');
         } finally {
             btn.disabled = false;
@@ -262,16 +352,48 @@ const Upload = (() => {
         btn.onclick = () => capturePhoto(video);
     };
 
+    // ZXing chama o callback a cada frame, não só em sucesso. NotFoundException/
+    // ChecksumException/FormatException disparam sem QR válido no frame — é
+    // ruído esperado durante o scan contínuo, não um erro real (por isso não
+    // viram console.error, ao contrário de qualquer outra exceção inesperada).
+    const startDecoding = async (video, deviceIdOrConstraints) => {
+        const onResult = (result, error, scanControls) => {
+            controls = scanControls;
+
+            if (result) {
+                drawOverlay(video, result.getResultPoints());
+                handleQrDecoded(result);
+                return;
+            }
+
+            clearOverlay();
+
+            const isNoQrFound = error instanceof NotFoundException
+                || error instanceof ChecksumException
+                || error instanceof FormatException;
+
+            if (error && !isNoQrFound) {
+                console.error('[upload] erro inesperado ao decodificar frame do QR Code:', error);
+            }
+        };
+
+        controls = typeof deviceIdOrConstraints === 'string'
+            ? await codeReader.decodeFromVideoDevice(deviceIdOrConstraints, video, onResult)
+            : await codeReader.decodeFromConstraints(deviceIdOrConstraints, video, onResult);
+
+        currentDeviceId = video.srcObject?.getVideoTracks?.()[0]?.getSettings?.().deviceId ?? null;
+    };
+
     // Só faz sentido alternar câmera se o dispositivo expõe mais de uma. Em
-    // iOS Safari e alguns navegadores, listCameras() pode falhar ou devolver
-    // uma lista incompleta sem prompt de permissão — nesse caso o botão
-    // simplesmente permanece escondido, sem afetar o scanner contínuo.
+    // iOS Safari e alguns navegadores, listVideoInputDevices() pode falhar ou
+    // devolver uma lista incompleta sem prompt de permissão — nesse caso o
+    // botão simplesmente permanece escondido, sem afetar o scanner contínuo.
     const setupCameraSwitch = async (video) => {
         const btn = document.getElementById('qrScannerSwitchCameraBtn');
 
         try {
-            const cameras = await QrScanner.listCameras();
-            if (cameras.length < 2) {
+            videoInputDevices = await BrowserCodeReader.listVideoInputDevices();
+            if (videoInputDevices.length < 2) {
                 btn.classList.add('hidden');
                 return;
             }
@@ -284,58 +406,74 @@ const Upload = (() => {
         btn.onclick = () => switchCamera(video);
     };
 
-    // setCamera() troca a track do stream já ativo, sem precisar destruir e
-    // recriar o QrScanner. Como a track muda, os ajustes que dependem dela
-    // (foco macro, resolução, captura por foto) precisam ser refeitos para a
-    // nova câmera — senão continuam presos aos parâmetros da câmera anterior.
+    // ZXing não tem equivalente a setCamera() num stream vivo: trocar de
+    // câmera exige parar a decodificação atual e reiniciar apontando para o
+    // próximo deviceId da lista (índice circular). Como o stream é recriado
+    // do zero, os ajustes que dependem da track (foco macro, resolução,
+    // captura por foto) precisam ser refeitos para a nova câmera.
     const switchCamera = async (video) => {
         const btn = document.getElementById('qrScannerSwitchCameraBtn');
-        if (!scanner || btn.disabled) return;
+        if (videoInputDevices.length < 2 || btn.disabled) return;
 
-        const nextFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        const currentIndex = videoInputDevices.findIndex((device) => device.deviceId === currentDeviceId);
+        const nextDevice = videoInputDevices[(currentIndex + 1) % videoInputDevices.length];
         const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<i class="ki-filled ki-loading animate-spin"></i> Alternando...';
 
         try {
-            await scanner.setCamera(nextFacingMode);
-            currentFacingMode = nextFacingMode;
+            controls?.stop();
+            controls = null;
+            clearOverlay();
+
+            await startDecoding(video, nextDevice.deviceId);
 
             await enableCloseFocus(video);
             await enableHigherResolution(video);
             setupPhotoCapture(video);
         } catch (error) {
-            // Dispositivo pode não ter de fato a câmera oposta disponível
-            // (ex.: listCameras() contou uma câmera virtual/duplicada).
-            // Não bloqueia o scanner: ele continua ativo na câmera atual.
+            // Dispositivo pode não ter de fato a câmera seguinte disponível
+            // (ex.: listVideoInputDevices() contou uma câmera virtual/duplicada).
+            // A tentativa já parou o stream anterior, então voltamos para a
+            // câmera original em vez de deixar o modal sem nenhum stream ativo.
             showCaptureFeedback('Não foi possível alternar a câmera neste dispositivo.');
+
+            try {
+                await startDecoding(video, currentDeviceId ?? { video: { facingMode: { ideal: 'environment' } } });
+                await enableCloseFocus(video);
+                await enableHigherResolution(video);
+                setupPhotoCapture(video);
+            } catch (restoreError) {
+                console.error('[upload] falha ao restaurar câmera após troca malsucedida:', restoreError);
+            }
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
         }
     };
 
-    // Tudo aqui dentro do try, incluindo resetScannerUi e a construção do
-    // QrScanner: startCamera roda como callback do evento 'shown' do modal, sem
-    // ninguém para dar await/catch nela — um erro fora do try vira uma rejeição
-    // de Promise não tratada, silenciosa (tela preta sem nenhum feedback).
+    // Tudo aqui dentro do try, incluindo resetScannerUi e a criação do
+    // BrowserQRCodeReader: startCamera roda como callback do evento 'shown' do
+    // modal, sem ninguém para dar await/catch nela — um erro fora do try vira
+    // uma rejeição de Promise não tratada, silenciosa (tela preta sem nenhum
+    // feedback). decodeFromConstraints (não decodeFromVideoDevice) é usado na
+    // primeira chamada porque os labels de MediaDeviceInfo só ficam disponíveis
+    // depois da primeira concessão de permissão — não dá pra escolher a câmera
+    // traseira por deviceId/heurística de label antes disso.
     const startCamera = async () => {
         const video = document.getElementById('qrScannerVideo');
 
         try {
             resetScannerUi();
+            setupOverlayCanvas(video);
 
-            scanner = new QrScanner(video, handleQrDecoded, {
-                preferredCamera: 'environment',
-                highlightScanRegion: true,
-                highlightCodeOutline: true,
-            });
+            codeReader = new BrowserQRCodeReader();
+            await startDecoding(video, { video: { facingMode: { ideal: 'environment' } } });
 
-            await scanner.start();
             await enableCloseFocus(video);
             await enableHigherResolution(video);
             setupPhotoCapture(video);
-            setupCameraSwitch(video);
+            await setupCameraSwitch(video);
             scheduleDistanceHint();
         } catch (error) {
             console.error('[upload] erro ao iniciar câmera do QR Code:', error);
@@ -345,10 +483,12 @@ const Upload = (() => {
 
     const stopCamera = () => {
         clearDistanceHintTimer();
-        scanner?.stop();
-        scanner?.destroy();
-        scanner = null;
-        currentFacingMode = 'environment';
+        controls?.stop();
+        controls = null;
+        codeReader = null;
+        currentDeviceId = null;
+        videoInputDevices = [];
+        clearOverlay();
     };
 
     const initQrScannerModal = () => {
