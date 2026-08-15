@@ -10,7 +10,7 @@
             <div class="relative rounded-lg overflow-hidden bg-black aspect-square">
                 <video id="qrScannerVideo" class="w-full h-full object-cover" muted playsinline></video>
                 <canvas id="qrScannerOverlay" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
-                <div class="absolute inset-8 border-2 border-white/60 rounded-lg pointer-events-none" aria-hidden="true"></div>
+                <div id="qrScannerScanBox" class="absolute inset-8 border-2 border-white/60 rounded-lg pointer-events-none" aria-hidden="true"></div>
             </div>
             <p id="qrScannerStatus" class="text-sm text-secondary-foreground text-center">
                 Aponte a câmera para o QR Code do cupom fiscal.
