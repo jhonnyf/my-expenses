@@ -11,9 +11,12 @@ const SCAN_INTERVAL_MS = 300;
 
 // iOS Safari expõe labels descritivos por lente ("Back Camera" = principal,
 // "Back Ultra Wide Camera"/"Back Telephoto Camera" = as outras) — dá pra
-// acertar com certeza. Android geralmente não diferencia lente no label
-// (ex.: "camera2 0, facing back"), então o máximo que dá pra fazer ali é
-// evitar uma lente que o próprio label já denuncia como ultra-wide/telephoto.
+// acertar com certeza. Android geralmente só indica o lado (ex.: "camera2 0,
+// facing back" / "camera2 1, facing front"), sem indicar qual lente — o
+// máximo que dá pra fazer ali é confirmar que é traseira e evitar uma lente
+// que o próprio label já denuncia como ultra-wide/telephoto.
+const FRONT_CAMERA_LABEL = /front|user|frontal/i;
+const BACK_CAMERA_HINT_LABEL = /back|rear|traseira|environment/i;
 const MAIN_BACK_CAMERA_LABEL = /^back camera$/i;
 const EXCLUDED_LENS_LABEL = /ultra[\s-]?wide|wide[\s-]?angle|telephoto|\btele\b|periscope/i;
 
@@ -415,11 +418,27 @@ const Upload = (() => {
 
         videoInputDevices = devices;
 
-        const exact = devices.find((device) => MAIN_BACK_CAMERA_LABEL.test(device.label.trim()));
+        // Só considera candidatas as que o label afirma serem traseiras. Sem
+        // essa checagem, um label genérico (ex.: Android sem info de lente)
+        // podia "passar" no filtro de exclusão de ultra-wide/tele mesmo sendo
+        // a câmera frontal — foi exatamente o que causou a frontal abrir por
+        // padrão num Samsung Android.
+        const backCandidates = devices.filter((device) => device.label
+            && BACK_CAMERA_HINT_LABEL.test(device.label)
+            && !FRONT_CAMERA_LABEL.test(device.label));
+
+        if (!backCandidates.length) {
+            // Nenhum label indicando o lado — não dá pra garantir que não é a
+            // frontal. Melhor deixar facingMode:environment decidir (nunca
+            // escolhe a frontal) do que arriscar abrir a câmera errada.
+            return null;
+        }
+
+        const exact = backCandidates.find((device) => MAIN_BACK_CAMERA_LABEL.test(device.label.trim()));
         if (exact) return exact.deviceId;
 
-        const notExcluded = devices.find((device) => device.label && !EXCLUDED_LENS_LABEL.test(device.label));
-        return notExcluded?.deviceId ?? null;
+        const notExcluded = backCandidates.find((device) => !EXCLUDED_LENS_LABEL.test(device.label));
+        return notExcluded?.deviceId ?? backCandidates[0].deviceId;
     };
 
     const openCameraStream = async (video, deviceId) => {
