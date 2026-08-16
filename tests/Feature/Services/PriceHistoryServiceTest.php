@@ -82,6 +82,30 @@ class PriceHistoryServiceTest extends TestCase
         $this->assertCount(0, $result);
     }
 
+    public function test_search_finds_own_item_via_other_users_alias(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'REFRIG GUARANA ANTARCTICA 350ML LAT']);
+
+        // Outro usuário apelidou a mesma description bruta em outra compra
+        // dele; quem busca não tem alias próprio, e o termo só bate no
+        // apelido de terceiro.
+        ProductAlias::create([
+            'user_id' => $other->id,
+            'description' => 'REFRIG GUARANA ANTARCTICA 350ML LAT',
+            'canonical_name' => 'Guaraná gelado',
+        ]);
+
+        $result = $this->service->search('gelado', $user->id);
+
+        $this->assertCount(1, $result);
+        // Nome exibido continua a description bruta — sem alias próprio.
+        $this->assertEquals('REFRIG GUARANA ANTARCTICA 350ML LAT', $result->first()->description);
+    }
+
     public function test_search_groups_aliased_descriptions_under_canonical_name(): void
     {
         $user = User::factory()->create();

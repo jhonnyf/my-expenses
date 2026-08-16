@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -53,12 +54,17 @@ class FullTextQuery
      *
      * @param  list<string>  $fullTextColumns
      * @param  list<string>  $likeColumns
+     * @param  list<\Closure>  $existsCallbacks  Fechos de subquery correlacionada,
+     *                                           adicionados como orWhereExists() dentro
+     *                                           do mesmo grupo (ex: casar a busca contra
+     *                                           uma tabela relacionada por EXISTS em vez
+     *                                           de coluna própria).
      */
-    public static function applyOr(Builder $query, string $term, array $fullTextColumns, array $likeColumns = []): Builder
+    public static function applyOr(Builder $query, string $term, array $fullTextColumns, array $likeColumns = [], array $existsCallbacks = []): Builder
     {
         $booleanQuery = self::build($term);
 
-        return $query->where(function (Builder $q) use ($term, $booleanQuery, $fullTextColumns, $likeColumns) {
+        return $query->where(function (Builder $q) use ($term, $booleanQuery, $fullTextColumns, $likeColumns, $existsCallbacks) {
             foreach ($fullTextColumns as $column) {
                 if ($booleanQuery !== null) {
                     $q->orWhereRaw("MATCH({$column}) AGAINST(? IN BOOLEAN MODE)", [$booleanQuery]);
@@ -70,6 +76,28 @@ class FullTextQuery
             foreach ($likeColumns as $column) {
                 $q->orWhere($column, 'like', "%{$term}%");
             }
+
+            foreach ($existsCallbacks as $callback) {
+                $q->orWhereExists($callback);
+            }
         });
+    }
+
+    /**
+     * Mesma lógica de match de applyOr() (MATCH...AGAINST em MySQL, LIKE nos
+     * demais drivers), aplicada a uma única coluna — para reaproveitar dentro
+     * de subqueries correlacionadas (ex: EXISTS) que não usam applyOr().
+     */
+    public static function matchColumn(Builder|QueryBuilder $query, string $column, string $term): void
+    {
+        $booleanQuery = self::build($term);
+
+        if ($booleanQuery !== null) {
+            $query->whereRaw("MATCH({$column}) AGAINST(? IN BOOLEAN MODE)", [$booleanQuery]);
+
+            return;
+        }
+
+        $query->where($column, 'like', "%{$term}%");
     }
 }

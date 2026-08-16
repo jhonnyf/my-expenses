@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\InvoiceItem;
 use App\Models\ProductAlias;
+use App\Support\FullTextQuery;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 
 class ProductAliasService
@@ -105,6 +107,40 @@ class ProductAliasService
         $allNames = $namesByDescription->flatten()->unique();
 
         return $allNames->count() === 1 ? $allNames->first() : null;
+    }
+
+    /**
+     * Fecho de subquery correlacionada (EXISTS): casa a busca quando a
+     * description bruta do item tem apelido criado por QUALQUER outro
+     * usuário batendo com o termo (busca full-text/MySQL). Não altera o
+     * nome exibido — esse continua sendo o apelido do próprio buscador via
+     * canonicalNameSql(), ou a description bruta na ausência dele; só o
+     * critério de busca passa a enxergar apelidos de terceiros.
+     */
+    public function otherUsersAliasFullTextExists(string $term, int $excludeUserId): \Closure
+    {
+        return function (QueryBuilder $sub) use ($term, $excludeUserId) {
+            $sub->from('product_aliases')
+                ->whereColumn('product_aliases.description', 'invoices_items.description')
+                ->where('product_aliases.user_id', '!=', $excludeUserId);
+
+            FullTextQuery::matchColumn($sub, 'product_aliases.canonical_name', $term);
+        };
+    }
+
+    /**
+     * Mesma ideia de otherUsersAliasFullTextExists(), mas casando por LIKE —
+     * para buscas que não usam FullTextQuery::applyOr() (ex: histórico de
+     * preços, restrito a um único usuário e já usa LIKE puro nas colunas).
+     */
+    public function otherUsersAliasLikeExists(string $term, int $excludeUserId): \Closure
+    {
+        return function (QueryBuilder $sub) use ($term, $excludeUserId) {
+            $sub->from('product_aliases')
+                ->whereColumn('product_aliases.description', 'invoices_items.description')
+                ->where('product_aliases.user_id', '!=', $excludeUserId)
+                ->where('product_aliases.canonical_name', 'like', "%{$term}%");
+        };
     }
 
     /**

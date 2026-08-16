@@ -20,7 +20,11 @@ class ShoppingListService
      * de todos os usuários (não só do usuário logado), para aproveitar
      * preços e produtos já cadastrados por outras pessoas. O nome canônico
      * exibido e o apelido de loja usados continuam sendo os do usuário que
-     * busca, não os de quem originou a nota.
+     * busca, não os de quem originou a nota. O termo buscado, porém, também
+     * casa contra apelidos de produto criados por QUALQUER outro usuário
+     * (ver ProductAliasService::otherUsersAliasFullTextExists) — assim quem
+     * nunca apelidou um item ainda o encontra pelo apelido que outra pessoa
+     * já deu a ele.
      *
      * Filtro de localização (opcional):
      * - $filterCity/$filterState: o usuário escolheu explicitamente "outra cidade"
@@ -47,7 +51,12 @@ class ShoppingListService
         $this->aliasService->joinCanonicalNames($itemsQuery, $userId);
         $nameSql = $this->aliasService->canonicalNameSql();
 
-        FullTextQuery::applyOr($itemsQuery, $query, ['invoices_items.description', 'product_aliases.canonical_name']);
+        FullTextQuery::applyOr(
+            $itemsQuery,
+            $query,
+            ['invoices_items.description', 'product_aliases.canonical_name'],
+            existsCallbacks: [$this->aliasService->otherUsersAliasFullTextExists($query, $userId)]
+        );
 
         $itemsQuery
             ->select(

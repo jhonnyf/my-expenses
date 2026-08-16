@@ -90,6 +90,30 @@ class ShoppingListServiceTest extends TestCase
         $this->assertEquals('REFRIG COCA COLA 350ML LAT', $results->first()->description);
     }
 
+    public function test_search_products_finds_item_via_other_users_alias(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($other)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'REFRIG GUARANA ANTARCTICA 350ML LAT']);
+
+        // Só o outro usuário apelidou o item; quem busca não tem alias próprio
+        // para essa description, e o termo buscado só bate no apelido do outro.
+        ProductAlias::create([
+            'user_id' => $other->id,
+            'description' => 'REFRIG GUARANA ANTARCTICA 350ML LAT',
+            'canonical_name' => 'Guaraná gelado',
+        ]);
+
+        $results = $this->service->searchProducts($user->id, 'gelado', new Collection);
+
+        $this->assertCount(1, $results);
+        // Nome exibido continua a description bruta — sem alias próprio do
+        // buscador, o apelido de terceiro só entra no critério de busca.
+        $this->assertEquals('REFRIG GUARANA ANTARCTICA 350ML LAT', $results->first()->description);
+    }
+
     public function test_search_products_with_city_state_override_only_returns_matching_city(): void
     {
         $user = User::factory()->create();

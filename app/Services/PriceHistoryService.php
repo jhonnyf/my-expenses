@@ -9,6 +9,16 @@ use Illuminate\Support\Facades\DB;
 
 class PriceHistoryService
 {
+    public function __construct(private readonly ProductAliasService $aliasService) {}
+
+    /**
+     * Busca produtos no histórico de compras do próprio usuário. O termo
+     * também casa contra apelidos de produto criados por QUALQUER outro
+     * usuário (ver ProductAliasService::otherUsersAliasLikeExists) — o nome
+     * exibido continua sendo o apelido do próprio usuário, ou a description
+     * bruta na ausência dele; só o critério de busca enxerga apelidos de
+     * terceiros.
+     */
     public function search(string $query, int $userId): Collection
     {
         return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
@@ -17,9 +27,10 @@ class PriceHistoryService
                     ->where('product_aliases.user_id', '=', $userId);
             })
             ->where('invoices.user_id', $userId)
-            ->where(function ($q) use ($query) {
+            ->where(function ($q) use ($query, $userId) {
                 $q->where('invoices_items.description', 'like', "%{$query}%")
-                    ->orWhere('product_aliases.canonical_name', 'like', "%{$query}%");
+                    ->orWhere('product_aliases.canonical_name', 'like', "%{$query}%")
+                    ->orWhereExists($this->aliasService->otherUsersAliasLikeExists($query, $userId));
             })
             ->select(
                 DB::raw('COALESCE(product_aliases.canonical_name, invoices_items.description) as description'),
