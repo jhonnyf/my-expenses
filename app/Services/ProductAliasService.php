@@ -8,6 +8,7 @@ use App\Support\FullTextQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ProductAliasService
 {
@@ -32,6 +33,32 @@ class ProductAliasService
     public function canonicalNameSql(): string
     {
         return 'COALESCE(product_aliases.canonical_name, invoices_items.description)';
+    }
+
+    /**
+     * Faz LEFT JOIN com um apelido "da comunidade" pela description do item:
+     * um representante (o menor canonical_name, escolha arbitrária mas
+     * determinística) entre os apelidos que QUALQUER usuário diferente de
+     * $excludeUserId já deu pra essa description — disponível como
+     * `community_aliases.canonical_name` pra quem chamar. Complementa
+     * joinCanonicalNames() (que só traz o apelido do próprio $excludeUserId);
+     * usado pra exibir de quem veio o apelido em itens da comunidade, não
+     * pra decidir o valor "oficial" do item.
+     */
+    public function joinCommunityCanonicalName(Builder $query, int $excludeUserId): Builder
+    {
+        $communityAliases = ProductAlias::query()
+            ->select('description', DB::raw('MIN(canonical_name) as canonical_name'))
+            ->where('user_id', '!=', $excludeUserId)
+            ->groupBy('description');
+
+        return $query->leftJoinSub(
+            $communityAliases,
+            'community_aliases',
+            'community_aliases.description',
+            '=',
+            'invoices_items.description'
+        );
     }
 
     /**

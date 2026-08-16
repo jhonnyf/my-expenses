@@ -45,6 +45,7 @@ const ShoppingList = (() => {
                         const isFav = item.is_favorite == 1;
                         const isOwn = item.is_own == 1;
                         const description = Utils.escapeHtml(item.description);
+                        const displayDescription = Utils.escapeHtml(item.display_description || item.description);
                         const issuerName = Utils.escapeHtml(item.issuer_name);
 
                         return `
@@ -52,7 +53,7 @@ const ShoppingList = (() => {
                                  data-add-item="${index}">
                                 <div class="w-full sm:flex-1 sm:min-w-0">
                                     <p class="text-sm font-medium text-foreground truncate">
-                                        ${isFav ? '<i class="ki-filled ki-star text-yellow-500 text-xs me-1"></i>' : ''}${description}
+                                        ${isFav ? '<i class="ki-filled ki-star text-yellow-500 text-xs me-1"></i>' : ''}${displayDescription}
                                     </p>
                                     <p class="text-xs text-secondary-foreground mt-0.5 flex items-center flex-wrap gap-x-1">
                                         <span class="font-medium">${issuerName}</span>

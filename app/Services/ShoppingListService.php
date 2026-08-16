@@ -7,7 +7,6 @@ use App\Models\Issuer;
 use App\Support\DistanceCalculator;
 use App\Support\FullTextQuery;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class ShoppingListService
 {
@@ -25,6 +24,15 @@ class ShoppingListService
      * (ver ProductAliasService::otherUsersAliasFullTextExists) — assim quem
      * nunca apelidou um item ainda o encontra pelo apelido que outra pessoa
      * já deu a ele.
+     *
+     * Cada resultado traz dois nomes: `description` (o valor "oficial" do
+     * item — apelido do próprio buscador, senão a description bruta — usado
+     * ao adicionar o item à lista) e `display_description` (só para exibir
+     * na busca). Para itens da comunidade (is_own = 0) com algum apelido
+     * disponível (do próprio buscador ou de outro usuário qualquer),
+     * `display_description` vem no formato "Apelido (nome oficial na NF)";
+     * sem apelido nenhum, ou para itens do próprio buscador, os dois campos
+     * são iguais.
      *
      * Filtro de localização (opcional):
      * - $filterCity/$filterState: o usuário escolheu explicitamente "outra cidade"
@@ -49,7 +57,7 @@ class ShoppingListService
                     ->where('issuer_nicknames.user_id', '=', $userId);
             });
         $this->aliasService->joinCanonicalNames($itemsQuery, $userId);
-        $nameSql = $this->aliasService->canonicalNameSql();
+        $this->aliasService->joinCommunityCanonicalName($itemsQuery, $userId);
 
         FullTextQuery::applyOr(
             $itemsQuery,
@@ -60,7 +68,9 @@ class ShoppingListService
 
         $itemsQuery
             ->select(
-                DB::raw("{$nameSql} as description"),
+                'invoices_items.description as raw_description',
+                'product_aliases.canonical_name as own_canonical_name',
+                'community_aliases.canonical_name as community_canonical_name',
                 'invoices_items.unit_price',
                 'invoices_items.unit',
                 'invoices_items.code',
@@ -73,11 +83,38 @@ class ShoppingListService
 
         $this->applyLocationFilter($itemsQuery, $filterCity, $filterState, $userLatitude, $userLongitude);
 
-        return $itemsQuery
+        $items = $itemsQuery
             ->orderByDesc('is_favorite')
             ->orderBy('invoices_items.unit_price', 'asc')
             ->limit(20)
             ->get();
+
+        $items->each(function (InvoiceItem $item) {
+            $item->description = $item->own_canonical_name ?? $item->raw_description;
+            $item->display_description = $this->buildDisplayDescription($item);
+
+            unset($item->own_canonical_name, $item->community_canonical_name, $item->raw_description);
+        });
+
+        return $items;
+    }
+
+    /**
+     * "Apelido (nome oficial na NF)" para itens da comunidade com algum
+     * apelido disponível; senão o próprio `description` (já calculado antes
+     * desta chamada) ou a description bruta, sem parênteses.
+     */
+    private function buildDisplayDescription(InvoiceItem $item): string
+    {
+        if ((int) $item->is_own === 1) {
+            return $item->description;
+        }
+
+        $nickname = $item->own_canonical_name ?? $item->community_canonical_name;
+
+        return $nickname !== null
+            ? "{$nickname} ({$item->raw_description})"
+            : $item->raw_description;
     }
 
     private function applyLocationFilter($query, ?string $filterCity, ?string $filterState, ?float $userLatitude, ?float $userLongitude): void

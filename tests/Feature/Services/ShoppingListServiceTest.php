@@ -68,6 +68,29 @@ class ShoppingListServiceTest extends TestCase
         $results = $this->service->searchProducts($user->id, 'Coca-Cola', new Collection);
 
         $this->assertEquals('Coca-Cola 350ml', $results->first()->description);
+        // Item da comunidade (is_own = 0) com apelido disponível: exibição
+        // traz o apelido seguido do nome oficial na NF entre parênteses.
+        $this->assertEquals('Coca-Cola 350ml (REFRIG COCA COLA 350ML LAT)', $results->first()->display_description);
+    }
+
+    public function test_search_products_display_description_has_no_parentheses_for_own_item(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'REFRIG COCA COLA 350ML LAT']);
+
+        ProductAlias::create([
+            'user_id' => $user->id,
+            'description' => 'REFRIG COCA COLA 350ML LAT',
+            'canonical_name' => 'Coca-Cola 350ml',
+        ]);
+
+        $results = $this->service->searchProducts($user->id, 'Coca-Cola', new Collection);
+
+        $this->assertEquals(1, $results->first()->is_own);
+        $this->assertEquals('Coca-Cola 350ml', $results->first()->description);
+        $this->assertEquals('Coca-Cola 350ml', $results->first()->display_description);
     }
 
     public function test_search_products_falls_back_to_raw_description_when_searching_user_has_no_alias(): void
@@ -88,6 +111,47 @@ class ShoppingListServiceTest extends TestCase
         $results = $this->service->searchProducts($user->id, 'COCA COLA', new Collection);
 
         $this->assertEquals('REFRIG COCA COLA 350ML LAT', $results->first()->description);
+        // Sem alias próprio, description cai pra bruta — mas display_description
+        // ainda mostra o apelido de terceiro (item de comunidade), ver teste abaixo.
+        $this->assertEquals('Coca-Cola 350ml (REFRIG COCA COLA 350ML LAT)', $results->first()->display_description);
+    }
+
+    public function test_search_products_display_description_equals_raw_description_without_any_alias(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($other)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'MACARRAO ESPAGUETE 500G']);
+
+        $results = $this->service->searchProducts($user->id, 'MACARRAO', new Collection);
+
+        $this->assertEquals(0, $results->first()->is_own);
+        $this->assertEquals('MACARRAO ESPAGUETE 500G', $results->first()->description);
+        $this->assertEquals('MACARRAO ESPAGUETE 500G', $results->first()->display_description);
+    }
+
+    public function test_search_products_display_description_uses_other_users_alias_for_community_item(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($other)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'REFRIG COCA COLA 350ML LAT']);
+
+        // Apelido pertence a um terceiro, não a quem busca — display_description
+        // ainda mostra esse apelido pro item da comunidade, com o nome oficial
+        // entre parênteses; description (usado ao adicionar à lista) continua bruto.
+        ProductAlias::create([
+            'user_id' => $other->id,
+            'description' => 'REFRIG COCA COLA 350ML LAT',
+            'canonical_name' => 'Coca-Cola 350ml',
+        ]);
+
+        $results = $this->service->searchProducts($user->id, 'COCA COLA', new Collection);
+
+        $this->assertEquals('REFRIG COCA COLA 350ML LAT', $results->first()->description);
+        $this->assertEquals('Coca-Cola 350ml (REFRIG COCA COLA 350ML LAT)', $results->first()->display_description);
     }
 
     public function test_search_products_finds_item_via_other_users_alias(): void
