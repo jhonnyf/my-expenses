@@ -116,6 +116,7 @@ const Upload = (() => {
         document.getElementById('qrScannerCaptureBtn').classList.add('hidden');
         document.getElementById('qrScannerCaptureFeedback').classList.add('hidden');
         document.getElementById('qrScannerSwitchCameraBtn').classList.add('hidden');
+        document.getElementById('qrScannerCameraLabel').classList.add('hidden');
 
         const statusEl = document.getElementById('qrScannerStatus');
         statusEl.classList.remove('hidden');
@@ -441,6 +442,23 @@ const Upload = (() => {
         return notExcluded?.deviceId ?? backCandidates[0].deviceId;
     };
 
+    // Lê o label direto da track concedida (em vez de casar currentDeviceId com
+    // videoInputDevices) porque reflete exatamente a câmera que o navegador
+    // abriu de fato, mesmo quando ela foi resolvida via facingMode em vez de
+    // deviceId (ex.: primeira abertura sem candidata traseira identificável).
+    const updateCameraLabel = () => {
+        const el = document.getElementById('qrScannerCameraLabel');
+        const label = mediaStream?.getVideoTracks?.()[0]?.label;
+
+        if (!label) {
+            el.classList.add('hidden');
+            return;
+        }
+
+        el.textContent = `Câmera ativa: ${label}`;
+        el.classList.remove('hidden');
+    };
+
     const openCameraStream = async (video, deviceId) => {
         const constraints = {
             video: deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'environment' } },
@@ -451,6 +469,7 @@ const Upload = (() => {
         await video.play();
 
         currentDeviceId = mediaStream.getVideoTracks()[0]?.getSettings?.().deviceId ?? deviceId ?? null;
+        updateCameraLabel();
     };
 
     // Recorta o frame na área do overlay visível antes de decodificar (em vez

@@ -15,6 +15,10 @@
             <p id="qrScannerStatus" class="text-sm text-secondary-foreground text-center">
                 Aponte a câmera para o QR Code do cupom fiscal.
             </p>
+
+            {{-- Nome/label da câmera atualmente ativa, reportado pelo próprio navegador --}}
+            <p id="qrScannerCameraLabel" class="text-xs text-secondary-foreground/70 text-center hidden"></p>
+
             <p id="qrScannerError" class="text-xs text-destructive text-center hidden"></p>
 
             {{-- Aparece depois de alguns segundos sem leitura, sugerindo ajuste de distância --}}
