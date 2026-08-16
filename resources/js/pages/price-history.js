@@ -229,6 +229,7 @@ const PriceHistory = (() => {
                     resultsList.innerHTML = data.map(item => {
                         const min = Utils.formatCurrency(item.min_price);
                         const max = Utils.formatCurrency(item.max_price);
+                        const officialDescription = item.official_description ? Utils.escapeHtml(item.official_description) : null;
                         return `
                             <div class="flex items-center gap-3 px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors"
                                  data-product="${encodeURIComponent(item.description)}">
@@ -237,6 +238,7 @@ const PriceHistory = (() => {
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-medium text-foreground truncate">${Utils.escapeHtml(item.display_description || item.description)}</p>
+                                    ${officialDescription ? `<p class="text-xs text-secondary-foreground truncate">${officialDescription}</p>` : ''}
                                     <p class="text-xs text-secondary-foreground mt-0.5">
                                         ${item.purchase_count}x comprado &middot; R$ ${min} — R$ ${max}
                                     </p>

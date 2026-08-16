@@ -19,8 +19,10 @@ class PriceHistoryService
      * continua sendo o apelido do próprio usuário, ou a description bruta
      * na ausência dele.
      *
-     * `display_description` (só exibição) mostra "Apelido (nome oficial na
-     * NF)" quando o único apelido disponível pra esse produto veio de outro
+     * `display_description` (só exibição) traz o apelido quando existir,
+     * senão a description bruta. `official_description` vem preenchido só
+     * quando o front deve mostrar o nome oficial na NF numa segunda linha:
+     * quando o único apelido disponível pra esse produto veio de outro
      * usuário — o próprio usuário nunca apelidou, então o nome oficial ajuda
      * a confirmar do que se trata antes de abrir o histórico.
      */
@@ -57,10 +59,16 @@ class PriceHistoryService
             ->get();
 
         $items->each(function (InvoiceItem $item) {
-            $item->display_description = $item->own_canonical_name
-                ?? ($item->community_canonical_name !== null
-                    ? "{$item->community_canonical_name} ({$item->raw_description})"
-                    : $item->raw_description);
+            if ($item->own_canonical_name !== null) {
+                $item->display_description = $item->own_canonical_name;
+                $item->official_description = null;
+            } elseif ($item->community_canonical_name !== null && $item->community_canonical_name !== $item->raw_description) {
+                $item->display_description = $item->community_canonical_name;
+                $item->official_description = $item->raw_description;
+            } else {
+                $item->display_description = $item->raw_description;
+                $item->official_description = null;
+            }
 
             unset($item->raw_description, $item->own_canonical_name, $item->community_canonical_name);
         });

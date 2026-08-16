@@ -106,8 +106,10 @@ class PriceHistoryServiceTest extends TestCase
         // alias próprio, usado sem alteração pra abrir o timeline.
         $this->assertEquals('REFRIG GUARANA ANTARCTICA 350ML LAT', $result->first()->description);
         // display_description (só exibição) mostra o apelido de quem deu o
-        // nome, com o nome oficial na NF entre parênteses.
-        $this->assertEquals('Guaraná gelado (REFRIG GUARANA ANTARCTICA 350ML LAT)', $result->first()->display_description);
+        // nome; official_description traz o nome oficial na NF à parte, pro
+        // front exibir numa segunda linha.
+        $this->assertEquals('Guaraná gelado', $result->first()->display_description);
+        $this->assertEquals('REFRIG GUARANA ANTARCTICA 350ML LAT', $result->first()->official_description);
     }
 
     public function test_search_display_description_matches_description_when_user_has_own_alias(): void
@@ -122,8 +124,9 @@ class PriceHistoryServiceTest extends TestCase
         $result = $this->service->search('Café', $user->id);
 
         $this->assertEquals('Café', $result->first()->description);
-        // Alias é do próprio usuário — sem parênteses, igual à description.
+        // Alias é do próprio usuário — sem segunda linha, igual à description.
         $this->assertEquals('Café', $result->first()->display_description);
+        $this->assertNull($result->first()->official_description);
     }
 
     public function test_search_display_description_equals_raw_description_without_any_alias(): void
@@ -137,6 +140,7 @@ class PriceHistoryServiceTest extends TestCase
 
         $this->assertEquals('ARROZ BRANCO 5KG', $result->first()->description);
         $this->assertEquals('ARROZ BRANCO 5KG', $result->first()->display_description);
+        $this->assertNull($result->first()->official_description);
     }
 
     public function test_search_groups_aliased_descriptions_under_canonical_name(): void
