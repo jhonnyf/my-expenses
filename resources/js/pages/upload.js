@@ -446,15 +446,26 @@ const Upload = (() => {
     // videoInputDevices) porque reflete exatamente a câmera que o navegador
     // abriu de fato, mesmo quando ela foi resolvida via facingMode em vez de
     // deviceId (ex.: primeira abertura sem candidata traseira identificável).
+    // Nem todo browser/dispositivo expõe um label descritivo por privacidade —
+    // nesse caso caímos para "Câmera frontal/traseira" via facingMode, pra
+    // garantir que o texto sempre fique visível enquanto a câmera está ativa.
+    const cameraLabelFallback = (facingMode) => {
+        if (facingMode === 'user') return 'Câmera frontal';
+        if (facingMode === 'environment') return 'Câmera traseira';
+
+        return 'Câmera';
+    };
+
     const updateCameraLabel = () => {
         const el = document.getElementById('qrScannerCameraLabel');
-        const label = mediaStream?.getVideoTracks?.()[0]?.label;
+        const track = mediaStream?.getVideoTracks?.()[0];
 
-        if (!label) {
+        if (!track) {
             el.classList.add('hidden');
             return;
         }
 
+        const label = track.label || cameraLabelFallback(track.getSettings?.().facingMode);
         el.textContent = `Câmera ativa: ${label}`;
         el.classList.remove('hidden');
     };
