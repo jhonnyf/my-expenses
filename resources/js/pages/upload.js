@@ -12,13 +12,24 @@ const SCAN_INTERVAL_MS = 300;
 // iOS Safari expõe labels descritivos por lente ("Back Camera" = principal,
 // "Back Ultra Wide Camera"/"Back Telephoto Camera" = as outras) — dá pra
 // acertar com certeza. Android geralmente só indica o lado (ex.: "camera2 0,
-// facing back" / "camera2 1, facing front"), sem indicar qual lente — o
-// máximo que dá pra fazer ali é confirmar que é traseira e evitar uma lente
-// que o próprio label já denuncia como ultra-wide/telephoto.
+// facing back" / "camera 1, facing front"), sem indicar qual lente — o
+// máximo que dá pra fazer ali é confirmar que é traseira, evitar uma lente
+// que o próprio label já denuncie como ultra-wide/telephoto, e usar o índice
+// numérico do label como heurística de desempate (ver CAMERA_INDEX_LABEL).
 const FRONT_CAMERA_LABEL = /front|user|frontal/i;
 const BACK_CAMERA_HINT_LABEL = /back|rear|traseira|environment/i;
 const MAIN_BACK_CAMERA_LABEL = /^back camera$/i;
 const EXCLUDED_LENS_LABEL = /ultra[\s-]?wide|wide[\s-]?angle|telephoto|\btele\b|periscope/i;
+
+// No Camera2 API do Android, o índice de câmera é atribuído pelo fabricante
+// na ordem em que as lentes foram adicionadas ao hardware: a lente principal
+// quase sempre recebe o menor índice entre as traseiras, e lentes auxiliares
+// (ultra-wide, macro, telephoto) recebem índices maiores — mesmo quando o
+// label não diz qual é qual. Não é garantido por spec, mas é a convenção
+// seguida pela grande maioria dos OEMs e é o único sinal numérico disponível
+// quando o label não denuncia o tipo de lente (caso relatado em device real:
+// label "camera 0, facing back" na lente principal).
+const CAMERA_INDEX_LABEL = /camera\d*\s*(\d+)/i;
 
 const Upload = (() => {
     let initialized = false;
@@ -438,8 +449,19 @@ const Upload = (() => {
         const exact = backCandidates.find((device) => MAIN_BACK_CAMERA_LABEL.test(device.label.trim()));
         if (exact) return exact.deviceId;
 
-        const notExcluded = backCandidates.find((device) => !EXCLUDED_LENS_LABEL.test(device.label));
-        return notExcluded?.deviceId ?? backCandidates[0].deviceId;
+        const notExcluded = backCandidates.filter((device) => !EXCLUDED_LENS_LABEL.test(device.label));
+        const candidates = notExcluded.length ? notExcluded : backCandidates;
+
+        // Entre as candidatas restantes (sem indicação explícita de lente),
+        // prefere a de menor índice numérico no label — ver CAMERA_INDEX_LABEL.
+        // A ordem de enumerateDevices() não é confiável pra isso: já vimos
+        // dispositivo Android listar a ultra-wide antes da principal.
+        const byIndex = candidates
+            .map((device) => ({ device, index: parseInt(CAMERA_INDEX_LABEL.exec(device.label)?.[1] ?? '', 10) }))
+            .filter(({ index }) => !Number.isNaN(index))
+            .sort((a, b) => a.index - b.index);
+
+        return byIndex[0]?.device.deviceId ?? candidates[0].deviceId;
     };
 
     // Lê o label direto da track concedida (em vez de casar currentDeviceId com
