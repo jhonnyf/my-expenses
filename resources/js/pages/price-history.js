@@ -236,7 +236,7 @@ const PriceHistory = (() => {
                                     <i class="ki-filled ki-chart-line-star text-sm"></i>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-foreground truncate">${Utils.escapeHtml(item.description)}</p>
+                                    <p class="text-sm font-medium text-foreground truncate">${Utils.escapeHtml(item.display_description || item.description)}</p>
                                     <p class="text-xs text-secondary-foreground mt-0.5">
                                         ${item.purchase_count}x comprado &middot; R$ ${min} — R$ ${max}
                                     </p>

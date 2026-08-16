@@ -15,17 +15,25 @@ class PriceHistoryService
      * Busca produtos no histórico de compras do próprio usuário. O termo
      * também casa contra apelidos de produto criados por QUALQUER outro
      * usuário (ver ProductAliasService::otherUsersAliasLikeExists) — o nome
-     * exibido continua sendo o apelido do próprio usuário, ou a description
-     * bruta na ausência dele; só o critério de busca enxerga apelidos de
-     * terceiros.
+     * "oficial" do resultado (`description`, usado pra abrir o timeline)
+     * continua sendo o apelido do próprio usuário, ou a description bruta
+     * na ausência dele.
+     *
+     * `display_description` (só exibição) mostra "Apelido (nome oficial na
+     * NF)" quando o único apelido disponível pra esse produto veio de outro
+     * usuário — o próprio usuário nunca apelidou, então o nome oficial ajuda
+     * a confirmar do que se trata antes de abrir o histórico.
      */
     public function search(string $query, int $userId): Collection
     {
-        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+        $itemsQuery = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->leftJoin('product_aliases', function ($join) use ($userId) {
                 $join->on('product_aliases.description', '=', 'invoices_items.description')
                     ->where('product_aliases.user_id', '=', $userId);
-            })
+            });
+        $this->aliasService->joinCommunityCanonicalName($itemsQuery, $userId);
+
+        $items = $itemsQuery
             ->where('invoices.user_id', $userId)
             ->where(function ($q) use ($query, $userId) {
                 $q->where('invoices_items.description', 'like', "%{$query}%")
@@ -34,6 +42,9 @@ class PriceHistoryService
             })
             ->select(
                 DB::raw('COALESCE(product_aliases.canonical_name, invoices_items.description) as description'),
+                DB::raw('MIN(invoices_items.description) as raw_description'),
+                DB::raw('MIN(product_aliases.canonical_name) as own_canonical_name'),
+                DB::raw('MIN(community_aliases.canonical_name) as community_canonical_name'),
                 DB::raw('COUNT(*) as purchase_count'),
                 DB::raw('MIN(invoices_items.unit_price) as min_price'),
                 DB::raw('MAX(invoices_items.unit_price) as max_price'),
@@ -44,6 +55,17 @@ class PriceHistoryService
             ->orderByDesc('purchase_count')
             ->limit(20)
             ->get();
+
+        $items->each(function (InvoiceItem $item) {
+            $item->display_description = $item->own_canonical_name
+                ?? ($item->community_canonical_name !== null
+                    ? "{$item->community_canonical_name} ({$item->raw_description})"
+                    : $item->raw_description);
+
+            unset($item->raw_description, $item->own_canonical_name, $item->community_canonical_name);
+        });
+
+        return $items;
     }
 
     public function getTimeline(string $description, int $userId): array

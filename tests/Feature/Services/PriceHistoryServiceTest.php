@@ -102,8 +102,41 @@ class PriceHistoryServiceTest extends TestCase
         $result = $this->service->search('gelado', $user->id);
 
         $this->assertCount(1, $result);
-        // Nome exibido continua a description bruta — sem alias próprio.
+        // Nome "oficial" (description) continua a description bruta — sem
+        // alias próprio, usado sem alteração pra abrir o timeline.
         $this->assertEquals('REFRIG GUARANA ANTARCTICA 350ML LAT', $result->first()->description);
+        // display_description (só exibição) mostra o apelido de quem deu o
+        // nome, com o nome oficial na NF entre parênteses.
+        $this->assertEquals('Guaraná gelado (REFRIG GUARANA ANTARCTICA 350ML LAT)', $result->first()->display_description);
+    }
+
+    public function test_search_display_description_matches_description_when_user_has_own_alias(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'CAFE MOIDO 500G']);
+
+        ProductAlias::create(['user_id' => $user->id, 'description' => 'CAFE MOIDO 500G', 'canonical_name' => 'Café']);
+
+        $result = $this->service->search('Café', $user->id);
+
+        $this->assertEquals('Café', $result->first()->description);
+        // Alias é do próprio usuário — sem parênteses, igual à description.
+        $this->assertEquals('Café', $result->first()->display_description);
+    }
+
+    public function test_search_display_description_equals_raw_description_without_any_alias(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoice)->create(['description' => 'ARROZ BRANCO 5KG']);
+
+        $result = $this->service->search('ARROZ', $user->id);
+
+        $this->assertEquals('ARROZ BRANCO 5KG', $result->first()->description);
+        $this->assertEquals('ARROZ BRANCO 5KG', $result->first()->display_description);
     }
 
     public function test_search_groups_aliased_descriptions_under_canonical_name(): void
