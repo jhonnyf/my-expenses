@@ -44,7 +44,7 @@
                         <div id="profileAvatar"
                              class="flex items-center justify-center size-20 rounded-2xl font-bold text-2xl uppercase shrink-0 transition-all duration-300
                              {{ $isFavorite ? 'bg-yellow-500/15 text-yellow-600 ring-2 ring-yellow-400 shadow-lg shadow-yellow-500/20' : 'bg-primary/10 text-primary ring-2 ring-primary/30' }}">
-                            <span id="profileAvatarInitials">{{ strtoupper(substr($nickname ?: $record->name, 0, 2)) }}</span>
+                            <span id="profileAvatarInitials">{{ mb_strtoupper(mb_substr($nickname ?: $record->name, 0, 2)) }}</span>
                         </div>
 
                         {{-- Nome + CNPJ --}}

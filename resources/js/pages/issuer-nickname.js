@@ -46,7 +46,7 @@ const IssuerNickname = (() => {
             }
 
             const avatar = row.querySelector('.issuer-avatar');
-            if (avatar) avatar.textContent = displayName.substring(0, 2).toUpperCase();
+            if (avatar) avatar.textContent = Array.from(displayName).slice(0, 2).join('').toUpperCase();
         });
     };
 
@@ -55,7 +55,7 @@ const IssuerNickname = (() => {
 
         document.getElementById('issuerDisplayName').textContent = displayName;
         document.getElementById('issuerBreadcrumbName').textContent = displayName;
-        document.getElementById('profileAvatarInitials').textContent = displayName.substring(0, 2).toUpperCase();
+        document.getElementById('profileAvatarInitials').textContent = Array.from(displayName).slice(0, 2).join('').toUpperCase();
 
         document.getElementById('issuerOriginalNameWrap')?.classList.toggle('hidden', !nickname);
     };

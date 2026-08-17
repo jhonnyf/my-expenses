@@ -117,7 +117,7 @@
                                                 <div class="flex items-center gap-3">
                                                     <div class="issuer-avatar flex items-center justify-center size-9 rounded-lg shrink-0 font-semibold text-sm uppercase transition-all duration-200
                                                         {{ $isFav ? 'bg-yellow-500/10 text-yellow-600 ring-2 ring-yellow-400/40' : 'bg-primary/10 text-primary' }}">
-                                                        {{ strtoupper(substr($item->nickname ?: $item->name, 0, 2)) }}
+                                                        {{ mb_strtoupper(mb_substr($item->nickname ?: $item->name, 0, 2)) }}
                                                     </div>
                                                     <div class="min-w-0">
                                                         <p class="text-sm font-semibold text-foreground truncate issuer-name"
@@ -190,7 +190,7 @@
                                 <div class="flex items-center gap-3">
                                     <div class="issuer-avatar flex items-center justify-center size-10 rounded-lg shrink-0 font-semibold text-sm uppercase transition-all duration-200
                                         {{ $isFav ? 'bg-yellow-500/10 text-yellow-600 ring-2 ring-yellow-400/40' : 'bg-primary/10 text-primary' }}">
-                                        {{ strtoupper(substr($item->nickname ?: $item->name, 0, 2)) }}
+                                        {{ mb_strtoupper(mb_substr($item->nickname ?: $item->name, 0, 2)) }}
                                     </div>
                                     <div class="min-w-0 flex-1">
                                         <p class="text-sm font-semibold text-foreground truncate issuer-name"
