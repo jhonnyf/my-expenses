@@ -313,22 +313,22 @@ import{P as wo}from"./pwa-DnA2qi4Z.js";function Ri(r,e){return function(){return
                 </div>
             </div>`},rt=(I,O)=>{const B={};for(const U of I)(B[U.issuer_id]||={name:U.issuer_name,items:[]}).items.push(U);return Object.values(B).map(U=>{const W=U.items.reduce((me,be)=>me+be.unit_price*be.quantity,0),V=U.items.map(me=>ke(me,O)).join(""),re=U.items[0].issuer_id;return`
                 <div class="kt-card ${O?"opacity-75":""}" data-group="${O?"p":"u"}-${re}">
-                    <div class="kt-card-header flex-col sm:flex-row items-start sm:items-center gap-2">
-                        <h3 class="kt-card-title min-w-0 flex-1 truncate">
-                            <i class="ki-filled ki-shop ${O?"text-green-500":"text-primary"} me-1"></i> ${R.escapeHtml(U.name)}
-                        </h3>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <span class="text-xs text-secondary-foreground" data-group-summary>
+                    <div class="kt-card-header gap-2">
+                        <div class="min-w-0 flex-1">
+                            <h3 class="kt-card-title truncate">
+                                <i class="ki-filled ki-shop ${O?"text-green-500":"text-primary"} me-1"></i> ${R.escapeHtml(U.name)}
+                            </h3>
+                            <p class="text-xs text-secondary-foreground mt-0.5" data-group-summary>
                                 ${U.items.length} ${U.items.length===1?"item":"itens"}
                                 &middot; R$ ${R.formatCurrency(W)}
-                            </span>
-                            <button type="button"
-                                    class="kt-btn kt-btn-sm kt-btn-outline"
-                                    data-directions="${re}"
-                                    data-kt-modal-toggle="#directionsModal">
-                                <i class="ki-filled ki-geolocation"></i> Como chegar
-                            </button>
+                            </p>
                         </div>
+                        <button type="button"
+                                class="kt-btn kt-btn-sm kt-btn-outline shrink-0"
+                                data-directions="${re}"
+                                data-kt-modal-toggle="#directionsModal">
+                            <i class="ki-filled ki-geolocation"></i> Como chegar
+                        </button>
                     </div>
                     <div class="kt-card-content pb-3">
                         <div class="divide-y divide-border">${V}</div>

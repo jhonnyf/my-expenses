@@ -313,22 +313,22 @@ const ShoppingList = (() => {
 
             return `
                 <div class="kt-card ${isPurchased ? 'opacity-75' : ''}" data-group="${isPurchased ? 'p' : 'u'}-${issuerId}">
-                    <div class="kt-card-header flex-col sm:flex-row items-start sm:items-center gap-2">
-                        <h3 class="kt-card-title min-w-0 flex-1 truncate">
-                            <i class="ki-filled ki-shop ${isPurchased ? 'text-green-500' : 'text-primary'} me-1"></i> ${Utils.escapeHtml(group.name)}
-                        </h3>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <span class="text-xs text-secondary-foreground" data-group-summary>
+                    <div class="kt-card-header gap-2">
+                        <div class="min-w-0 flex-1">
+                            <h3 class="kt-card-title truncate">
+                                <i class="ki-filled ki-shop ${isPurchased ? 'text-green-500' : 'text-primary'} me-1"></i> ${Utils.escapeHtml(group.name)}
+                            </h3>
+                            <p class="text-xs text-secondary-foreground mt-0.5" data-group-summary>
                                 ${group.items.length} ${group.items.length === 1 ? 'item' : 'itens'}
                                 &middot; R$ ${Utils.formatCurrency(groupTotal)}
-                            </span>
-                            <button type="button"
-                                    class="kt-btn kt-btn-sm kt-btn-outline"
-                                    data-directions="${issuerId}"
-                                    data-kt-modal-toggle="#directionsModal">
-                                <i class="ki-filled ki-geolocation"></i> Como chegar
-                            </button>
+                            </p>
                         </div>
+                        <button type="button"
+                                class="kt-btn kt-btn-sm kt-btn-outline shrink-0"
+                                data-directions="${issuerId}"
+                                data-kt-modal-toggle="#directionsModal">
+                            <i class="ki-filled ki-geolocation"></i> Como chegar
+                        </button>
                     </div>
                     <div class="kt-card-content pb-3">
                         <div class="divide-y divide-border">${rows}</div>
