@@ -67,7 +67,7 @@
     <div class="kt-container-fixed space-y-5 pb-10">
 
         {{-- Cards de destaque: Total, Produtos, Impostos, Itens --}}
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div class="kt-card">
                 <div class="kt-card-content py-5 px-5">
                     <div class="flex items-center justify-between">
