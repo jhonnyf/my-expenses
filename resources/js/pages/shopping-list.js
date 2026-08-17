@@ -313,11 +313,11 @@ const ShoppingList = (() => {
 
             return `
                 <div class="kt-card ${isPurchased ? 'opacity-75' : ''}" data-group="${isPurchased ? 'p' : 'u'}-${issuerId}">
-                    <div class="kt-card-header flex-wrap gap-2">
-                        <h3 class="kt-card-title">
+                    <div class="kt-card-header flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <h3 class="kt-card-title min-w-0 flex-1 truncate">
                             <i class="ki-filled ki-shop ${isPurchased ? 'text-green-500' : 'text-primary'} me-1"></i> ${Utils.escapeHtml(group.name)}
                         </h3>
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 shrink-0">
                             <span class="text-xs text-secondary-foreground" data-group-summary>
                                 ${group.items.length} ${group.items.length === 1 ? 'item' : 'itens'}
                                 &middot; R$ ${Utils.formatCurrency(groupTotal)}
