@@ -7,6 +7,8 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 
 class FindOrCreateSocialUser
 {
+    public function __construct(private readonly CreateDefaultCategoriesAction $categoriesAction) {}
+
     public function handle(SocialiteUser $socialUser, string $provider): User
     {
         $user = User::where('provider', $provider)
@@ -32,11 +34,15 @@ class FindOrCreateSocialUser
             }
         }
 
-        return User::create([
+        $user = User::create([
             'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? 'User',
             'email' => $email,
             'provider' => $provider,
             'provider_id' => $socialUser->getId(),
         ]);
+
+        $this->categoriesAction->execute($user);
+
+        return $user;
     }
 }

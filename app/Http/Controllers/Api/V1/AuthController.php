@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\CreateDefaultCategoriesAction;
 use App\Actions\UpdateUserLocationAction;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
@@ -29,8 +30,11 @@ class AuthController extends Controller
         ]);
     }
 
-    public function register(RegisterRequest $request, UpdateUserLocationAction $locationAction): JsonResponse
-    {
+    public function register(
+        RegisterRequest $request,
+        UpdateUserLocationAction $locationAction,
+        CreateDefaultCategoriesAction $categoriesAction
+    ): JsonResponse {
         $user = User::create([
             'name' => $request->input('name'),
             'email' => $request->input('email'),
@@ -38,6 +42,7 @@ class AuthController extends Controller
         ]);
 
         $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));
+        $categoriesAction->execute($user);
 
         $token = $user->createToken($request->input('device_name', 'api'))->plainTextToken;
 

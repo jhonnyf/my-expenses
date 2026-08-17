@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\GeocodeUserProfileJob;
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -166,5 +167,18 @@ class RegisterControllerTest extends TestCase
             'password_confirmation' => 'password123',
             'estado' => 'PRR',
         ])->assertSessionHasErrors(['estado']);
+    }
+
+    public function test_store_creates_default_categories_for_user(): void
+    {
+        $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'categorias@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $user = User::where('email', 'categorias@example.com')->firstOrFail();
+        $this->assertSame(11, Category::where('user_id', $user->id)->count());
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Actions;
 
 use App\Actions\FindOrCreateSocialUser;
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
@@ -70,6 +71,9 @@ class FindOrCreateSocialUserTest extends TestCase
             'provider_id' => 'google-789',
         ]);
         $this->assertInstanceOf(User::class, $result);
+
+        $user = User::where('email', 'new@example.com')->firstOrFail();
+        $this->assertSame(11, Category::where('user_id', $user->id)->count());
     }
 
     public function test_creates_user_with_null_email_when_provider_does_not_return_email(): void
@@ -86,6 +90,20 @@ class FindOrCreateSocialUserTest extends TestCase
             'provider_id' => 'apple-001',
         ]);
         $this->assertInstanceOf(User::class, $result);
+    }
+
+    public function test_does_not_create_default_categories_for_existing_user(): void
+    {
+        $user = User::factory()->create([
+            'provider' => 'google',
+            'provider_id' => 'google-123',
+        ]);
+
+        $socialiteUser = $this->makeSocialiteUser('google-123', $user->email);
+
+        app(FindOrCreateSocialUser::class)->handle($socialiteUser, 'google');
+
+        $this->assertSame(0, Category::where('user_id', $user->id)->count());
     }
 
     public function test_does_not_link_provider_to_user_of_different_provider(): void

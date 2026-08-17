@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\CreateDefaultCategoriesAction;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -18,11 +19,13 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
+        $user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'jhonnyf7@gmail.com',
             'password' => Hash::make('123123'),
         ]);
+
+        app(CreateDefaultCategoriesAction::class)->execute($user);
 
         if (app()->isLocal()) {
             $this->call(VisualCheckUserSeeder::class);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateDefaultCategoriesAction;
 use App\Actions\UpdateUserLocationAction;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
@@ -20,8 +21,11 @@ class RegisterController extends Controller
         return view('register.index');
     }
 
-    public function store(RegisterRequest $request, UpdateUserLocationAction $locationAction): RedirectResponse
-    {
+    public function store(
+        RegisterRequest $request,
+        UpdateUserLocationAction $locationAction,
+        CreateDefaultCategoriesAction $categoriesAction
+    ): RedirectResponse {
         $user = User::create([
             'name' => $request->input('name'),
             'email' => $request->input('email'),
@@ -29,6 +33,7 @@ class RegisterController extends Controller
         ]);
 
         $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));
+        $categoriesAction->execute($user);
 
         Auth::login($user);
         $request->session()->regenerate();
