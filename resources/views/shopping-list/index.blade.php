@@ -81,7 +81,7 @@
                                         Voltar pra minha cidade
                                     </button>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-wrap items-center gap-2">
                                     <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-action="use-my-location">
                                         <i class="ki-filled ki-geolocation"></i>
                                         Usar minha localização
