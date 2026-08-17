@@ -237,7 +237,7 @@
                                     </thead>
                                     <tbody>
                                         @foreach($items as $item)
-                                            <tr class="transition-colors hover:bg-accent/40">
+                                            <tr class="transition-colors hover:bg-accent/60">
                                                 <td class="text-sm text-secondary-foreground">
                                                     {{ \Carbon\Carbon::parse($item->issued_at)->format('d/m/Y') }}
                                                 </td>

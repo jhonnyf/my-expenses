@@ -460,7 +460,7 @@ const ShoppingList = (() => {
         const container = document.getElementById('savedLists');
         const today = new Date().toLocaleDateString('pt-BR');
         container.insertAdjacentHTML('afterbegin', `
-            <div class="flex items-center gap-3 py-3 px-1 group rounded-lg transition-colors hover:bg-accent/40" id="saved-list-${id}">
+            <div class="flex items-center gap-3 py-3 px-1 group rounded-lg transition-colors hover:bg-accent/60" id="saved-list-${id}">
                 <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary shrink-0">
                     <i class="ki-filled ki-basket text-sm"></i>
                 </div>

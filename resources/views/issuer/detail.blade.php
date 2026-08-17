@@ -238,7 +238,7 @@
                                     </thead>
                                     <tbody>
                                         @foreach($record->invoices as $invoice)
-                                            <tr class="invoice-row transition-colors hover:bg-accent/40">
+                                            <tr class="invoice-row transition-colors hover:bg-accent/60">
                                                 <td>
                                                     <span class="text-sm font-mono text-foreground">
                                                         {{ $invoice->number }}<span class="text-secondary-foreground">/{{ $invoice->series }}</span>
@@ -283,7 +283,7 @@
                         {{-- MOBILE (< lg): cards --}}
                         <div class="kt-card-content lg:hidden grid gap-3 p-5">
                             @foreach($record->invoices as $invoice)
-                                <div class="invoice-row rounded-xl border border-border p-4 flex flex-col gap-2 transition-colors hover:bg-accent/40">
+                                <div class="invoice-row rounded-xl border border-border p-4 flex flex-col gap-2 transition-colors hover:bg-accent/60">
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="text-sm font-mono text-foreground">
                                             {{ $invoice->number }}<span class="text-secondary-foreground">/{{ $invoice->series }}</span>

@@ -140,7 +140,7 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($records->items() as $item)
-                                        <tr class="transition-colors duration-150 hover:bg-accent/40">
+                                        <tr class="transition-colors duration-150 hover:bg-accent/60">
                                             <td class="py-2.5">
                                                 <div class="flex items-center gap-3">
                                                     <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary font-semibold text-xs shrink-0 uppercase">

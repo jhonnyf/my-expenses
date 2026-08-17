@@ -327,7 +327,7 @@
                                         $share = ($item->total_price / $itemsTotal) * 100;
                                         $isFavoriteProduct = $favoriteProductNames->contains($item->canonical_name ?? $item->description);
                                     @endphp
-                                    <tr class="transition-colors duration-150 hover:bg-accent/40">
+                                    <tr class="transition-colors duration-150 hover:bg-accent/60">
                                         <td class="text-center text-secondary-foreground">{{ $item->item_number }}</td>
                                         <td class="py-2.5">
                                             <div class="flex items-center gap-1.5 min-w-0">

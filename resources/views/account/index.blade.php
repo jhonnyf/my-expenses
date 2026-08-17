@@ -240,7 +240,7 @@
                   </thead>
                   <tbody>
                     @foreach($recentInvoices as $invoice)
-                    <tr>
+                    <tr class="transition-colors duration-150 hover:bg-accent/60">
                       <td>
                         <div class="flex flex-col gap-0.5">
                           <span class="text-sm font-medium text-foreground tabular-nums">{{ $invoice->issued_at->format('d/m/Y') }}</span>

@@ -178,7 +178,7 @@ const PriceHistory = (() => {
         });
 
         tbody.innerHTML = rows.map(r => `
-                <tr class="${r.rowClass} transition-colors hover:bg-accent/40">
+                <tr class="${r.rowClass} transition-colors hover:bg-accent/60">
                     <td class="text-sm text-secondary-foreground">${r.date}</td>
                     <td class="text-sm font-medium text-foreground">${r.issuerName}</td>
                     <td class="text-right font-semibold font-mono text-sm ${r.priceClass}">R$ ${Utils.formatCurrency(r.price)}${r.badge}</td>

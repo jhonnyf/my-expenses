@@ -79,7 +79,7 @@ const PriceComparison = (() => {
             <th></th>`;
 
         tableBody.innerHTML = rows.map((row, index) => `
-            <tr>
+            <tr class="transition-colors duration-150 hover:bg-accent/60">
                 <td class="text-sm text-foreground font-medium">${Utils.escapeHtml(row.city)}/${Utils.escapeHtml(row.state)}</td>
                 <td class="text-end text-sm font-semibold text-primary tabular-nums">R$ ${Utils.formatCurrency(row.min_price)}</td>
                 <td class="text-end text-sm text-secondary-foreground tabular-nums">R$ ${Utils.formatCurrency(row.avg_price)}</td>
@@ -100,7 +100,7 @@ const PriceComparison = (() => {
             <th class="text-end text-xs font-semibold text-secondary-foreground uppercase tracking-wide">Amostras</th>`;
 
         tableBody.innerHTML = rows.map(row => `
-            <tr>
+            <tr class="transition-colors duration-150 hover:bg-accent/60">
                 <td class="text-sm text-foreground font-medium">${Utils.escapeHtml(row.issuer_name)}</td>
                 <td class="text-end text-sm font-semibold text-primary tabular-nums">R$ ${Utils.formatCurrency(row.min_price)}</td>
                 <td class="text-end text-sm text-secondary-foreground tabular-nums">R$ ${Utils.formatCurrency(row.avg_price)}</td>

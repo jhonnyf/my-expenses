@@ -101,7 +101,7 @@
                                             $daysSinceLast = $item->last_purchased_at ? \Carbon\Carbon::parse($item->last_purchased_at)->diffInDays(now()) : null;
                                             $isDue = $daysSinceLast !== null && $daysSinceLast >= $item->avg_interval_days;
                                         @endphp
-                                        <tr class="transition-colors hover:bg-accent/40">
+                                        <tr class="transition-colors hover:bg-accent/60">
                                             <td class="font-medium text-foreground truncate py-2.5">{{ $item->description }}</td>
                                             <td class="text-center py-2.5">
                                                 <span class="kt-badge kt-badge-primary kt-badge-sm">{{ $item->purchase_count }}×</span>

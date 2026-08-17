@@ -344,7 +344,7 @@
                     <div class="kt-card-content pb-2">
                         @if($topIssuers->isNotEmpty())
                             @foreach($topIssuers as $i => $issuer)
-                                <div class="flex items-center justify-between gap-3 px-2 py-3 rounded-lg hover:bg-accent/40 transition-colors {{ !$loop->last ? 'border-b border-border/40' : '' }}">
+                                <div class="flex items-center justify-between gap-3 px-2 py-3 rounded-lg hover:bg-accent/60 transition-colors {{ !$loop->last ? 'border-b border-border/40' : '' }}">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <span class="flex items-center justify-center size-8 rounded-lg shrink-0 font-bold text-xs {{ $i === 0 ? 'bg-primary/10 text-primary' : 'bg-secondary/60 text-secondary-foreground' }}">
                                             {{ $i + 1 }}º
@@ -381,7 +381,7 @@
                     <div class="kt-card-content pb-2">
                         @if($topProducts->isNotEmpty())
                             @foreach($topProducts->take(5) as $i => $product)
-                                <div class="flex items-center justify-between gap-3 px-2 py-3 rounded-lg hover:bg-accent/40 transition-colors {{ !$loop->last ? 'border-b border-border/40' : '' }}">
+                                <div class="flex items-center justify-between gap-3 px-2 py-3 rounded-lg hover:bg-accent/60 transition-colors {{ !$loop->last ? 'border-b border-border/40' : '' }}">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <span class="flex items-center justify-center size-8 rounded-lg shrink-0 font-bold text-xs {{ $i === 0 ? 'bg-violet-500/10 text-violet-600' : 'bg-secondary/60 text-secondary-foreground' }}">
                                             {{ $i + 1 }}º

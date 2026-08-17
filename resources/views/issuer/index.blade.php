@@ -104,7 +104,7 @@
                                 <tbody>
                                     @foreach ($records->items() as $item)
                                         @php $isFav = $favoriteIds->contains($item->id); @endphp
-                                        <tr class="issuer-row transition-colors duration-150 hover:bg-accent/40 {{ $isFav ? 'bg-yellow-500/5' : '' }}">
+                                        <tr class="issuer-row transition-colors duration-150 hover:bg-accent/60 {{ $isFav ? 'bg-yellow-500/5' : '' }}">
                                             <td class="text-center py-2.5 {{ $isFav ? 'shadow-[inset_3px_0_0_0_#eab308]' : '' }}">
                                                 <button
                                                     data-favorite-id="{{ $item->id }}"

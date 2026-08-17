@@ -183,7 +183,7 @@
                         <div class="kt-card-content pb-2">
                             <div id="savedLists" class="divide-y divide-border">
                                 @forelse($lists as $list)
-                                    <div class="flex items-center gap-3 py-3 px-1 group rounded-lg transition-colors hover:bg-accent/40" id="saved-list-{{ $list->id }}">
+                                    <div class="flex items-center gap-3 py-3 px-1 group rounded-lg transition-colors hover:bg-accent/60" id="saved-list-{{ $list->id }}">
                                         <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary shrink-0">
                                             <i class="ki-filled ki-basket text-sm"></i>
                                         </div>
