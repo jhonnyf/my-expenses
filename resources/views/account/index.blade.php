@@ -19,7 +19,7 @@
         @if($user->avatar)
           <img src="{{ $user->avatar->url() }}" alt="{{ $user->name }}" class="size-full object-cover" />
         @else
-          <span class="text-3xl font-bold leading-none select-none">{{ strtoupper(substr($user->name, 0, 2)) }}</span>
+          <span class="text-3xl font-bold leading-none select-none">{{ mb_strtoupper(mb_substr($user->name, 0, 2)) }}</span>
         @endif
       </div>
       <div class="flex items-center gap-1.5">
@@ -316,7 +316,7 @@
                   @if($user->avatar)
                     <img src="{{ $user->avatar->url() }}" alt="{{ $user->name }}" class="size-full object-cover" id="avatar_preview_img" />
                   @else
-                    <span class="text-lg font-bold select-none" id="avatar_preview_initials">{{ strtoupper(substr($user->name, 0, 2)) }}</span>
+                    <span class="text-lg font-bold select-none" id="avatar_preview_initials">{{ mb_strtoupper(mb_substr($user->name, 0, 2)) }}</span>
                   @endif
                 </div>
                 <div class="flex flex-col gap-2 grow">

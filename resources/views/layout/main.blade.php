@@ -118,7 +118,7 @@
                                     @if(Auth::user()->avatar)
                                         <img alt="{{ Auth::user()->name }}" class="size-full object-cover" src="{{ Auth::user()->avatar->url() }}" />
                                     @else
-                                        <span class="text-xs font-bold leading-none select-none">{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</span>
+                                        <span class="text-xs font-bold leading-none select-none">{{ mb_strtoupper(mb_substr(Auth::user()->name, 0, 2)) }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -129,7 +129,7 @@
                                             @if(Auth::user()->avatar)
                                                 <img alt="{{ Auth::user()->name }}" class="size-full object-cover" src="{{ Auth::user()->avatar->url() }}" />
                                             @else
-                                                <span class="text-xs font-bold leading-none select-none">{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</span>
+                                                <span class="text-xs font-bold leading-none select-none">{{ mb_strtoupper(mb_substr(Auth::user()->name, 0, 2)) }}</span>
                                             @endif
                                         </div>
                                         <div class="flex flex-col gap-1.5">
