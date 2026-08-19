@@ -19,6 +19,7 @@ use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,7 +48,13 @@ Route::group(['prefix' => 'login', 'as' => 'login.'], function () {
     Route::get('social/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback')->middleware('throttle:10,1');
 });
 
-Route::group(['middleware' => 'auth'], function () {
+Route::group(['prefix' => 'email/verify', 'as' => 'verification.', 'middleware' => 'auth'], function () {
+    Route::get('/', [VerificationController::class, 'notice'])->name('notice');
+    Route::get('{id}/{hash}', [VerificationController::class, 'verify'])->name('verify')->middleware(['signed', 'throttle:6,1']);
+    Route::post('resend', [VerificationController::class, 'resend'])->name('send')->middleware('throttle:6,1');
+});
+
+Route::group(['middleware' => ['auth', 'verified']], function () {
 
     Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.'], function () {
         Route::get('/', [DashboardController::class, 'index'])->name('index');

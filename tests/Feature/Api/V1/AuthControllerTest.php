@@ -5,7 +5,9 @@ namespace Tests\Feature\Api\V1;
 use App\Jobs\GeocodeUserProfileJob;
 use App\Models\Category;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -139,5 +141,73 @@ class AuthControllerTest extends TestCase
 
         $user = User::where('email', 'categorias@example.com')->firstOrFail();
         $this->assertSame(11, Category::where('user_id', $user->id)->count());
+    }
+
+    public function test_register_creates_user_with_unverified_email(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Test User',
+            'email' => 'naoverificado@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $user = User::where('email', 'naoverificado@example.com')->firstOrFail();
+        $this->assertFalse($user->hasVerifiedEmail());
+    }
+
+    public function test_register_sends_verification_email(): void
+    {
+        Notification::fake();
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Test User',
+            'email' => 'naoverificado@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $user = User::where('email', 'naoverificado@example.com')->firstOrFail();
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    public function test_unverified_user_is_blocked_from_protected_endpoints(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/dashboard')
+            ->assertStatus(403);
+    }
+
+    public function test_unverified_user_can_still_call_me_and_logout(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/auth/me')
+            ->assertStatus(200);
+    }
+
+    public function test_resend_verification_email_sends_notification(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/auth/email/resend')
+            ->assertStatus(200);
+
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    public function test_resend_verification_email_returns_conflict_for_verified_user(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/auth/email/resend')
+            ->assertStatus(409);
     }
 }

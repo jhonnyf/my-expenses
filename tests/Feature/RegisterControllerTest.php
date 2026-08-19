@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Jobs\GeocodeUserProfileJob;
 use App\Models\Category;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -27,19 +29,56 @@ class RegisterControllerTest extends TestCase
             ->assertRedirect(route('dashboard.index'));
     }
 
-    public function test_store_creates_user_and_redirects_to_dashboard(): void
+    public function test_store_creates_user_and_redirects_to_verification_notice(): void
     {
         $this->post('/register', [
             'name' => 'João Silva',
             'email' => 'joao@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-        ])->assertRedirect(route('dashboard.index'));
+        ])->assertRedirect(route('verification.notice'));
 
         $this->assertDatabaseHas('users', [
             'name' => 'João Silva',
             'email' => 'joao@example.com',
         ]);
+    }
+
+    public function test_store_creates_user_with_unverified_email(): void
+    {
+        $this->post('/register', [
+            'name' => 'João Silva',
+            'email' => 'joao@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $user = User::where('email', 'joao@example.com')->firstOrFail();
+        $this->assertFalse($user->hasVerifiedEmail());
+    }
+
+    public function test_store_sends_verification_email(): void
+    {
+        Notification::fake();
+
+        $this->post('/register', [
+            'name' => 'João Silva',
+            'email' => 'joao@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $user = User::where('email', 'joao@example.com')->firstOrFail();
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    public function test_unverified_user_is_redirected_to_verification_notice_when_accessing_dashboard(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertRedirect(route('verification.notice'));
     }
 
     public function test_store_logs_in_user_after_registration(): void
@@ -131,7 +170,7 @@ class RegisterControllerTest extends TestCase
             'password_confirmation' => 'password123',
             'cidade' => 'Curitiba',
             'estado' => 'PR',
-        ])->assertRedirect(route('dashboard.index'));
+        ])->assertRedirect(route('verification.notice'));
 
         $user = User::where('email', 'maria@example.com')->firstOrFail();
         $this->assertDatabaseHas('users_profiles', [

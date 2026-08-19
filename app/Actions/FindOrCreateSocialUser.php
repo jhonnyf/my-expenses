@@ -28,6 +28,7 @@ class FindOrCreateSocialUser
                 $user->update([
                     'provider' => $provider,
                     'provider_id' => $socialUser->getId(),
+                    'email_verified_at' => $user->email_verified_at ?? now(),
                 ]);
 
                 return $user;
@@ -39,6 +40,7 @@ class FindOrCreateSocialUser
             'email' => $email,
             'provider' => $provider,
             'provider_id' => $socialUser->getId(),
+            'email_verified_at' => now(),
         ]);
 
         $this->categoriesAction->execute($user);

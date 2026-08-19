@@ -93,6 +93,24 @@ class SocialAuthControllerTest extends TestCase
             'provider_id' => 'google-new',
         ]);
         $this->assertAuthenticated();
+
+        $user = User::where('email', 'newuser@example.com')->firstOrFail();
+        $this->assertTrue($user->hasVerifiedEmail());
+    }
+
+    public function test_callback_verifies_email_of_previously_unverified_existing_user(): void
+    {
+        $user = User::factory()->unverified()->create(['email' => 'unverified@example.com']);
+
+        $socialiteUser = $this->mockSocialiteUser('google-789', 'unverified@example.com');
+        $driver = $this->mockSocialiteDriver($socialiteUser);
+
+        Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
+
+        $this->get(route('login.social.callback', 'google'))
+            ->assertRedirect(route('dashboard.index'));
+
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
     }
 
     public function test_callback_links_provider_to_existing_email_user(): void

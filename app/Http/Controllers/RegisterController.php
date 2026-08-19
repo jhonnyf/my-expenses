@@ -34,10 +34,11 @@ class RegisterController extends Controller
 
         $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));
         $categoriesAction->execute($user);
+        $user->sendEmailVerificationNotification();
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard.index');
+        return redirect()->route('verification.notice');
     }
 }

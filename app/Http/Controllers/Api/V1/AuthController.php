@@ -43,6 +43,7 @@ class AuthController extends Controller
 
         $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));
         $categoriesAction->execute($user);
+        $user->sendEmailVerificationNotification();
 
         $token = $user->createToken($request->input('device_name', 'api'))->plainTextToken;
 
@@ -64,5 +65,18 @@ class AuthController extends Controller
         $token->delete();
 
         return response()->json(['message' => 'Logout realizado com sucesso.']);
+    }
+
+    public function resendVerificationEmail(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->error('Este e-mail já está verificado.', 409);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return response()->json(['message' => 'E-mail de verificação reenviado com sucesso.']);
     }
 }
