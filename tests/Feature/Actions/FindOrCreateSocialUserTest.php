@@ -40,6 +40,21 @@ class FindOrCreateSocialUserTest extends TestCase
         $this->assertDatabaseCount('users', 1);
     }
 
+    public function test_verifies_email_of_existing_provider_linked_user_when_still_null(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'provider' => 'google',
+            'provider_id' => 'google-123',
+        ]);
+
+        $socialiteUser = $this->makeSocialiteUser('google-123', $user->email);
+
+        $result = app(FindOrCreateSocialUser::class)->handle($socialiteUser, 'google');
+
+        $this->assertTrue($user->is($result));
+        $this->assertNotNull($result->fresh()->email_verified_at);
+    }
+
     public function test_links_provider_to_existing_user_by_email(): void
     {
         $user = User::factory()->create(['email' => 'existing@example.com']);

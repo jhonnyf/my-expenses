@@ -16,6 +16,10 @@ class FindOrCreateSocialUser
             ->first();
 
         if ($user) {
+            if (is_null($user->email_verified_at)) {
+                $user->update(['email_verified_at' => now()]);
+            }
+
             return $user;
         }
 
