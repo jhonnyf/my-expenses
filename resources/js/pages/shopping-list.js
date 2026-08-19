@@ -39,12 +39,13 @@ const ShoppingList = (() => {
         <div class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors border-t border-border"
              data-add-generic="${Utils.escapeHtml(query)}">
             <div class="flex items-center gap-2 min-w-0">
-                <i class="ki-filled ki-note text-muted-foreground"></i>
-                <span class="text-sm text-secondary-foreground truncate">
-                    Adicionar <span class="font-medium text-foreground">"${Utils.escapeHtml(query)}"</span> como lembrete, sem preço
-                </span>
+                <i class="ki-filled ki-note text-muted-foreground shrink-0"></i>
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-foreground truncate">"${Utils.escapeHtml(query)}"</p>
+                    <p class="text-xs text-secondary-foreground">Adicionar como lembrete, sem preço</p>
+                </div>
             </div>
-            <i class="ki-filled ki-plus-squared text-lg text-muted-foreground"></i>
+            <i class="ki-filled ki-plus-squared text-lg text-muted-foreground shrink-0"></i>
         </div>`;
 
     const fetchResults = (query) => {

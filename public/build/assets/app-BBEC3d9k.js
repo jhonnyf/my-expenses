@@ -236,12 +236,13 @@ import{P as So}from"./pwa-DnA2qi4Z.js";function Mi(r,e){return function(){return
         <div class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors border-t border-border"
              data-add-generic="${N.escapeHtml(C)}">
             <div class="flex items-center gap-2 min-w-0">
-                <i class="ki-filled ki-note text-muted-foreground"></i>
-                <span class="text-sm text-secondary-foreground truncate">
-                    Adicionar <span class="font-medium text-foreground">"${N.escapeHtml(C)}"</span> como lembrete, sem preço
-                </span>
+                <i class="ki-filled ki-note text-muted-foreground shrink-0"></i>
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-foreground truncate">"${N.escapeHtml(C)}"</p>
+                    <p class="text-xs text-secondary-foreground">Adicionar como lembrete, sem preço</p>
+                </div>
             </div>
-            <i class="ki-filled ki-plus-squared text-lg text-muted-foreground"></i>
+            <i class="ki-filled ki-plus-squared text-lg text-muted-foreground shrink-0"></i>
         </div>`,O=C=>{N.http(w(C)).then(I=>{I.length===0?u.innerHTML='<div class="px-4 py-3 text-sm text-secondary-foreground">Nenhum produto encontrado.</div>'+E(C):(u.innerHTML=I.map((T,V)=>{const Q=N.formatCurrency(T.unit_price),K=T.issued_at?new Date(T.issued_at).toLocaleDateString("pt-BR"):"",J=T.is_favorite==1,ge=T.is_own==1,he=N.escapeHtml(T.description),pt=N.escapeHtml(T.display_description||T.description),ar=T.official_description?N.escapeHtml(T.official_description):null,Pr=N.escapeHtml(T.issuer_name);return`
                             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors ${J?"bg-yellow-50 dark:bg-yellow-500/5":""}"
                                  data-add-item="${V}">
