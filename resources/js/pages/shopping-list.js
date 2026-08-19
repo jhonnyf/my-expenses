@@ -396,7 +396,7 @@ const ShoppingList = (() => {
             return;
         }
 
-        shoppingListContainer.style.display = 'block';
+        shoppingListContainer.style.display = 'flex';
         btnNew.style.display = 'inline-flex';
         listNameCard.style.display = 'block';
 
