@@ -26,7 +26,7 @@
     <link href="{{ asset('assets/media/app/favicon-16x16.png') }}" rel="icon" sizes="16x16" type="image/png" />
     <link href="{{ asset('assets/media/app/favicon.ico') }}" rel="shortcut icon" />
     <link href="{{ asset('manifest.webmanifest') }}" rel="manifest" />
-    <meta content="#3b82f6" name="theme-color" />
+    <meta content="#059669" name="theme-color" />
     <meta content="yes" name="mobile-web-app-capable" />
     <meta content="yes" name="apple-mobile-web-app-capable" />
     <meta content="default" name="apple-mobile-web-app-status-bar-style" />
