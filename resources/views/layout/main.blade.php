@@ -82,16 +82,6 @@
                     
                     <!-- Topbar -->
                     <div class="flex items-center gap-2.5">
-                        <!-- Global Search -->
-                        <div class="relative hidden lg:block" id="globalSearchWrapper">
-                            <label class="kt-input w-[280px]">
-                                <i class="ki-filled ki-magnifier"></i>
-                                <input type="text" id="globalSearchInput" placeholder="Buscar..." autocomplete="off" />
-                            </label>
-                            <div id="globalSearchResults" class="hidden absolute top-full end-0 mt-2 w-[400px] bg-background border border-border rounded-lg shadow-lg z-50 max-h-[500px] overflow-y-auto">
-                            </div>
-                        </div>
-                        <!-- End of Global Search -->
                         <!-- Notifications -->
                         <div class="shrink-0" data-kt-dropdown="true" data-kt-dropdown-offset="10px, 10px" data-kt-dropdown-placement="bottom-end" data-kt-dropdown-trigger="click">
                             <div class="cursor-pointer shrink-0 relative" data-kt-dropdown-toggle="true" id="notificationsToggle">
@@ -192,7 +182,6 @@
     @auth
     <script>
         window.pageConfig = window.pageConfig || {};
-        window.pageConfig.globalSearchUrl = '{{ route("search") }}';
         window.pageConfig.notificationsUrl = '{{ route("notifications.index") }}';
         window.pageConfig.notificationsReadUrl = '{{ url("notifications") }}';
         window.pageConfig.favoriteProductToggleUrl = '{{ route("favorite-products.toggle") }}';

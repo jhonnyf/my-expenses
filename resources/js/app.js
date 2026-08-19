@@ -4,7 +4,6 @@ import Account from './pages/account';
 import Budget from './pages/budget';
 import Category from './pages/category';
 import Dashboard from './pages/dashboard';
-import GlobalSearch from './pages/global-search';
 import InvoiceDetail from './pages/invoice-detail';
 import IssuerDetail from './pages/issuer-detail';
 import IssuerFavorite from './pages/issuer-favorite';
@@ -26,7 +25,6 @@ const pages = {
     'budget': Budget,
     'category': Category,
     'dashboard': Dashboard,
-    'global-search': GlobalSearch,
     'invoice-detail': InvoiceDetail,
     'issuer-detail': IssuerDetail,
     'issuer-favorite': IssuerFavorite,
@@ -43,7 +41,6 @@ const pages = {
 
 document.addEventListener('DOMContentLoaded', () => {
     Pwa.init();
-    GlobalSearch.init();
     Notifications.init();
 
     if (window.pageConfig?.favoriteProductToggleUrl) {
