@@ -15,8 +15,8 @@ class AddShoppingListItemRequest extends FormRequest
     {
         return [
             'description' => ['required', 'string'],
-            'unit_price' => ['required', 'numeric'],
-            'issuer_id' => ['required', 'integer', 'exists:issuers,id'],
+            'unit_price' => ['nullable', 'numeric'],
+            'issuer_id' => ['nullable', 'integer', 'exists:issuers,id'],
             'quantity' => ['required', 'integer', 'min:1'],
         ];
     }

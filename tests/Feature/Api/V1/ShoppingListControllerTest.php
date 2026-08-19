@@ -251,6 +251,29 @@ class ShoppingListControllerTest extends TestCase
         ]);
     }
 
+    public function test_add_item_without_price_or_issuer_creates_generic_item(): void
+    {
+        $user = User::factory()->create();
+        $list = ShoppingList::factory()->for($user)->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/v1/shopping-lists/{$list->id}/items", [
+                'description' => 'Fralda',
+                'quantity' => 1,
+            ])
+            ->assertStatus(201)
+            ->assertJsonPath('data.description', 'Fralda')
+            ->assertJsonPath('data.unit_price', null)
+            ->assertJsonPath('data.issuer', null);
+
+        $this->assertDatabaseHas('shopping_list_items', [
+            'shopping_list_id' => $list->id,
+            'description' => 'Fralda',
+            'issuer_id' => null,
+            'unit_price' => null,
+        ]);
+    }
+
     public function test_update_item_quantity(): void
     {
         $user = User::factory()->create();

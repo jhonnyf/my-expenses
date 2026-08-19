@@ -12,6 +12,8 @@ const ShoppingList = (() => {
     let searchInput, searchResults, resultsList, shoppingListContainer, btnNew, listNameCard;
     let locationDefault, locationOverrideEl, locationOverrideLabel, locationModalCitySelect;
 
+    const itemTotal = (item) => item.unit_price != null ? item.unit_price * item.quantity : 0;
+
     const handleLocationUpdated = (e) => {
         const { cidade, estado } = e.detail;
 
@@ -33,11 +35,23 @@ const ShoppingList = (() => {
         return `${searchUrl}?${params.toString()}`;
     };
 
+    const buildGenericRow = (query) => `
+        <div class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-accent/30 cursor-pointer transition-colors border-t border-border"
+             data-add-generic="${Utils.escapeHtml(query)}">
+            <div class="flex items-center gap-2 min-w-0">
+                <i class="ki-filled ki-note text-muted-foreground"></i>
+                <span class="text-sm text-secondary-foreground truncate">
+                    Adicionar <span class="font-medium text-foreground">"${Utils.escapeHtml(query)}"</span> como lembrete, sem preço
+                </span>
+            </div>
+            <i class="ki-filled ki-plus-squared text-lg text-muted-foreground"></i>
+        </div>`;
+
     const fetchResults = (query) => {
         Utils.http(buildSearchUrl(query))
             .then(data => {
                 if (data.length === 0) {
-                    resultsList.innerHTML = '<div class="px-4 py-3 text-sm text-secondary-foreground">Nenhum produto encontrado.</div>';
+                    resultsList.innerHTML = '<div class="px-4 py-3 text-sm text-secondary-foreground">Nenhum produto encontrado.</div>' + buildGenericRow(query);
                 } else {
                     resultsList.innerHTML = data.map((item, index) => {
                         const price = Utils.formatCurrency(item.unit_price);
@@ -74,7 +88,7 @@ const ShoppingList = (() => {
                                     <i class="ki-filled ki-plus-squared text-lg text-muted-foreground hover:text-primary"></i>
                                 </div>
                             </div>`;
-                    }).join('');
+                    }).join('') + buildGenericRow(query);
 
                     resultsList._lastData = data;
                 }
@@ -174,11 +188,41 @@ const ShoppingList = (() => {
         renderList();
     };
 
+    const addGenericToList = async (description) => {
+        await ensureListExists();
+
+        const saved = await Utils.http(`${baseUrl}/${currentListId}/items`, {
+            method: 'POST',
+            body: { description, quantity: 1 },
+        });
+
+        shoppingItems.push({
+            id: saved.id,
+            description: saved.description,
+            unit_price: null,
+            unit: saved.unit,
+            issuer_name: 'Sem mercado definido',
+            issuer_id: null,
+            quantity: saved.quantity,
+            purchased_at: null,
+        });
+
+        searchInput.value = '';
+        searchResults.classList.add('hidden');
+        renderList();
+    };
+
     const handleResultsClick = (e) => {
         // O botão de favoritar produto é tratado globalmente por
         // Utils.initFavoriteProduct() via data-action="favorite-product" — aqui só
         // ignoramos o clique nele pra não também disparar o "adicionar à lista".
         if (e.target.closest('[data-action="favorite-product"]')) return;
+
+        const genericRow = e.target.closest('[data-add-generic]');
+        if (genericRow) {
+            addGenericToList(genericRow.dataset.addGeneric);
+            return;
+        }
 
         const row = e.target.closest('[data-add-item]');
         if (!row || !resultsList._lastData) return;
@@ -214,20 +258,20 @@ const ShoppingList = (() => {
             return;
         }
 
-        const subtotal = item.unit_price * item.quantity;
+        const subtotal = itemTotal(item);
         row.querySelector('[data-qty-display]').textContent = item.quantity;
-        row.querySelector('[data-subtotal-display]').textContent = `R$ ${Utils.formatCurrency(subtotal)}`;
+        row.querySelector('[data-subtotal-display]').textContent = item.unit_price != null ? `R$ ${Utils.formatCurrency(subtotal)}` : '—';
 
         const group = document.querySelector(`[data-group="u-${item.issuer_id}"]`);
         if (group) {
             const groupItems = shoppingItems.filter(i => i.issuer_id === item.issuer_id && !i.purchased_at);
-            const groupTotal = groupItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+            const groupTotal = groupItems.reduce((sum, i) => sum + itemTotal(i), 0);
             group.querySelector('[data-group-summary]').innerHTML = `
                 ${groupItems.length} ${groupItems.length === 1 ? 'item' : 'itens'}
-                &middot; R$ ${Utils.formatCurrency(groupTotal)}`;
+                ${item.issuer_id != null ? `&middot; R$ ${Utils.formatCurrency(groupTotal)}` : ''}`;
         }
 
-        const total = shoppingItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+        const total = shoppingItems.reduce((sum, i) => sum + itemTotal(i), 0);
         document.getElementById('totalPrice').textContent = `R$ ${Utils.formatCurrency(total)}`;
         updateSidebarCount();
     };
@@ -259,7 +303,8 @@ const ShoppingList = (() => {
     };
 
     const buildItemRow = (item, isPurchased) => {
-        const subtotal = item.unit_price * item.quantity;
+        const hasPrice = item.unit_price != null;
+        const subtotal = itemTotal(item);
         const checkedClass = isPurchased ? 'bg-green-500 border-green-500' : 'border-border';
         const textClass = isPurchased ? 'line-through text-secondary-foreground' : 'text-foreground';
 
@@ -272,7 +317,7 @@ const ShoppingList = (() => {
                     </button>
                     <div class="min-w-0">
                         <p class="text-sm font-medium ${textClass} truncate">${Utils.escapeHtml(item.description)}</p>
-                        <p class="text-xs text-secondary-foreground">R$ ${Utils.formatCurrency(item.unit_price)} / ${item.unit || 'un'}</p>
+                        <p class="text-xs text-secondary-foreground">${hasPrice ? `R$ ${Utils.formatCurrency(item.unit_price)} / ${item.unit || 'un'}` : 'Sem preço definido'}</p>
                     </div>
                 </div>
                 <div class="flex items-center justify-between sm:justify-end gap-3 ps-8 sm:ps-0 sm:ms-4 shrink-0">
@@ -289,7 +334,7 @@ const ShoppingList = (() => {
                             </button>
                         </div>
                     ` : `<span class="text-sm text-secondary-foreground w-8 text-center">${item.quantity}</span>`}
-                    <span class="font-semibold font-mono text-sm w-24 text-right ${isPurchased ? 'text-secondary-foreground' : ''}" data-subtotal-display>R$ ${Utils.formatCurrency(subtotal)}</span>
+                    <span class="font-semibold font-mono text-sm w-24 text-right ${isPurchased ? 'text-secondary-foreground' : ''}" data-subtotal-display>${hasPrice ? `R$ ${Utils.formatCurrency(subtotal)}` : '—'}</span>
                     <button data-remove-item="${item._index}"
                             class="text-muted-foreground hover:text-destructive transition-colors">
                         <i class="ki-filled ki-trash text-sm"></i>
@@ -306,29 +351,31 @@ const ShoppingList = (() => {
         }
 
         return Object.values(grouped).map(group => {
-            const groupTotal = group.items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+            const groupTotal = group.items.reduce((sum, item) => sum + itemTotal(item), 0);
             const rows = group.items.map(item => buildItemRow(item, isPurchased)).join('');
 
             const issuerId = group.items[0].issuer_id;
+            const isGeneric = issuerId == null;
 
             return `
                 <div class="kt-card ${isPurchased ? 'opacity-75' : ''}" data-group="${isPurchased ? 'p' : 'u'}-${issuerId}">
                     <div class="kt-card-header gap-2">
                         <div class="min-w-0 flex-1">
                             <h3 class="kt-card-title truncate">
-                                <i class="ki-filled ki-shop ${isPurchased ? 'text-green-500' : 'text-primary'} me-1"></i> ${Utils.escapeHtml(group.name)}
+                                <i class="ki-filled ${isGeneric ? 'ki-note-2 text-muted-foreground' : `ki-shop ${isPurchased ? 'text-green-500' : 'text-primary'}`} me-1"></i> ${Utils.escapeHtml(group.name)}
                             </h3>
                             <p class="text-xs text-secondary-foreground mt-0.5" data-group-summary>
                                 ${group.items.length} ${group.items.length === 1 ? 'item' : 'itens'}
-                                &middot; R$ ${Utils.formatCurrency(groupTotal)}
+                                ${!isGeneric ? `&middot; R$ ${Utils.formatCurrency(groupTotal)}` : ''}
                             </p>
                         </div>
+                        ${!isGeneric ? `
                         <button type="button"
                                 class="kt-btn kt-btn-sm kt-btn-outline shrink-0"
                                 data-directions="${issuerId}"
                                 data-kt-modal-toggle="#directionsModal">
                             <i class="ki-filled ki-geolocation"></i> Como chegar
-                        </button>
+                        </button>` : ''}
                     </div>
                     <div class="kt-card-content pb-3">
                         <div class="divide-y divide-border">${rows}</div>
@@ -373,7 +420,7 @@ const ShoppingList = (() => {
         const el = document.querySelector(`#saved-list-${currentListId} .text-xs`);
         if (el) {
             const count = shoppingItems.length;
-            const total = shoppingItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+            const total = shoppingItems.reduce((sum, i) => sum + itemTotal(i), 0);
             const today = new Date().toLocaleDateString('pt-BR');
             el.textContent = `${count} ${count === 1 ? 'item' : 'itens'} · R$ ${Utils.formatCurrency(total)} · ${today}`;
         }
@@ -421,7 +468,7 @@ const ShoppingList = (() => {
             purchasedSection.style.display = 'none';
         }
 
-        const total = shoppingItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+        const total = shoppingItems.reduce((sum, item) => sum + itemTotal(item), 0);
         document.getElementById('totalPrice').textContent = 'R$ ' + Utils.formatCurrency(total);
         updateSummaryProgress(pending.length, purchased.length);
         updateSidebarCount();
@@ -481,11 +528,11 @@ const ShoppingList = (() => {
         shoppingItems = data.items.map(item => ({
             id: item.id,
             description: item.description,
-            unit_price: parseFloat(item.unit_price),
+            unit_price: item.unit_price != null ? parseFloat(item.unit_price) : null,
             unit: item.unit,
-            issuer_name: item.issuer.display_name,
+            issuer_name: item.issuer ? item.issuer.display_name : 'Sem mercado definido',
             issuer_id: item.issuer_id,
-            ...mapIssuerAddress(item.issuer),
+            ...mapIssuerAddress(item.issuer || {}),
             quantity: item.quantity,
             purchased_at: item.purchased_at,
         }));

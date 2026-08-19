@@ -117,6 +117,51 @@ class ShoppingListControllerTest extends TestCase
         $this->assertEquals('01310100', $response->json('items.0.issuer.zip_code'));
     }
 
+    public function test_add_item_creates_item_with_issuer_and_price(): void
+    {
+        $user = User::factory()->create();
+        $list = ShoppingList::factory()->for($user)->create();
+        $issuer = Issuer::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson("/shopping-list/{$list->id}/items", [
+                'description' => 'Leite Integral',
+                'unit' => 'UN',
+                'unit_price' => 5.50,
+                'quantity' => 2,
+                'issuer_id' => $issuer->id,
+            ])
+            ->assertStatus(200)
+            ->assertJson(['description' => 'Leite Integral']);
+
+        $this->assertDatabaseHas('shopping_list_items', [
+            'shopping_list_id' => $list->id,
+            'description' => 'Leite Integral',
+            'issuer_id' => $issuer->id,
+        ]);
+    }
+
+    public function test_add_item_without_price_or_issuer_creates_generic_item(): void
+    {
+        $user = User::factory()->create();
+        $list = ShoppingList::factory()->for($user)->create();
+
+        $this->actingAs($user)
+            ->postJson("/shopping-list/{$list->id}/items", [
+                'description' => 'Fralda',
+                'quantity' => 1,
+            ])
+            ->assertStatus(200)
+            ->assertJson(['description' => 'Fralda', 'issuer_id' => null, 'unit_price' => null]);
+
+        $this->assertDatabaseHas('shopping_list_items', [
+            'shopping_list_id' => $list->id,
+            'description' => 'Fralda',
+            'issuer_id' => null,
+            'unit_price' => null,
+        ]);
+    }
+
     public function test_search_with_city_state_override_filters_results(): void
     {
         $user = User::factory()->create();

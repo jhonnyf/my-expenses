@@ -17,7 +17,7 @@ class ShoppingListItemResource extends JsonResource
             'quantity' => $this->quantity,
             'purchased_at' => $this->purchased_at,
             'created_at' => $this->created_at,
-            'issuer' => new IssuerResource($this->whenLoaded('issuer')),
+            'issuer' => $this->whenLoaded('issuer', fn () => $this->issuer ? new IssuerResource($this->issuer) : null),
         ];
     }
 }
