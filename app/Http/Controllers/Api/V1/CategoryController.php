@@ -17,13 +17,18 @@ class CategoryController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $categories = $this->service->getCategoriesWithSpending(
-            $request->user()->id,
-            $request->query('start_date'),
-            $request->query('end_date'),
-        );
+        $userId = $request->user()->id;
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
-        return $this->success(CategoryResource::collection($categories));
+        $categories = $this->service->getCategoriesWithSpending($userId, $startDate, $endDate);
+
+        return response()->json([
+            'data' => CategoryResource::collection($categories),
+            'meta' => [
+                'uncategorizedCount' => $this->service->countUncategorizedItems($userId, $startDate, $endDate),
+            ],
+        ]);
     }
 
     public function show(Category $category): JsonResponse

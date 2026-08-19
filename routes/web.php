@@ -10,8 +10,7 @@ use App\Http\Controllers\IssuerController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MyPurchaseController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\PriceComparisonController;
-use App\Http\Controllers\PriceHistoryController;
+use App\Http\Controllers\PricesController;
 use App\Http\Controllers\ProductAliasController;
 use App\Http\Controllers\RecurringPurchaseController;
 use App\Http\Controllers\RegisterController;
@@ -20,6 +19,7 @@ use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\SocialAuthController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -78,18 +78,17 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('auto-categorize', [CategoryController::class, 'autoCategorize'])->name('auto-categorize');
     });
 
-    Route::group(['prefix' => 'price-history', 'as' => 'price-history.'], function () {
-        Route::get('/', [PriceHistoryController::class, 'index'])->name('index');
-        Route::get('search', [PriceHistoryController::class, 'search'])->name('search');
-        Route::get('show', [PriceHistoryController::class, 'show'])->name('show');
+    Route::group(['prefix' => 'prices', 'as' => 'prices.'], function () {
+        Route::get('/', [PricesController::class, 'index'])->name('index');
+        Route::get('search', [PricesController::class, 'search'])->name('search');
+        Route::get('history', [PricesController::class, 'history'])->name('history');
+        Route::get('by-city', [PricesController::class, 'byCity'])->name('by-city');
+        Route::get('by-issuer', [PricesController::class, 'byIssuer'])->name('by-issuer');
     });
 
-    Route::group(['prefix' => 'price-comparison', 'as' => 'price-comparison.'], function () {
-        Route::get('/', [PriceComparisonController::class, 'index'])->name('index');
-        Route::get('search-products', [PriceComparisonController::class, 'searchProducts'])->name('search-products');
-        Route::get('by-city', [PriceComparisonController::class, 'byCity'])->name('by-city');
-        Route::get('by-issuer', [PriceComparisonController::class, 'byIssuer'])->name('by-issuer');
-    });
+    // Rotas antigas, mantidas como redirect (301) para não quebrar links/favoritos salvos.
+    Route::get('/price-history', fn (Request $request) => redirect()->route('prices.index', $request->query(), 301));
+    Route::get('/price-comparison', fn (Request $request) => redirect()->route('prices.index', $request->query(), 301));
 
     Route::group(['prefix' => 'product-aliases', 'as' => 'product-aliases.'], function () {
         Route::get('review', [ProductAliasController::class, 'review'])->name('review');

@@ -375,7 +375,7 @@
                     <div class="kt-card-header">
                         <h3 class="kt-card-title">Produtos Mais Comprados</h3>
                         <div class="kt-card-toolbar">
-                            <a href="{{ route('price-history.index') }}" class="kt-link text-xs">Ver histórico</a>
+                            <a href="{{ route('prices.index') }}" class="kt-link text-xs">Ver histórico</a>
                         </div>
                     </div>
                     <div class="kt-card-content pb-2">

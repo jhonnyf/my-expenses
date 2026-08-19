@@ -179,6 +179,10 @@ class ProductAliasService
      */
     public function communitySuggestions(int $userId): array
     {
+        if (! config('product-alias.suggestions_enabled')) {
+            return [];
+        }
+
         $userDescriptions = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
             ->where('invoices.user_id', $userId)
             ->select('invoices_items.description')

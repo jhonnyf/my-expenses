@@ -16,6 +16,8 @@ class CategoryResource extends JsonResource
             'icon' => $this->icon,
             'keywords' => $this->keywords ?? [],
             'total_spent' => $this->when(isset($this->total_spent), $this->total_spent),
+            'items_count' => $this->when(isset($this->items_count), $this->items_count),
+            'is_system' => $this->user_id === null,
         ];
     }
 }

@@ -22,6 +22,7 @@ class InvoiceResource extends JsonResource
             'total_amount' => $this->total_amount,
             'total_taxes' => $this->total_taxes,
             'created_at' => $this->created_at,
+            'items_count' => $this->when(isset($this->items_count), $this->items_count),
             'issuer' => new IssuerResource($this->whenLoaded('issuer')),
             'items' => InvoiceItemResource::collection($this->whenLoaded('items')),
             'payments' => InvoicePaymentResource::collection($this->whenLoaded('payments')),

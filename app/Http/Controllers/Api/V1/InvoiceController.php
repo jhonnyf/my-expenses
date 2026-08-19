@@ -30,7 +30,12 @@ class InvoiceController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
         $invoices = Invoice::where('user_id', $request->user()->id)
+            ->with('issuer.nicknameForUser')
+            ->when($startDate && $endDate, fn ($query) => $query->whereDateBetween('issued_at', $startDate, $endDate))
             ->orderByDesc('issued_at')
             ->paginate();
 

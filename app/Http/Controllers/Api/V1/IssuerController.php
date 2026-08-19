@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\UpdateIssuerNicknameRequest;
+use App\Http\Resources\Api\V1\InvoiceResource;
 use App\Http\Resources\Api\V1\IssuerResource;
 use App\Models\Issuer;
 use App\Models\IssuerNickname;
@@ -23,7 +24,9 @@ class IssuerController extends Controller
                 $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
                     ->where('issuer_nicknames.user_id', '=', $user->id);
             })
-            ->addSelect('issuer_nicknames.nickname as nickname');
+            ->addSelect('issuer_nicknames.nickname as nickname')
+            ->withCount(['invoices as purchase_count' => fn ($q) => $q->where('user_id', $user->id)])
+            ->withSum(['invoices as total_spent' => fn ($q) => $q->where('user_id', $user->id)], 'total_amount');
 
         if ($favoriteIds->isNotEmpty()) {
             $placeholders = implode(',', array_fill(0, $favoriteIds->count(), '?'));
@@ -66,6 +69,7 @@ class IssuerController extends Controller
         return $this->success([
             'issuer' => new IssuerResource($issuer),
             'stats' => $stats,
+            'invoices' => InvoiceResource::collection($issuer->invoices),
         ]);
     }
 

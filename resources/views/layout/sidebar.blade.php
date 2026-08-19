@@ -66,21 +66,12 @@
                     </a>
                 </div>
 
-                <div class="kt-menu-item{{ request()->routeIs('price-history.*') ? ' active' : '' }}">
-                    <a href="{{ route('price-history.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
-                        <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
-                            <i class="ki-filled ki-graph-up text-lg"></i>
-                        </span>
-                        <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">Histórico de Preços</span>
-                    </a>
-                </div>
-
-                <div class="kt-menu-item{{ request()->routeIs('price-comparison.*') ? ' active' : '' }}">
-                    <a href="{{ route('price-comparison.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
+                <div class="kt-menu-item{{ request()->routeIs('prices.*') ? ' active' : '' }}">
+                    <a href="{{ route('prices.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
                         <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
                             <i class="ki-filled ki-chart-line-star text-lg"></i>
                         </span>
-                        <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">Comparativo de Preços</span>
+                        <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">Preços</span>
                     </a>
                 </div>
 

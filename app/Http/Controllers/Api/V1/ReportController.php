@@ -22,6 +22,18 @@ class ReportController extends Controller
         return $this->success($data);
     }
 
+    public function emailReport(Request $request): JsonResponse
+    {
+        $request->validate([
+            'format' => ['required', 'in:pdf,csv'],
+        ]);
+
+        // TODO: montar o relatório (buildReportData) e disparar e-mail com o
+        // anexo no formato solicitado — geração/envio ainda não implementados.
+
+        return $this->success(['scheduled' => true]);
+    }
+
     public function exportCsv(Request $request): StreamedResponse
     {
         $data = $this->service->buildReportData(

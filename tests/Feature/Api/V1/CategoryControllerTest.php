@@ -45,7 +45,37 @@ class CategoryControllerTest extends TestCase
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/categories?start_date=2026-01-01&end_date=2026-01-31')
             ->assertStatus(200)
-            ->assertJsonPath('data.0.total_spent', 30);
+            ->assertJsonPath('data.0.total_spent', 30)
+            ->assertJsonPath('data.0.items_count', 1)
+            ->assertJsonPath('data.0.is_system', false);
+    }
+
+    public function test_index_flags_categories_without_owner_as_system(): void
+    {
+        $user = User::factory()->create();
+        Category::factory()->create(['user_id' => null]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/categories')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.is_system', true);
+    }
+
+    public function test_index_returns_uncategorized_count_in_meta(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => '2026-01-15']);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
+        InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/categories?start_date=2026-01-01&end_date=2026-01-31')
+            ->assertStatus(200)
+            ->assertJsonPath('meta.uncategorizedCount', 2);
     }
 
     public function test_store_creates_category(): void

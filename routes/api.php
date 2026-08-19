@@ -84,6 +84,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/', [ReportController::class, 'generate'])->name('generate');
             Route::get('csv', [ReportController::class, 'exportCsv'])->name('csv');
+            Route::post('email', [ReportController::class, 'emailReport'])->name('email');
         });
 
         // Histórico de preços

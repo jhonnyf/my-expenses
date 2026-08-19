@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1;
 
 use App\Models\Invoice;
 use App\Models\Issuer;
+use App\Models\IssuerNickname;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -29,6 +30,44 @@ class InvoiceControllerTest extends TestCase
             ->assertStatus(200)
             ->assertJsonStructure(['data', 'links', 'meta'])
             ->assertJsonCount(3, 'data');
+    }
+
+    public function test_index_filters_by_period_when_start_and_end_date_given(): void
+    {
+        $user = User::factory()->create();
+        Invoice::factory()->for($user)->create(['issued_at' => '2026-01-15 10:00:00']);
+        Invoice::factory()->for($user)->create(['issued_at' => '2026-03-10 10:00:00']);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/invoices?start_date=2026-01-01&end_date=2026-01-31')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.issued_at', '2026-01-15T10:00:00.000000Z');
+    }
+
+    public function test_index_returns_issuer_nickname_as_display_name_when_set(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['name' => 'Razão Social Oficial LTDA']);
+        IssuerNickname::factory()->for($user)->for($issuer)->create(['nickname' => 'Mercadinho da esquina']);
+        Invoice::factory()->for($user)->for($issuer)->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/invoices')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.issuer.display_name', 'Mercadinho da esquina');
+    }
+
+    public function test_index_returns_issuer_name_as_display_name_when_no_nickname(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['name' => 'Razão Social Oficial LTDA']);
+        Invoice::factory()->for($user)->for($issuer)->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/invoices')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.issuer.display_name', 'Razão Social Oficial LTDA');
     }
 
     public function test_show_returns_401_when_unauthenticated(): void

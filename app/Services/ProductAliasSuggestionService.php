@@ -26,6 +26,10 @@ class ProductAliasSuggestionService
 
     public function suggest(int $userId): array
     {
+        if (! config('product-alias.suggestions_enabled')) {
+            return [];
+        }
+
         return $this->resolveSuggestions($userId, self::MAX_CANDIDATES, self::MAX_SUGGESTIONS);
     }
 
@@ -36,6 +40,10 @@ class ProductAliasSuggestionService
      */
     public function suggestAll(int $userId): array
     {
+        if (! config('product-alias.suggestions_enabled')) {
+            return [];
+        }
+
         return $this->resolveSuggestions($userId, null, self::MAX_SUGGESTIONS_FULL_REVIEW);
     }
 

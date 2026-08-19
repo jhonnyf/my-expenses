@@ -179,6 +179,24 @@ class ProductAliasServiceTest extends TestCase
         $this->assertEquals('Arroz Branco 5kg', $result[0]['canonical_name']);
     }
 
+    public function test_community_suggestions_returns_empty_when_feature_disabled(): void
+    {
+        config(['product-alias.suggestions_enabled' => false]);
+
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        $invoiceA = Invoice::factory()->for($userA)->for($issuer)->create();
+        InvoiceItem::factory()->for($invoiceA)->create(['description' => 'ARROZ 5KG']);
+
+        ProductAlias::create(['user_id' => $userB->id, 'description' => 'ARROZ 5KG', 'canonical_name' => 'Arroz Branco 5kg']);
+
+        $result = $this->service->communitySuggestions($userA->id);
+
+        $this->assertCount(0, $result);
+    }
+
     public function test_community_suggestions_excludes_descriptions_already_aliased_by_user(): void
     {
         $userA = User::factory()->create();

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\V1;
 
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Models\IssuerNickname;
 use App\Models\User;
@@ -29,6 +30,20 @@ class IssuerControllerTest extends TestCase
             ->assertStatus(200)
             ->assertJsonStructure(['data', 'links', 'meta'])
             ->assertJsonCount(3, 'data');
+    }
+
+    public function test_index_includes_purchase_count_and_total_spent(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 50]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 30]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/issuers')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.purchase_count', 2)
+            ->assertJsonPath('data.0.total_spent', 80);
     }
 
     public function test_index_excludes_issuers_the_user_never_bought_from(): void
@@ -69,8 +84,24 @@ class IssuerControllerTest extends TestCase
                 'data' => [
                     'issuer' => ['id', 'cnpj', 'name'],
                     'stats',
+                    'invoices',
                 ],
             ]);
+    }
+
+    public function test_show_includes_recent_invoices_with_items_count(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 35.63]);
+        InvoiceItem::factory()->count(4)->create(['invoice_id' => $invoice->id]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/issuers/{$issuer->id}")
+            ->assertStatus(200)
+            ->assertJsonPath('data.invoices.0.id', $invoice->id)
+            ->assertJsonPath('data.invoices.0.items_count', 4)
+            ->assertJsonPath('data.invoices.0.total_amount', '35.63');
     }
 
     public function test_toggle_favorite_returns_401_when_unauthenticated(): void

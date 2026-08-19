@@ -46,6 +46,18 @@ class ProductAliasSuggestionServiceTest extends TestCase
         );
     }
 
+    public function test_suggest_and_suggest_all_return_empty_when_feature_disabled(): void
+    {
+        config(['product-alias.suggestions_enabled' => false]);
+
+        $user = User::factory()->create();
+        $this->createItem($user->id, 'REFRIG COCA COLA 350ML LAT');
+        $this->createItem($user->id, 'COCA-COLA LATA 350ML');
+
+        $this->assertSame([], $this->service->suggest($user->id));
+        $this->assertSame([], $this->service->suggestAll($user->id));
+    }
+
     public function test_suggest_excludes_dissimilar_descriptions(): void
     {
         $user = User::factory()->create();

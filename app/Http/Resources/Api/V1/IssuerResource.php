@@ -22,6 +22,8 @@ class IssuerResource extends JsonResource
             'nickname' => $this->nickname,
             'display_name' => $this->display_name,
             'is_favorite' => $this->when(isset($this->is_favorite), $this->is_favorite),
+            'purchase_count' => $this->when(isset($this->purchase_count), $this->purchase_count),
+            'total_spent' => $this->when(isset($this->total_spent), $this->total_spent),
         ];
     }
 }

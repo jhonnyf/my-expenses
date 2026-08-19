@@ -44,7 +44,7 @@ class ProductSearchStrategy implements SearchStrategyInterface
                 'type' => 'product',
                 'title' => $p->description,
                 'subtitle' => $p->count.'x comprado - Média R$ '.number_format($p->avg_price, 2, ',', '.'),
-                'url' => route('price-history.index').'?q='.urlencode($p->description),
+                'url' => route('prices.index').'?q='.urlencode($p->description),
             ]);
     }
 }
