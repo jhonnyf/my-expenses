@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Services\NFCeService;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class NFCeServiceTest extends TestCase
@@ -66,5 +67,69 @@ class NFCeServiceTest extends TestCase
         $result = $this->service->extrairChaveDeUrl($url);
 
         $this->assertEquals($key, $result);
+    }
+
+    public function test_consultar_por_qr_code_parses_html_returned_directly(): void
+    {
+        $url = 'https://nfce.exemplo.gov.br/consulta?p='.$this->sampleKey.'|10|1|abc';
+
+        Http::fake([
+            'nfce.exemplo.gov.br/*' => Http::response(
+                file_get_contents(base_path('tests/fixtures/nfce_portal_direto.html')),
+                200
+            ),
+        ]);
+
+        $resultado = $this->service->consultarPorQRCode($url);
+
+        $this->assertSame('MERCADO EXEMPLO LTDA', $resultado['dados']['emitente']['nome']);
+        $this->assertSame('12345678000190', $resultado['dados']['emitente']['cnpj']);
+        $this->assertCount(1, $resultado['dados']['itens']);
+        $this->assertSame('PRODUTO TESTE UM', $resultado['dados']['itens'][0]['descricao']);
+        $this->assertSame(10.00, $resultado['dados']['totais']['valor_produtos']);
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_consultar_por_qr_code_resolves_content_embedded_behind_iframe(): void
+    {
+        $url = 'https://nfeweb.exemplo.gov.br/nfeweb/sites/nfce/danfeNFCe?p='.$this->sampleKey.'|10|1|abc';
+
+        Http::fake([
+            'nfeweb.exemplo.gov.br/nfeweb/sites/nfce/render/*' => Http::response(
+                file_get_contents(base_path('tests/fixtures/nfce_portal_iframe_render.html')),
+                200
+            ),
+            'nfeweb.exemplo.gov.br/*' => Http::response(
+                file_get_contents(base_path('tests/fixtures/nfce_portal_iframe_outer.html')),
+                200
+            ),
+        ]);
+
+        $resultado = $this->service->consultarPorQRCode($url);
+
+        $this->assertSame('MERCADO EXEMPLO LTDA', $resultado['dados']['emitente']['nome']);
+        $this->assertCount(1, $resultado['dados']['itens']);
+        $this->assertSame('PRODUTO TESTE UM', $resultado['dados']['itens'][0]['descricao']);
+        $this->assertSame(10.00, $resultado['dados']['totais']['valor_produtos']);
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_consultar_por_qr_code_throws_when_iframe_content_cannot_be_fetched(): void
+    {
+        $url = 'https://nfeweb.exemplo.gov.br/nfeweb/sites/nfce/danfeNFCe?p='.$this->sampleKey.'|10|1|abc';
+
+        Http::fake([
+            'nfeweb.exemplo.gov.br/nfeweb/sites/nfce/render/*' => Http::response('erro interno', 500),
+            'nfeweb.exemplo.gov.br/*' => Http::response(
+                file_get_contents(base_path('tests/fixtures/nfce_portal_iframe_outer.html')),
+                200
+            ),
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->service->consultarPorQRCode($url);
     }
 }

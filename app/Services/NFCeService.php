@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use GuzzleHttp\Cookie\CookieJar;
 use Illuminate\Support\Facades\Http;
 use NFePHP\Common\Certificate;
 use NFePHP\Common\UFList;
@@ -203,23 +204,152 @@ class NFCeService
     {
         $this->validarUrlSefaz($url);
 
+        $cookieJar = new CookieJar;
+
         $response = Http::timeout(15)
-            ->withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (compatible; NFCe-Reader/1.0)',
-                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            ])
+            ->withHeaders($this->headersPortalSefaz())
+            ->withOptions(['cookies' => $cookieJar])
             ->get($url);
 
         if ($response->failed()) {
             throw new \RuntimeException("Erro ao consultar portal SEFAZ: HTTP {$response->status()}");
         }
 
-        $html = $response->body();
+        $html = $this->resolverHtmlEmbutido($response->body(), $url, $cookieJar) ?? $response->body();
 
         return [
             'dados' => $this->parseHtmlPortal($html),
             'html' => $html,
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function headersPortalSefaz(): array
+    {
+        return [
+            'User-Agent' => 'Mozilla/5.0 (compatible; NFCe-Reader/1.0)',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        ];
+    }
+
+    /**
+     * Alguns portais SEFAZ (ex.: Goiás) não devolvem os dados da NFC-e diretamente:
+     * a página é uma casca que carrega o conteúdo real via iframe, usando a mesma
+     * sessão (cookies) da requisição original. Este método detecta esse padrão,
+     * busca o iframe e extrai o HTML real embutido nele. Retorna null quando o
+     * portal já devolve o conteúdo diretamente (comportamento atual, inalterado).
+     */
+    private function resolverHtmlEmbutido(string $html, string $baseUrl, CookieJar $cookieJar): ?string
+    {
+        $iframeUrl = $this->extrairUrlIframe($html, $baseUrl);
+
+        if ($iframeUrl === null) {
+            return null;
+        }
+
+        $this->validarUrlSefaz($iframeUrl);
+
+        $iframeResponse = Http::timeout(15)
+            ->withHeaders([...$this->headersPortalSefaz(), 'Referer' => $baseUrl])
+            ->withOptions(['cookies' => $cookieJar])
+            ->get($iframeUrl);
+
+        if ($iframeResponse->failed()) {
+            throw new \RuntimeException("Erro ao consultar conteúdo do portal SEFAZ: HTTP {$iframeResponse->status()}");
+        }
+
+        $htmlEmbutido = $this->extrairHtmlDoScriptDanfe($iframeResponse->body());
+
+        if ($htmlEmbutido === null) {
+            throw new \RuntimeException('Não foi possível extrair os dados da NFC-e do portal SEFAZ (formato inesperado).');
+        }
+
+        return $htmlEmbutido;
+    }
+
+    private function extrairUrlIframe(string $html, string $baseUrl): ?string
+    {
+        $dom = new \DOMDocument;
+        @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+        $xpath = new \DOMXPath($dom);
+
+        $node = $xpath->query('//iframe[@src]')->item(0);
+        if (! $node instanceof \DOMElement) {
+            return null;
+        }
+
+        return $this->resolverUrlAbsoluta($node->getAttribute('src'), $baseUrl);
+    }
+
+    private function resolverUrlAbsoluta(string $src, string $baseUrl): string
+    {
+        if (str_starts_with($src, 'http://') || str_starts_with($src, 'https://')) {
+            return $src;
+        }
+
+        $parts = parse_url($baseUrl);
+        $scheme = $parts['scheme'] ?? 'https';
+        $host = $parts['host'] ?? '';
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
+        return "{$scheme}://{$host}{$port}/".ltrim($src, '/');
+    }
+
+    /**
+     * Extrai o HTML embutido no script `new DanfeNFCe(seletor, diretorioImagens, htmlEscapado)`
+     * usado por alguns portais SEFAZ para injetar o DANFE via JavaScript.
+     *
+     * O terceiro argumento (o HTML, escapado como string JS) é lido com uma varredura
+     * manual em vez de regex — o HTML embutido pode ter dezenas de KB, e uma regex com
+     * grupo repetido nesse tamanho estoura o limite de pilha do PCRE/JIT.
+     */
+    private function extrairHtmlDoScriptDanfe(string $html): ?string
+    {
+        if (! preg_match('/new\s+DanfeNFCe\s*\(\s*[\'"][^\'"]*[\'"]\s*,\s*[\'"][^\'"]*[\'"]\s*,\s*\'/', $html, $m, PREG_OFFSET_CAPTURE)) {
+            return null;
+        }
+
+        $inicio = $m[0][1] + strlen($m[0][0]);
+        $conteudoEscapado = $this->lerStringJsEscapada($html, $inicio);
+
+        if ($conteudoEscapado === null) {
+            return null;
+        }
+
+        $jsonEscapado = str_replace("\\'", "'", $conteudoEscapado);
+        $decoded = json_decode('"'.$jsonEscapado.'"');
+
+        return is_string($decoded) && $decoded !== '' ? $decoded : null;
+    }
+
+    /**
+     * Lê o conteúdo de uma string JS delimitada por aspas simples, a partir da posição
+     * logo após a aspa de abertura, respeitando caracteres escapados (\x).
+     */
+    private function lerStringJsEscapada(string $html, int $inicio): ?string
+    {
+        $tamanho = strlen($html);
+        $i = $inicio;
+
+        while ($i < $tamanho) {
+            $char = $html[$i];
+
+            if ($char === '\\') {
+                $i += 2;
+
+                continue;
+            }
+
+            if ($char === "'") {
+                return substr($html, $inicio, $i - $inicio);
+            }
+
+            $i++;
+        }
+
+        return null;
     }
 
     /**
