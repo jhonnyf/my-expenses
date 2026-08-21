@@ -69,7 +69,7 @@ class ImportInvoiceAction
             'user_id' => $userId,
             'number' => Arr::get($parsed, 'numero', ''),
             'series' => Arr::get($parsed, 'serie', ''),
-            'issued_at' => Arr::get($parsed, 'emitido_em', now()),
+            'issued_at' => Arr::get($parsed, 'emitido_em') ?: now(),
             'environment' => Arr::get($parsed, 'ambiente', 'producao') === 'producao' ? 'production' : 'staging',
             'issuer_id' => $issuer?->id,
             'total_icms_base' => (float) Arr::get($parsed, 'total.base_calculo_icms', 0),
