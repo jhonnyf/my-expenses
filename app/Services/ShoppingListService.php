@@ -83,9 +83,14 @@ class ShoppingListService
 
         $this->applyLocationFilter($itemsQuery, $filterCity, $filterState, $userLatitude, $userLongitude);
 
+        // ->distinct(): a mesma nota pode ter o produto lançado em duas linhas
+        // idênticas (emissor/descrição/preço/data iguais) quando o mercado
+        // escaneia o item duas vezes em vez de somar a quantidade — todas as
+        // colunas selecionadas saem iguais nesse caso, então DISTINCT colapsa
+        // pra uma linha só sem precisar de GROUP BY.
         $items = $itemsQuery
-            ->orderByDesc('is_favorite')
-            ->orderBy('invoices_items.unit_price', 'asc')
+            ->distinct()
+            ->orderByDesc('invoices.issued_at')
             ->limit(20)
             ->get();
 

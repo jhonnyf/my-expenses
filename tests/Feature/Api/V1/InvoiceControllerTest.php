@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Issuer;
 use App\Models\IssuerNickname;
 use App\Models\User;
+use App\Services\NFCeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -133,5 +134,100 @@ class InvoiceControllerTest extends TestCase
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/invoices/import/xml', ['xml' => $file])
             ->assertStatus(409);
+    }
+
+    // ─── importByQrCode ──────────────────────────────────────────────────────
+
+    public function test_import_by_qr_code_creates_invoice_and_logs_success(): void
+    {
+        $user = User::factory()->create();
+        $chave = '35260700000000000191650010000098765123456789';
+
+        $this->mock(NFCeService::class, function ($mock) use ($chave) {
+            $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn($chave);
+            $mock->shouldReceive('isCertificadoConfigurado')->once()->andReturn(false);
+            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => [], 'html' => '']);
+            $mock->shouldReceive('normalizarDadosPortal')->once()->andReturn([
+                'chave' => $chave,
+                'emitente' => ['cnpj' => '12345678000199', 'nome' => 'Loja Teste'],
+                'itens' => [],
+                'total' => ['valor_nota' => 10.0],
+                'pagamento' => [],
+            ]);
+        });
+
+        $qrcodeUrl = "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p={$chave}|3|1";
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/invoices/import/qrcode', ['qrcode_url' => $qrcodeUrl]);
+
+        $invoice = Invoice::where('user_id', $user->id)->first();
+        $response->assertStatus(201);
+        $this->assertNotNull($invoice);
+        $this->assertDatabaseHas('qrcode_reads', [
+            'user_id' => $user->id,
+            'qrcode_url' => $qrcodeUrl,
+            'status' => 'success',
+            'invoice_id' => $invoice->id,
+        ]);
+    }
+
+    public function test_import_by_qr_code_returns_422_and_logs_error_when_key_not_found(): void
+    {
+        $user = User::factory()->create();
+
+        $this->mock(NFCeService::class, function ($mock) {
+            $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn(null);
+        });
+
+        $qrcodeUrl = 'https://www.nfce.fazenda.sp.gov.br/invalido';
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/invoices/import/qrcode', ['qrcode_url' => $qrcodeUrl]);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseCount('invoices', 0);
+        $this->assertDatabaseHas('qrcode_reads', [
+            'user_id' => $user->id,
+            'qrcode_url' => $qrcodeUrl,
+            'status' => 'error',
+            'error_message' => 'Não foi possível extrair a chave de acesso da URL.',
+            'invoice_id' => null,
+        ]);
+    }
+
+    public function test_import_by_qr_code_returns_409_and_logs_error_for_duplicate_invoice(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $chave = '35260700000000000191650010000098765123456789';
+
+        Invoice::factory()->create([
+            'user_id' => $user->id,
+            'issuer_id' => $issuer->id,
+            'access_key' => $chave,
+        ]);
+
+        $this->mock(NFCeService::class, function ($mock) use ($chave) {
+            $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn($chave);
+            $mock->shouldReceive('isCertificadoConfigurado')->once()->andReturn(false);
+            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => [], 'html' => '']);
+            $mock->shouldReceive('normalizarDadosPortal')->once()->andReturn(['chave' => $chave]);
+        });
+
+        $qrcodeUrl = "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p={$chave}|3|1";
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/invoices/import/qrcode', ['qrcode_url' => $qrcodeUrl]);
+
+        $response->assertStatus(409);
+        $this->assertDatabaseCount('invoices', 1);
+        $this->assertDatabaseHas('qrcode_reads', [
+            'user_id' => $user->id,
+            'qrcode_url' => $qrcodeUrl,
+            'status' => 'error',
+            'error_message' => 'Esta nota fiscal já foi importada anteriormente.',
+            'invoice_id' => null,
+        ]);
     }
 }

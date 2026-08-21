@@ -55,4 +55,9 @@ class Invoice extends Model
     {
         return $this->hasMany(InvoicePayment::class);
     }
+
+    public function qrCodeReads(): HasMany
+    {
+        return $this->hasMany(QrCodeRead::class);
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\ImportInvoiceAction;
+use App\Actions\LogQrCodeReadAction;
 use App\Contracts\ImportStrategyInterface;
 use App\Events\InvoiceImported;
 use App\Http\Requests\ImportByAccessKeyRequest;
@@ -22,6 +23,7 @@ class InvoiceController extends Controller
 {
     public function __construct(
         private readonly ImportInvoiceAction $importAction,
+        private readonly LogQrCodeReadAction $logQrCodeReadAction,
         private readonly XmlFileImportStrategy $xmlStrategy,
         private readonly QrCodeImportStrategy $qrCodeStrategy,
         private readonly AccessKeyImportStrategy $accessKeyStrategy,
@@ -69,15 +71,24 @@ class InvoiceController extends Controller
 
     private function executeImport(FormRequest $request, ImportStrategyInterface $strategy): JsonResponse
     {
+        $qrcodeUrl = $strategy instanceof QrCodeImportStrategy ? (string) $request->input('qrcode_url') : null;
+        $userId = $request->user()->id;
+
         try {
             $payload = $strategy->resolve($request);
         } catch (\InvalidArgumentException|\RuntimeException $e) {
+            if ($qrcodeUrl !== null) {
+                $this->logQrCodeReadAction->execute($userId, $qrcodeUrl, success: false, errorMessage: $e->getMessage());
+            }
+
             return $this->error($e->getMessage(), 422, [$strategy->getErrorField() => [$e->getMessage()]]);
         }
 
-        $userId = $request->user()->id;
-
         if (Invoice::where('user_id', $userId)->where('access_key', $payload->parsed['chave'])->exists()) {
+            if ($qrcodeUrl !== null) {
+                $this->logQrCodeReadAction->execute($userId, $qrcodeUrl, success: false, errorMessage: 'Esta nota fiscal já foi importada anteriormente.');
+            }
+
             return $this->error('Esta nota fiscal já foi importada anteriormente.', 409);
         }
 
@@ -85,8 +96,16 @@ class InvoiceController extends Controller
             $invoice = $this->importAction->execute($payload->parsed, $payload->rawContent, $userId);
             InvoiceImported::dispatch($invoice);
 
+            if ($qrcodeUrl !== null) {
+                $this->logQrCodeReadAction->execute($userId, $qrcodeUrl, success: true, invoiceId: $invoice->id);
+            }
+
             return $this->success(new InvoiceResource($invoice), 201);
         } catch (\InvalidArgumentException $e) {
+            if ($qrcodeUrl !== null) {
+                $this->logQrCodeReadAction->execute($userId, $qrcodeUrl, success: false, errorMessage: $e->getMessage());
+            }
+
             return $this->error($e->getMessage(), 422);
         }
     }

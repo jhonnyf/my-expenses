@@ -333,6 +333,11 @@ class MyPurchaseControllerTest extends TestCase
         $invoice = Invoice::where('user_id', $user->id)->first();
         $this->assertNotNull($invoice);
         $response->assertOk()->assertExactJson(['redirect' => route('my-purchases.detail', $invoice->id)]);
+        $this->assertDatabaseHas('qrcode_reads', [
+            'user_id' => $user->id,
+            'status' => 'success',
+            'invoice_id' => $invoice->id,
+        ]);
     }
 
     public function test_import_by_qr_code_returns_json_error_without_reloading(): void
@@ -351,6 +356,12 @@ class MyPurchaseControllerTest extends TestCase
             'errors' => ['qrcode_url' => ['Não foi possível extrair a chave de acesso da URL.']],
         ]);
         $this->assertDatabaseCount('invoices', 0);
+        $this->assertDatabaseHas('qrcode_reads', [
+            'user_id' => $user->id,
+            'status' => 'error',
+            'error_message' => 'Não foi possível extrair a chave de acesso da URL.',
+            'invoice_id' => null,
+        ]);
     }
 
     public function test_import_by_qr_code_rejects_duplicate_invoice_via_json(): void
@@ -380,6 +391,12 @@ class MyPurchaseControllerTest extends TestCase
             'errors' => ['qrcode_url' => ['Esta nota fiscal já foi importada anteriormente.']],
         ]);
         $this->assertDatabaseCount('invoices', 1);
+        $this->assertDatabaseHas('qrcode_reads', [
+            'user_id' => $user->id,
+            'status' => 'error',
+            'error_message' => 'Esta nota fiscal já foi importada anteriormente.',
+            'invoice_id' => null,
+        ]);
     }
 
     public function test_import_by_qr_code_still_redirects_for_non_json_requests(): void
@@ -406,6 +423,11 @@ class MyPurchaseControllerTest extends TestCase
 
         $invoice = Invoice::where('user_id', $user->id)->first();
         $response->assertRedirect(route('my-purchases.detail', $invoice->id));
+        $this->assertDatabaseHas('qrcode_reads', [
+            'user_id' => $user->id,
+            'status' => 'success',
+            'invoice_id' => $invoice->id,
+        ]);
     }
 
     // ─── /api/nfce/upload (rota legada exposta sob /api) ────────────────────
