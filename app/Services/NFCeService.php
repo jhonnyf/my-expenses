@@ -519,6 +519,7 @@ class NFCeService
     private function extrairTotaisDoHtml(\DOMXPath $xpath): array
     {
         $valorProdutos = 0.0;
+        $valorDesconto = 0.0;
         $valorNota = 0.0;
         $valorTributos = 0.0;
 
@@ -536,6 +537,8 @@ class NFCeService
 
             if (str_contains($labelTexto, 'valor a pagar')) {
                 $valorNota = $valorNumerico;
+            } elseif (str_contains($labelTexto, 'desconto')) {
+                $valorDesconto = $valorNumerico;
             } elseif (str_contains($labelTexto, 'valor total')) {
                 $valorProdutos = $valorNumerico;
             }
@@ -553,6 +556,7 @@ class NFCeService
 
         return [
             'valor_produtos' => $valorProdutos,
+            'valor_desconto' => $valorDesconto,
             'valor_nota' => $valorNota,
             'valor_tributos' => $valorTributos,
         ];
@@ -681,6 +685,7 @@ class NFCeService
                 'base_calculo_icms' => 0.0,
                 'valor_icms' => 0.0,
                 'valor_produtos' => $totais['valor_produtos'] ?? 0.0,
+                'valor_desconto' => $totais['valor_desconto'] ?? 0.0,
                 'valor_nota' => $totais['valor_nota'] ?? 0.0,
                 'valor_tributos' => $totais['valor_tributos'] ?? 0.0,
             ],

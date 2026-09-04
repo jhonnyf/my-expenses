@@ -21,6 +21,15 @@ class NfceXmlImporterTest extends TestCase
         $this->assertSame('Produto fixture teste', $parsed['itens'][0]['descricao']);
     }
 
+    public function test_parses_valor_desconto_from_icms_tot()
+    {
+        $xml = str_replace('<vDesc>0.00</vDesc>', '<vDesc>1.50</vDesc>', $this->fixtureXml());
+
+        $parsed = (new NfceXmlImporter)->fromString($xml);
+
+        $this->assertSame(1.50, $parsed['total']['valor_desconto']);
+    }
+
     #[DataProvider('cepProvider')]
     public function test_normalizes_cep_leading_zeros(string $xmlCep, string $expected)
     {

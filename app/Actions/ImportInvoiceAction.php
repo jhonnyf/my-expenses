@@ -75,6 +75,7 @@ class ImportInvoiceAction
             'total_icms_base' => (float) Arr::get($parsed, 'total.base_calculo_icms', 0),
             'total_icms' => (float) Arr::get($parsed, 'total.valor_icms', 0),
             'total_products' => (float) Arr::get($parsed, 'total.valor_produtos', 0),
+            'total_discount' => (float) Arr::get($parsed, 'total.valor_desconto', 0),
             'total_amount' => (float) Arr::get($parsed, 'total.valor_nota', 0),
             'total_taxes' => (float) Arr::get($parsed, 'total.valor_tributos', 0),
             'raw_xml' => $rawContent,

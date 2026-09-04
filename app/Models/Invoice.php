@@ -22,6 +22,7 @@ class Invoice extends Model
         'total_icms_base',
         'total_icms',
         'total_products',
+        'total_discount',
         'total_amount',
         'total_taxes',
         'raw_xml',
@@ -32,6 +33,7 @@ class Invoice extends Model
         'total_icms_base' => 'decimal:2',
         'total_icms' => 'decimal:2',
         'total_products' => 'decimal:2',
+        'total_discount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'total_taxes' => 'decimal:2',
     ];

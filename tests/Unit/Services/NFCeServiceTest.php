@@ -108,6 +108,7 @@ class NFCeServiceTest extends TestCase
         // desconto aplicado) são linhas distintas do DANFE — valor_produtos deve bater
         // com o item (3,59), não com o valor final pago (2,99).
         $this->assertSame(3.59, $resultado['dados']['totais']['valor_produtos']);
+        $this->assertSame(0.60, $resultado['dados']['totais']['valor_desconto']);
         $this->assertSame(2.99, $resultado['dados']['totais']['valor_nota']);
     }
 

@@ -65,7 +65,8 @@ class ImportInvoiceActionTest extends TestCase
                 'base_calculo_icms' => 0,
                 'valor_icms' => 0,
                 'valor_produtos' => 25.00,
-                'valor_nota' => 25.00,
+                'valor_desconto' => 2.50,
+                'valor_nota' => 22.50,
                 'valor_tributos' => 0,
             ],
             'pagamento' => [
@@ -84,6 +85,21 @@ class ImportInvoiceActionTest extends TestCase
         $this->assertDatabaseHas('invoices', ['id' => $invoice->id, 'user_id' => $user->id]);
         $this->assertDatabaseHas('issuers', ['cnpj' => '11222333000181']);
         $this->assertDatabaseCount('invoices_items', 2);
+    }
+
+    public function test_execute_stores_total_discount(): void
+    {
+        $user = User::factory()->create();
+        $action = app(ImportInvoiceAction::class);
+
+        $invoice = $action->execute($this->parsedData, '<nfeProc/>', $user->id);
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'total_products' => 25.00,
+            'total_discount' => 2.50,
+            'total_amount' => 22.50,
+        ]);
     }
 
     public function test_execute_reuses_existing_issuer_by_cnpj(): void

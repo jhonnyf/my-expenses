@@ -19,6 +19,7 @@ class InvoiceResource extends JsonResource
             'total_icms_base' => $this->total_icms_base,
             'total_icms' => $this->total_icms,
             'total_products' => $this->total_products,
+            'total_discount' => $this->total_discount,
             'total_amount' => $this->total_amount,
             'total_taxes' => $this->total_taxes,
             'created_at' => $this->created_at,

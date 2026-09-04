@@ -130,6 +130,7 @@ class NfceXmlImporter
             'base_calculo_icms' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vBC'),
             'valor_icms' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vICMS'),
             'valor_produtos' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vProd'),
+            'valor_desconto' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vDesc'),
             'valor_nota' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vNF'),
             'valor_tributos' => (float) $this->val($infNFe, 'nfe:total/nfe:ICMSTot/nfe:vTotTrib'),
         ];
