@@ -96,4 +96,23 @@ class DashboardServiceTest extends TestCase
         $this->assertEquals(20.00, $result['previousPeriodExpenses']);
         $this->assertEquals(100.0, $result['periodVariation']);
     }
+
+    public function test_last_purchase_includes_number_issuer_and_items_count(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['name' => 'Mercado Central']);
+
+        $older = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDay(), 'number' => '111']);
+        InvoiceItem::factory()->for($older)->create();
+
+        $latest = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now(), 'number' => '222']);
+        InvoiceItem::factory()->count(3)->for($latest)->create();
+
+        $result = $this->service->getViewData($user->id);
+
+        $this->assertEquals($latest->id, $result['lastPurchase']->id);
+        $this->assertEquals('222', $result['lastPurchase']->number);
+        $this->assertEquals(3, $result['lastPurchase']->items_count);
+        $this->assertEquals('Mercado Central', $result['lastPurchase']->issuer->display_name);
+    }
 }

@@ -173,6 +173,28 @@ const Category = (() => {
             });
     };
 
+    const suggestKeywords = (context) => {
+        const name = document.getElementById(`${context}Name`).value.trim();
+        if (!name) {
+            alert('Informe o nome da categoria primeiro.');
+            return;
+        }
+
+        const btn = document.getElementById(context === 'new' ? 'btnSuggestNew' : 'btnSuggestEdit');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ki-filled ki-setting-2 animate-spin"></i> Sugerindo...';
+
+        Utils.http(`${baseUrl}/suggest-keywords`, { method: 'POST', body: { name } })
+            .then(data => {
+                document.getElementById(`${context}Keywords`).value = (data.keywords || []).join(', ');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            });
+    };
+
     const ACTIONS = {
         'auto-categorize': () => autoCategorize(),
         'show-new-form': () => showNewForm(),
@@ -180,6 +202,8 @@ const Category = (() => {
         'hide-new-form': () => hideNewForm(),
         'update-category': () => updateCategory(),
         'hide-edit-form': () => hideEditForm(),
+        'suggest-keywords-new': () => suggestKeywords('new'),
+        'suggest-keywords-edit': () => suggestKeywords('edit'),
         'edit-category': (btn) => editCategory(
             btn.dataset.categoryId,
             btn.dataset.categoryName,

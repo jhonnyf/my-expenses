@@ -8,6 +8,7 @@ use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class CategoryControllerTest extends TestCase
@@ -65,5 +66,39 @@ class CategoryControllerTest extends TestCase
             ->get('/categories?start_date=2026-01-01&end_date=2026-01-31')
             ->assertStatus(200)
             ->assertViewHas('totalSpent', 30.0);
+    }
+
+    public function test_suggest_keywords_redirects_unauthenticated_user(): void
+    {
+        $this->post('/categories/suggest-keywords', ['name' => 'Alimentação'])
+            ->assertRedirect('/login');
+    }
+
+    public function test_suggest_keywords_returns_ai_suggestions(): void
+    {
+        $user = User::factory()->create();
+        config(['ai.gemini.api_key' => 'test-key']);
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    ['content' => ['parts' => [['text' => json_encode(['keywords' => ['ARROZ', 'FEIJAO']])]]]],
+                ],
+            ], 200),
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/categories/suggest-keywords', ['name' => 'Alimentação'])
+            ->assertStatus(200)
+            ->assertJson(['keywords' => ['ARROZ', 'FEIJAO']]);
+    }
+
+    public function test_suggest_keywords_validates_name_required(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson('/categories/suggest-keywords', [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('name');
     }
 }

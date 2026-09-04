@@ -121,7 +121,8 @@ class DashboardService
     {
         return Invoice::where('user_id', $userId)
             ->whereDateBetween('issued_at', $start, $end)
-            ->select(['id', 'issuer_id', 'issued_at', 'total_amount'])
+            ->select(['id', 'issuer_id', 'number', 'issued_at', 'total_amount'])
+            ->withCount('items')
             ->with('issuer.nicknameForUser')
             ->orderByDesc('issued_at')
             ->first();

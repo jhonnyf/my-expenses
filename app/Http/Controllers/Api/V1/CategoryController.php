@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\AiSuggestCategoryKeywordsRequest;
 use App\Http\Requests\AssignCategoryItemRequest;
 use App\Http\Requests\SaveCategoryRequest;
 use App\Http\Resources\Api\V1\CategoryResource;
 use App\Models\Category;
 use App\Models\InvoiceItem;
+use App\Services\CategoryKeywordsAiSuggestionService;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function __construct(private readonly CategoryService $service) {}
+    public function __construct(
+        private readonly CategoryService $service,
+        private readonly CategoryKeywordsAiSuggestionService $aiSuggestionService,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -87,5 +92,12 @@ class CategoryController extends Controller
         $count = $this->service->autoCategorize($request->user()->id);
 
         return $this->success(['categorized' => $count]);
+    }
+
+    public function suggestKeywords(AiSuggestCategoryKeywordsRequest $request): JsonResponse
+    {
+        $suggestion = $this->aiSuggestionService->suggestKeywords($request->input('name'));
+
+        return $this->success($suggestion->toArray());
     }
 }

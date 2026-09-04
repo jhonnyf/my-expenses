@@ -89,7 +89,13 @@
                             <input type="color" id="newColor" class="w-full h-9 rounded border border-border cursor-pointer" value="#3B82F6" />
                         </div>
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 block">Palavras-chave</label>
+                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between">
+                                <span>Palavras-chave</span>
+                                <button type="button" data-action="suggest-keywords-new" id="btnSuggestNew"
+                                        class="kt-btn kt-btn-ghost kt-btn-xs">
+                                    <i class="ki-filled ki-setting-2"></i> Sugerir com IA
+                                </button>
+                            </label>
                             <input type="text" id="newKeywords" class="kt-input w-full" placeholder="PALAVRA1, PALAVRA2" />
                         </div>
                     </div>
@@ -116,7 +122,13 @@
                             <input type="color" id="editColor" class="w-full h-9 rounded border border-border cursor-pointer" />
                         </div>
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 block">Palavras-chave</label>
+                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between">
+                                <span>Palavras-chave</span>
+                                <button type="button" data-action="suggest-keywords-edit" id="btnSuggestEdit"
+                                        class="kt-btn kt-btn-ghost kt-btn-xs">
+                                    <i class="ki-filled ki-setting-2"></i> Sugerir com IA
+                                </button>
+                            </label>
                             <input type="text" id="editKeywords" class="kt-input w-full" />
                         </div>
                     </div>

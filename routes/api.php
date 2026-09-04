@@ -79,6 +79,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Categorias — rotas fixas ANTES do apiResource
             Route::post('categories/assign-item', [CategoryController::class, 'assignItem'])->name('categories.assign-item');
             Route::post('categories/auto-categorize', [CategoryController::class, 'autoCategorize'])->name('categories.auto-categorize');
+            Route::post('categories/suggest-keywords', [CategoryController::class, 'suggestKeywords'])
+                ->name('categories.suggest-keywords')
+                ->middleware('throttle:ai-suggestions');
             Route::apiResource('categories', CategoryController::class);
 
             // Orçamentos

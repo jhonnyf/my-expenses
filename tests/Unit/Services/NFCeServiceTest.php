@@ -91,6 +91,26 @@ class NFCeServiceTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_consultar_por_qr_code_separates_valor_produtos_from_valor_nota_when_ha_desconto(): void
+    {
+        $url = 'https://nfce.exemplo.gov.br/consulta?p='.$this->sampleKey.'|10|1|abc';
+
+        Http::fake([
+            'nfce.exemplo.gov.br/*' => Http::response(
+                file_get_contents(base_path('tests/fixtures/nfce_portal_direto_com_desconto.html')),
+                200
+            ),
+        ]);
+
+        $resultado = $this->service->consultarPorQRCode($url);
+
+        // "Valor total R$" (soma dos itens, sem desconto) e "Valor a pagar R$" (com
+        // desconto aplicado) são linhas distintas do DANFE — valor_produtos deve bater
+        // com o item (3,59), não com o valor final pago (2,99).
+        $this->assertSame(3.59, $resultado['dados']['totais']['valor_produtos']);
+        $this->assertSame(2.99, $resultado['dados']['totais']['valor_nota']);
+    }
+
     public function test_consultar_por_qr_code_resolves_content_embedded_behind_iframe(): void
     {
         $url = 'https://nfeweb.exemplo.gov.br/nfeweb/sites/nfce/danfeNFCe?p='.$this->sampleKey.'|10|1|abc';

@@ -510,14 +510,40 @@ class NFCeService
         return $itens;
     }
 
+    /**
+     * O DANFE NFCe lista "Valor total R$" (soma dos itens, sem desconto) e
+     * "Valor a pagar R$" (valor final, com desconto já aplicado) em linhas
+     * separadas de #totalNota. Sem distinguir as duas, valor_produtos ficava
+     * igual a valor_nota e divergia da soma dos itens sempre que havia desconto.
+     */
     private function extrairTotaisDoHtml(\DOMXPath $xpath): array
     {
-        $valorTotal = 0.0;
+        $valorProdutos = 0.0;
+        $valorNota = 0.0;
         $valorTributos = 0.0;
 
-        $totalNode = $xpath->query("//*[@id='totalNota']//span[contains(@class,'txtMax')]")->item(0);
-        if ($totalNode) {
-            $valorTotal = $this->parseBrDecimal(trim($totalNode->textContent));
+        $linhas = $xpath->query("//*[@id='totalNota']//*[@id='linhaTotal']");
+        foreach ($linhas as $linha) {
+            $label = $xpath->query('.//label', $linha)->item(0);
+            $valorNode = $xpath->query(".//span[contains(@class,'totalNumb')]", $linha)->item(0);
+
+            if (! $label || ! $valorNode) {
+                continue;
+            }
+
+            $labelTexto = mb_strtolower(trim($label->textContent));
+            $valorNumerico = $this->parseBrDecimal(trim($valorNode->textContent));
+
+            if (str_contains($labelTexto, 'valor a pagar')) {
+                $valorNota = $valorNumerico;
+            } elseif (str_contains($labelTexto, 'valor total')) {
+                $valorProdutos = $valorNumerico;
+            }
+        }
+
+        // Sem desconto, o portal só mostra "Valor a pagar" — mesmo valor da soma dos produtos.
+        if ($valorProdutos === 0.0) {
+            $valorProdutos = $valorNota;
         }
 
         $tribNode = $xpath->query("//*[@id='totalNota']//span[contains(@class,'txtObs')]")->item(0);
@@ -526,8 +552,8 @@ class NFCeService
         }
 
         return [
-            'valor_produtos' => $valorTotal,
-            'valor_nota' => $valorTotal,
+            'valor_produtos' => $valorProdutos,
+            'valor_nota' => $valorNota,
             'valor_tributos' => $valorTributos,
         ];
     }
