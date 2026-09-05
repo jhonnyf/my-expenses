@@ -14,7 +14,7 @@ class ProductNameAiSuggestionService
      * Bump manual sempre que o texto do prompt mudar de forma relevante —
      * invalida o cache automaticamente, sem precisar de comando manual.
      */
-    private const PROMPT_VERSION = 1;
+    private const PROMPT_VERSION = 2;
 
     private const MAX_DESCRIPTIONS = 5;
 
@@ -148,23 +148,38 @@ class ProductNameAiSuggestionService
         return 'Você é um assistente que padroniza nomes de produtos de supermercado/varejo '
             .'brasileiro a partir de descrições abreviadas extraídas de Notas Fiscais de '
             .'Consumidor Eletrônica (NFC-e). Essas descrições costumam vir em CAIXA ALTA, '
-            .'truncadas, com abreviações inconsistentes entre estabelecimentos diferentes '
-            .'(ex.: "REFRIG"/"REFRI" para refrigerante; "LT"/"LATA"; "GRF" para garrafa; '
-            .'tamanhos como "350ML", "1L", "2LT"; marcas abreviadas). '
+            .'truncadas, com abreviações inconsistentes entre estabelecimentos diferentes. '
+            .'Abreviações comuns a decodificar: '
+            .'categoria — "REFRIG"/"REFRI"/"REFG" = Refrigerante, "CERV" = Cerveja, '
+            .'"AGUA"/"AG" = Água, "SUC" = Suco; '
+            .'sabor/variação — "GUAR" = Guaraná, "LAR"/"LARANJ" = Laranja, "UV" = Uva, '
+            .'"LIM" = Limão, "MORANG" = Morango, "COCO" = Coco, "ZERO"/"ZR" = Zero açúcar, '
+            .'"DIET" = Diet, "LT"/"LATA" = Lata, "GRF"/"GARRF" = Garrafa; '
+            .'tamanho/unidade — números seguidos de unidade truncada pelo corte de impressão '
+            .'da nota, como "350M", "600M", "1L5", costumam significar "350ml", "600ml", '
+            .'"1,5L" quando o contexto (bebida, refrigerante, cerveja) confirma; normalize '
+            .'para a forma completa ("ml"/"L") sem alterar o valor numérico informado. '
             .'Dado um conjunto de uma ou mais descrições brutas que um usuário está tentando '
             .'unificar sob um único nome, decida se elas seguramente representam o MESMO '
-            .'produto (mesma marca, mesmo item, mesma variação/tamanho quando informado) e, '
-            .'em caso afirmativo, proponha um nome limpo e conciso em português do Brasil, com '
-            .'capitalização normal (não CAIXA ALTA), no formato aproximado "Marca Produto '
-            .'Tamanho" quando fizer sentido (ex.: "Coca-Cola 350ml", "Arroz Branco Tio João '
-            .'5kg"). Se houver apenas uma descrição, apenas limpe/formate o nome, sem inventar '
-            .'marca ou tamanho que não estejam implícitos no texto. '
+            .'produto (mesma categoria/sabor, mesma variação/tamanho quando informado — marca '
+            .'não é obrigatória) e, em caso afirmativo, proponha um nome limpo e conciso em '
+            .'português do Brasil, com capitalização normal (não CAIXA ALTA). '
+            .'Use o formato "Marca Produto Tamanho" quando a marca estiver identificável no '
+            .'texto (ex.: "Coca-Cola 350ml", "Arroz Branco Tio João 5kg"). Quando a descrição '
+            .'não trouxer marca mas tiver categoria + sabor/variação + tamanho reconhecíveis '
+            .'(mesmo após decodificar as abreviações acima), proponha um nome sem marca no '
+            .'formato "Categoria Sabor/Variação Tamanho" (ex.: "REFRI GUAR ZERO 350M" -> '
+            .'"Refrigerante Guaraná Zero 350ml") — a ausência de marca sozinha NUNCA é motivo '
+            .'para responder com baixa confiança. '
+            .'Se houver apenas uma descrição, apenas limpe/formate o nome, sem inventar '
+            .'marca, sabor ou tamanho que não estejam implícitos no texto. '
             .'Se houver duas ou mais descrições e você não tiver confiança razoável de que se '
-            .'referem ao mesmo produto (marcas diferentes, categorias diferentes, tamanhos '
+            .'referem ao mesmo produto (categorias diferentes, sabores diferentes, tamanhos '
             .'incompatíveis, ou ambiguidade genuína), OU se a descrição for curta/genérica '
-            .'demais para um nome específico, responda com confident=false e '
-            .'suggested_name=null — nunca invente marca, sabor ou tamanho que não estejam '
-            .'presentes ou fortemente implícitos no texto original.';
+            .'demais para um nome específico mesmo após decodificar as abreviações acima '
+            .'(ex.: apenas "DIVERSOS", "ITEM", um código numérico sem nome), responda com '
+            .'confident=false e suggested_name=null — nunca invente marca, sabor ou tamanho '
+            .'que não estejam presentes ou fortemente implícitos no texto original.';
     }
 
     private function parseResponse(?array $body): ProductNameAiSuggestion
