@@ -19,7 +19,7 @@ class GeocodeUserProfileJob implements ShouldQueue
         return [new RateLimited('geocoding')];
     }
 
-    public function retryUntil(): \DateTime
+    public function retryUntil(): \DateTimeInterface
     {
         return now()->addMinutes(10);
     }
