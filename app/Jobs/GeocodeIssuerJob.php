@@ -19,6 +19,11 @@ class GeocodeIssuerJob implements ShouldQueue
         return [new RateLimited('geocoding')];
     }
 
+    public function retryUntil(): \DateTime
+    {
+        return now()->addMinutes(10);
+    }
+
     public function handle(GeocodingService $geocodingService): void
     {
         $issuer = Issuer::find($this->issuerId);

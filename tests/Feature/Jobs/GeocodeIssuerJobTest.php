@@ -56,4 +56,11 @@ class GeocodeIssuerJobTest extends TestCase
 
         Http::assertNothingSent();
     }
+
+    public function test_retry_until_gives_a_time_window_instead_of_a_fixed_attempt_count(): void
+    {
+        $job = new GeocodeIssuerJob(1);
+
+        $this->assertGreaterThan(now(), $job->retryUntil());
+    }
 }
