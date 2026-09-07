@@ -103,7 +103,10 @@
                         <!-- End of Notifications -->
                         <!-- User -->
                         <div class="shrink-0" data-kt-dropdown="true" data-kt-dropdown-offset="10px, 10px" data-kt-dropdown-offset-rtl="-20px, 10px" data-kt-dropdown-placement="bottom-end" data-kt-dropdown-placement-rtl="bottom-start" data-kt-dropdown-trigger="click">
-                            <div class="cursor-pointer shrink-0" data-kt-dropdown-toggle="true">
+                            <div class="cursor-pointer shrink-0 flex items-center gap-2" data-kt-dropdown-toggle="true">
+                                <span class="kt-badge kt-badge-sm {{ Auth::user()->isPro() ? 'kt-badge-success' : 'kt-badge-secondary' }}">
+                                    {{ Auth::user()->isPro() ? 'Pro' : 'Grátis' }}
+                                </span>
                                 <div class="rounded-full border-2 border-green-500 size-9 shrink-0 flex items-center justify-center bg-primary text-primary-foreground overflow-hidden">
                                     @if(Auth::user()->avatar)
                                         <img alt="{{ Auth::user()->name }}" class="size-full object-cover" src="{{ Auth::user()->avatar->url() }}" />
@@ -123,7 +126,12 @@
                                             @endif
                                         </div>
                                         <div class="flex flex-col gap-1.5">
-                                            <span class="text-sm text-foreground font-semibold leading-none">{{ Auth::user()->name }}</span>
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-sm text-foreground font-semibold leading-none">{{ Auth::user()->name }}</span>
+                                                <span class="kt-badge kt-badge-sm {{ Auth::user()->isPro() ? 'kt-badge-success' : 'kt-badge-secondary' }}">
+                                                    {{ Auth::user()->isPro() ? 'Pro' : 'Grátis' }}
+                                                </span>
+                                            </div>
                                             <a class="text-xs text-secondary-foreground hover:text-primary font-medium leading-none" href="{{ route('account.index') }}">
                                                 {{ Auth::user()->email }}
                                             </a>

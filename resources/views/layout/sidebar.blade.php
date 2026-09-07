@@ -117,4 +117,13 @@
             <!-- End of Sidebar Menu -->
         </div>
     </div>
+    @if(!Auth::user()->isPro())
+        <div class="shrink-0 px-3 lg:px-5 pb-4">
+            <div class="rounded-lg border border-border bg-accent/40 p-3 flex flex-col gap-2">
+                <span class="kt-badge kt-badge-sm kt-badge-secondary self-start">Grátis</span>
+                <p class="text-xs text-secondary-foreground leading-tight">Desbloqueie recursos exclusivos com o plano Pro.</p>
+                <a href="{{ route('subscription.upgrade') }}" class="kt-btn kt-btn-primary kt-btn-sm justify-center">Fazer upgrade</a>
+            </div>
+        </div>
+    @endif
 </div>
