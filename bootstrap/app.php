@@ -1,6 +1,9 @@
 <?php
 
+use App\Exceptions\ProFeatureRequiredException;
 use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\EnsureIsSuperAdmin;
+use App\Http\Middleware\EnsureUserHasProPlan;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,10 +18,25 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('login'));
-        $middleware->alias(['auth' => Authenticate::class]);
+        $middleware->alias([
+            'auth' => Authenticate::class,
+            'pro' => EnsureUserHasProPlan::class,
+            'super-admin' => EnsureIsSuperAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request, Throwable $e) => $request->is('api/*')
         );
+
+        $exceptions->render(function (ProFeatureRequiredException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'upgrade_required' => true,
+                ], 402);
+            }
+
+            return redirect()->route('subscription.upgrade')->with('paywall_message', $e->getMessage());
+        });
     })->create();

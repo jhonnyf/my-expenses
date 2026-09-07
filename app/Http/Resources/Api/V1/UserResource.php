@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'estado' => $this->profile?->estado,
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
+            'subscription' => $this->subscription ? new SubscriptionResource($this->subscription) : null,
         ];
     }
 }

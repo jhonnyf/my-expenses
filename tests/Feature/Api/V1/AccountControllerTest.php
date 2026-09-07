@@ -42,6 +42,16 @@ class AccountControllerTest extends TestCase
             ->assertJsonPath('data.user.id', $user->id);
     }
 
+    public function test_show_includes_subscription_plan(): void
+    {
+        $user = User::factory()->pro()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/account')
+            ->assertStatus(200)
+            ->assertJsonPath('data.user.subscription.plan', 'pro');
+    }
+
     public function test_show_includes_location_suggestion_when_applicable(): void
     {
         $user = User::factory()->create();

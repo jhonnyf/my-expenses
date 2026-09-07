@@ -50,4 +50,39 @@ class BudgetControllerTest extends TestCase
                 && $summary['over_budget_count'] === 1)
             ->assertViewHas('budgets', fn ($budgets) => $budgets->first()->id === $overBudget->id);
     }
+
+    public function test_store_without_category_works_for_free_user(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson('/budgets', ['amount' => 500.00])
+            ->assertStatus(200);
+
+        $this->assertDatabaseHas('budgets', ['user_id' => $user->id, 'category_id' => null]);
+    }
+
+    public function test_store_with_category_redirects_to_upgrade_for_free_user(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $this->actingAs($user)
+            ->post('/budgets', ['category_id' => $category->id, 'amount' => 500.00])
+            ->assertRedirect(route('subscription.upgrade'));
+
+        $this->assertDatabaseMissing('budgets', ['user_id' => $user->id, 'category_id' => $category->id]);
+    }
+
+    public function test_store_with_category_works_for_pro_user(): void
+    {
+        $user = User::factory()->pro()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $this->actingAs($user)
+            ->postJson('/budgets', ['category_id' => $category->id, 'amount' => 500.00])
+            ->assertStatus(200);
+
+        $this->assertDatabaseHas('budgets', ['user_id' => $user->id, 'category_id' => $category->id]);
+    }
 }

@@ -20,14 +20,14 @@ class PricesControllerTest extends TestCase
 
     public function test_index_returns_200_for_authenticated_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user)->get('/prices')->assertStatus(200);
     }
 
     public function test_search_returns_empty_for_short_query(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user)
             ->getJson('/prices/search?q=a')
@@ -37,7 +37,7 @@ class PricesControllerTest extends TestCase
 
     public function test_search_returns_matching_candidates(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create();
         InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
             ->create(['description' => 'ARROZ BRANCO 5KG']);
@@ -50,7 +50,7 @@ class PricesControllerTest extends TestCase
 
     public function test_history_returns_empty_for_blank_description(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user)
             ->getJson('/prices/history')
@@ -60,7 +60,7 @@ class PricesControllerTest extends TestCase
 
     public function test_history_returns_timeline_for_own_purchases(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
         InvoiceItem::factory()->for($invoice)->create(['description' => 'OLEO DE SOJA 900ML', 'unit_price' => 7.50]);
@@ -74,7 +74,7 @@ class PricesControllerTest extends TestCase
 
     public function test_history_returns_empty_timeline_for_product_never_purchased_by_user(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $other = User::factory()->create();
         $issuer = Issuer::factory()->create();
         InvoiceItem::factory()->for(Invoice::factory()->for($other)->for($issuer)->create())
@@ -89,7 +89,7 @@ class PricesControllerTest extends TestCase
 
     public function test_by_city_returns_empty_without_product(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user)
             ->getJson('/prices/by-city')
@@ -99,7 +99,7 @@ class PricesControllerTest extends TestCase
 
     public function test_by_city_returns_ranked_results(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
         InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 20.00]);
@@ -112,7 +112,7 @@ class PricesControllerTest extends TestCase
 
     public function test_by_issuer_returns_empty_without_city_state(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user)
             ->getJson('/prices/by-issuer?product=arroz')
@@ -122,7 +122,7 @@ class PricesControllerTest extends TestCase
 
     public function test_by_issuer_returns_ranked_results(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create(['name' => 'MERCADO X', 'city' => 'Curitiba', 'state' => 'PR']);
         InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 20.00]);

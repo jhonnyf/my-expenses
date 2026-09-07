@@ -125,9 +125,19 @@ class ProductAliasControllerTest extends TestCase
             ->assertStatus(401);
     }
 
-    public function test_ai_suggest_name_returns_confident_suggestion_via_ai(): void
+    public function test_ai_suggest_name_returns_402_for_free_user(): void
     {
         $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/product-aliases/ai-suggest-name', ['descriptions' => ['ARROZ 5KG']])
+            ->assertStatus(402)
+            ->assertJson(['upgrade_required' => true]);
+    }
+
+    public function test_ai_suggest_name_returns_confident_suggestion_via_ai(): void
+    {
+        $user = User::factory()->pro()->create();
         config(['ai.gemini.api_key' => 'test-key']);
         Http::fake([
             'generativelanguage.googleapis.com/*' => Http::response([
@@ -147,7 +157,7 @@ class ProductAliasControllerTest extends TestCase
 
     public function test_ai_suggest_name_uses_community_suggestion_without_calling_ai(): void
     {
-        $userA = User::factory()->create();
+        $userA = User::factory()->pro()->create();
         $userB = User::factory()->create();
         ProductAlias::create(['user_id' => $userB->id, 'description' => 'ARROZ 5KG', 'canonical_name' => 'Arroz Branco 5kg']);
         Http::fake();
@@ -162,7 +172,7 @@ class ProductAliasControllerTest extends TestCase
 
     public function test_ai_suggest_name_validates_descriptions(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/product-aliases/ai-suggest-name', [])

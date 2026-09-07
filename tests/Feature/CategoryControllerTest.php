@@ -74,9 +74,18 @@ class CategoryControllerTest extends TestCase
             ->assertRedirect('/login');
     }
 
-    public function test_suggest_keywords_returns_ai_suggestions(): void
+    public function test_suggest_keywords_redirects_to_upgrade_for_free_user(): void
     {
         $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/categories/suggest-keywords', ['name' => 'Alimentação'])
+            ->assertRedirect(route('subscription.upgrade'));
+    }
+
+    public function test_suggest_keywords_returns_ai_suggestions(): void
+    {
+        $user = User::factory()->pro()->create();
         config(['ai.gemini.api_key' => 'test-key']);
         Http::fake([
             'generativelanguage.googleapis.com/*' => Http::response([
@@ -94,7 +103,7 @@ class CategoryControllerTest extends TestCase
 
     public function test_suggest_keywords_validates_name_required(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user)
             ->postJson('/categories/suggest-keywords', [])

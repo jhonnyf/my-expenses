@@ -25,6 +25,20 @@ class AccountControllerTest extends TestCase
         $this->actingAs($user)->get('/account')->assertStatus(200);
     }
 
+    public function test_index_shows_free_plan_badge_for_free_user(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/account')->assertStatus(200)->assertSee('Grátis');
+    }
+
+    public function test_index_shows_pro_plan_badge_for_pro_user(): void
+    {
+        $user = User::factory()->pro()->create();
+
+        $this->actingAs($user)->get('/account')->assertStatus(200)->assertSee('Pro');
+    }
+
     public function test_index_shows_location_suggestion_banner_when_applicable(): void
     {
         $user = User::factory()->create();

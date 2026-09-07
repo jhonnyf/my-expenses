@@ -20,7 +20,7 @@ class PriceHistoryControllerTest extends TestCase
 
     public function test_search_returns_empty_for_short_query(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/price-history?q=a')
@@ -30,7 +30,7 @@ class PriceHistoryControllerTest extends TestCase
 
     public function test_search_returns_matching_products(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->for($user)->for($issuer)->create();
 
@@ -53,7 +53,7 @@ class PriceHistoryControllerTest extends TestCase
 
     public function test_timeline_returns_empty_for_blank_description(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/price-history/timeline')
@@ -63,7 +63,7 @@ class PriceHistoryControllerTest extends TestCase
 
     public function test_timeline_returns_price_history_for_description(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
 

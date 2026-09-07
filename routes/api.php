@@ -81,7 +81,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('categories/auto-categorize', [CategoryController::class, 'autoCategorize'])->name('categories.auto-categorize');
             Route::post('categories/suggest-keywords', [CategoryController::class, 'suggestKeywords'])
                 ->name('categories.suggest-keywords')
-                ->middleware('throttle:ai-suggestions');
+                ->middleware(['throttle:ai-suggestions', 'pro']);
             Route::apiResource('categories', CategoryController::class);
 
             // Orçamentos
@@ -94,14 +94,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('email', [ReportController::class, 'emailReport'])->name('email');
             });
 
-            // Histórico de preços
-            Route::prefix('price-history')->name('price-history.')->group(function () {
+            // Histórico de preços — exclusivo do plano Pro
+            Route::prefix('price-history')->name('price-history.')->middleware('pro')->group(function () {
                 Route::get('/', [PriceHistoryController::class, 'search'])->name('search');
                 Route::get('timeline', [PriceHistoryController::class, 'timeline'])->name('timeline');
             });
 
-            // Comparativo de preços por cidade/mercado
-            Route::prefix('price-comparison')->name('price-comparison.')->group(function () {
+            // Comparativo de preços por cidade/mercado — exclusivo do plano Pro
+            Route::prefix('price-comparison')->name('price-comparison.')->middleware('pro')->group(function () {
                 Route::get('search-products', [PriceComparisonController::class, 'searchProducts'])->name('search-products');
                 Route::get('by-city', [PriceComparisonController::class, 'byCity'])->name('by-city');
                 Route::get('by-issuer', [PriceComparisonController::class, 'byIssuer'])->name('by-issuer');
@@ -117,11 +117,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('dismiss', [ProductAliasController::class, 'dismiss'])->name('dismiss');
                 Route::post('ai-suggest-name', [ProductAliasController::class, 'aiSuggestName'])
                     ->name('ai-suggest-name')
-                    ->middleware('throttle:ai-suggestions');
+                    ->middleware(['throttle:ai-suggestions', 'pro']);
             });
 
-            // Compras recorrentes
-            Route::prefix('recurring-purchases')->name('recurring-purchases.')->group(function () {
+            // Compras recorrentes — exclusivo do plano Pro
+            Route::prefix('recurring-purchases')->name('recurring-purchases.')->middleware('pro')->group(function () {
                 Route::get('/', [RecurringPurchaseController::class, 'index'])->name('index');
                 Route::post('add-to-list', [RecurringPurchaseController::class, 'addToShoppingList'])->name('add-to-list');
             });

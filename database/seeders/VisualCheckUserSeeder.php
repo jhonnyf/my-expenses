@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\CreateFreeSubscriptionAction;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -14,7 +15,7 @@ class VisualCheckUserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::query()->firstOrCreate(
+        $user = User::query()->firstOrCreate(
             ['email' => 'visual-check@local.test'],
             [
                 'name' => 'Visual Check',
@@ -22,5 +23,8 @@ class VisualCheckUserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        // DatabaseSeeder roda com WithoutModelEvents, então o UserObserver não dispara aqui.
+        app(CreateFreeSubscriptionAction::class)->execute($user);
     }
 }

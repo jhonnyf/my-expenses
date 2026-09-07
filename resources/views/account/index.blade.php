@@ -28,6 +28,9 @@
           <span class="size-1.5 rounded-full bg-current inline-block me-1"></span>
           Ativo
         </span>
+        <span class="kt-badge kt-badge-sm {{ $user->isPro() ? 'kt-badge-success' : 'kt-badge-secondary' }}">
+          {{ $user->isPro() ? 'Pro' : 'Grátis' }}
+        </span>
       </div>
       <div class="flex flex-wrap justify-center gap-1 lg:gap-4.5 text-sm">
         <div class="flex gap-1.25 items-center">

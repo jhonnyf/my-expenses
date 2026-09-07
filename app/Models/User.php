@@ -40,6 +40,16 @@ class User extends Authenticatable implements MustVerifyEmailContract
         return $this->hasOne(UserProfile::class);
     }
 
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class);
+    }
+
+    public function isPro(): bool
+    {
+        return $this->subscription?->isPro() ?? false;
+    }
+
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);

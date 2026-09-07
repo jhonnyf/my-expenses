@@ -20,7 +20,7 @@ class PriceComparisonControllerTest extends TestCase
 
     public function test_search_products_returns_matching_candidates(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create();
         InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
             ->create(['description' => 'ARROZ BRANCO 5KG']);
@@ -38,7 +38,7 @@ class PriceComparisonControllerTest extends TestCase
 
     public function test_by_city_returns_ranked_results(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
         InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 20.00]);
@@ -57,7 +57,7 @@ class PriceComparisonControllerTest extends TestCase
 
     public function test_by_issuer_returns_ranked_results(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create(['name' => 'MERCADO X', 'city' => 'Curitiba', 'state' => 'PR']);
         InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 20.00]);

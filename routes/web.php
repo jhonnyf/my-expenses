@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Admin\SubscriptionController as AdminSubscriptionController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -85,10 +87,11 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::post('auto-categorize', [CategoryController::class, 'autoCategorize'])->name('auto-categorize');
         Route::post('suggest-keywords', [CategoryController::class, 'suggestKeywords'])
             ->name('suggest-keywords')
-            ->middleware('throttle:ai-suggestions');
+            ->middleware(['throttle:ai-suggestions', 'pro']);
     });
 
-    Route::group(['prefix' => 'prices', 'as' => 'prices.'], function () {
+    // Comparação e histórico de preços entre lojas — exclusivo do plano Pro.
+    Route::group(['prefix' => 'prices', 'as' => 'prices.', 'middleware' => 'pro'], function () {
         Route::get('/', [PricesController::class, 'index'])->name('index');
         Route::get('search', [PricesController::class, 'search'])->name('search');
         Route::get('history', [PricesController::class, 'history'])->name('history');
@@ -110,7 +113,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::post('dismiss', [ProductAliasController::class, 'dismiss'])->name('dismiss');
         Route::post('ai-suggest-name', [ProductAliasController::class, 'aiSuggestName'])
             ->name('ai-suggest-name')
-            ->middleware('throttle:ai-suggestions');
+            ->middleware(['throttle:ai-suggestions', 'pro']);
     });
 
     Route::get('search', [SearchController::class, 'search'])->name('search');
@@ -124,11 +127,12 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::group(['prefix' => 'reports', 'as' => 'reports.'], function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         Route::post('generate', [ReportController::class, 'generate'])->name('generate');
-        Route::post('pdf', [ReportController::class, 'exportPdf'])->name('pdf');
+        Route::post('pdf', [ReportController::class, 'exportPdf'])->name('pdf')->middleware('pro');
         Route::post('csv', [ReportController::class, 'exportCsv'])->name('csv');
     });
 
-    Route::group(['prefix' => 'recurring-purchases', 'as' => 'recurring-purchases.'], function () {
+    // Detecção de compras recorrentes — exclusivo do plano Pro.
+    Route::group(['prefix' => 'recurring-purchases', 'as' => 'recurring-purchases.', 'middleware' => 'pro'], function () {
         Route::get('/', [RecurringPurchaseController::class, 'index'])->name('index');
         Route::post('add-to-list', [RecurringPurchaseController::class, 'addToShoppingList'])->name('add-to-list');
     });
@@ -166,6 +170,14 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
     Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
         Route::post('{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
+    });
+
+    Route::get('subscription/upgrade', [SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
+
+    // Painel super simples de promoção manual a Pro — só o super admin (config('subscription.super_admin_email')) acessa.
+    Route::group(['prefix' => 'admin/subscriptions', 'as' => 'admin.subscriptions.', 'middleware' => 'super-admin'], function () {
+        Route::get('/', [AdminSubscriptionController::class, 'index'])->name('index');
+        Route::patch('{user}', [AdminSubscriptionController::class, 'update'])->name('update');
     });
 
 });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\StoreBudgetAction;
 use App\Http\Requests\StoreBudgetRequest;
 use App\Models\Budget;
 use App\Services\BudgetService;
@@ -18,15 +19,13 @@ class BudgetController extends Controller
         return view('budget.index', $this->service->getBudgetsWithSpending(Auth::id()));
     }
 
-    public function store(StoreBudgetRequest $request): JsonResponse
+    public function store(StoreBudgetRequest $request, StoreBudgetAction $action): JsonResponse
     {
-        $budget = Budget::updateOrCreate(
-            [
-                'user_id' => Auth::id(),
-                'category_id' => $request->input('category_id'),
-            ],
-            ['amount' => $request->input('amount')]
-        )->load('category');
+        $budget = $action->execute(
+            Auth::user(),
+            $request->input('category_id'),
+            $request->input('amount')
+        );
 
         $budget = $this->service->attachSpending($budget);
 

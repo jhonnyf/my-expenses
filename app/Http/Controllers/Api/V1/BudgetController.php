@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\StoreBudgetAction;
 use App\Http\Requests\StoreBudgetRequest;
 use App\Http\Resources\Api\V1\BudgetResource;
 use App\Http\Resources\Api\V1\CategoryResource;
@@ -24,17 +25,15 @@ class BudgetController extends Controller
         ]);
     }
 
-    public function store(StoreBudgetRequest $request): JsonResponse
+    public function store(StoreBudgetRequest $request, StoreBudgetAction $action): JsonResponse
     {
-        $budget = Budget::updateOrCreate(
-            [
-                'user_id' => $request->user()->id,
-                'category_id' => $request->input('category_id'),
-            ],
-            ['amount' => $request->input('amount')]
+        $budget = $action->execute(
+            $request->user(),
+            $request->input('category_id'),
+            $request->input('amount')
         );
 
-        return $this->success(new BudgetResource($budget->load('category')), 201);
+        return $this->success(new BudgetResource($budget), 201);
     }
 
     public function destroy(Budget $budget): JsonResponse

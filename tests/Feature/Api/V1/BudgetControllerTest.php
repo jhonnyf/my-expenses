@@ -31,7 +31,7 @@ class BudgetControllerTest extends TestCase
 
     public function test_store_creates_budget(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $category = Category::factory()->for($user)->create();
 
         $this->actingAs($user, 'sanctum')
@@ -46,6 +46,29 @@ class BudgetControllerTest extends TestCase
             'user_id' => $user->id,
             'category_id' => $category->id,
         ]);
+    }
+
+    public function test_store_without_category_works_for_free_user(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/budgets', ['amount' => 500.00])
+            ->assertStatus(201);
+    }
+
+    public function test_store_with_category_returns_402_for_free_user(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->for($user)->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/budgets', [
+                'category_id' => $category->id,
+                'amount' => 500.00,
+            ])
+            ->assertStatus(402)
+            ->assertJson(['upgrade_required' => true]);
     }
 
     public function test_destroy_returns_401_when_unauthenticated(): void

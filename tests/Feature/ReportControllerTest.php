@@ -71,9 +71,18 @@ class ReportControllerTest extends TestCase
     // ErrorException (500) sob o handler de erro real do Laravel, só nesse fluxo
     // (um teste batendo só no Service não pega isso, porque o array em si não
     // "quebra", só tem a chave errada).
-    public function test_export_pdf_returns_200_for_last_month_filter(): void
+    public function test_export_pdf_redirects_to_upgrade_for_free_user(): void
     {
         $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/reports/pdf', [])
+            ->assertRedirect(route('subscription.upgrade'));
+    }
+
+    public function test_export_pdf_returns_200_for_last_month_filter(): void
+    {
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create();
         $category = Category::factory()->for($user)->create();
         $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->startOfMonth()->subMonth()->addDays(5)]);

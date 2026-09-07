@@ -17,9 +17,19 @@ class RecurringPurchaseControllerTest extends TestCase
         $this->getJson('/api/v1/recurring-purchases')->assertStatus(401);
     }
 
-    public function test_index_returns_recurring_data_structure(): void
+    public function test_index_returns_402_for_free_user(): void
     {
         $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/recurring-purchases')
+            ->assertStatus(402)
+            ->assertJson(['upgrade_required' => true]);
+    }
+
+    public function test_index_returns_recurring_data_structure(): void
+    {
+        $user = User::factory()->pro()->create();
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/recurring-purchases')
@@ -48,7 +58,7 @@ class RecurringPurchaseControllerTest extends TestCase
     public function test_add_to_list_returns_403_when_list_belongs_to_another_user(): void
     {
         $list = ShoppingList::factory()->create();
-        $other = User::factory()->create();
+        $other = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create();
 
         $this->actingAs($other, 'sanctum')
@@ -63,7 +73,7 @@ class RecurringPurchaseControllerTest extends TestCase
 
     public function test_add_to_list_adds_item_to_list(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->pro()->create();
         $list = ShoppingList::factory()->for($user)->create();
         $issuer = Issuer::factory()->create();
 

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Actions\CreateDefaultCategoriesAction;
+use App\Actions\CreateFreeSubscriptionAction;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -26,6 +27,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         app(CreateDefaultCategoriesAction::class)->execute($user);
+        app(CreateFreeSubscriptionAction::class)->execute($user);
 
         if (app()->isLocal()) {
             $this->call(VisualCheckUserSeeder::class);
