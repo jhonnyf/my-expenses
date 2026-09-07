@@ -6,6 +6,7 @@ use App\Models\File;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class UpdateUserAvatarAction
 {
@@ -14,11 +15,15 @@ class UpdateUserAvatarAction
         [$width, $height] = $this->dimensions($uploadedFile);
 
         return DB::transaction(function () use ($user, $uploadedFile, $width, $height) {
-            $user->avatar?->delete();
-
             $path = $uploadedFile->store('avatars', 'public');
 
-            return $user->files()->create([
+            if ($path === false) {
+                throw new RuntimeException('Falha ao salvar a imagem de avatar.');
+            }
+
+            $oldAvatar = $user->avatar;
+
+            $file = $user->files()->create([
                 'collection' => 'avatar',
                 'disk' => 'public',
                 'path' => $path,
@@ -28,6 +33,10 @@ class UpdateUserAvatarAction
                 'width' => $width,
                 'height' => $height,
             ]);
+
+            $oldAvatar?->delete();
+
+            return $file;
         });
     }
 
