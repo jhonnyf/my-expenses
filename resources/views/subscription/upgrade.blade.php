@@ -17,31 +17,60 @@
     </div>
 
     <div class="kt-container-fixed">
-        <div class="max-w-xl mx-auto">
-            <div class="kt-card p-6 lg:p-7.5">
-                <h3 class="kt-card-title mb-4">O que você ganha no Pro</h3>
+        <div class="max-w-2xl mx-auto">
+            <div class="kt-card kt-card-grid">
+                <div class="kt-card-header">
+                    <h3 class="kt-card-title">Grátis x Pro</h3>
+                </div>
 
-                <ul class="flex flex-col gap-3 mb-6">
-                    @foreach ([
-                        'Sugestões automáticas via Inteligência Artificial (categorias e nomes de produto)',
-                        'Exportação de relatórios em PDF',
-                        'Comparação de preços e histórico entre lojas',
-                        'Detecção de compras recorrentes e melhor loja',
-                        'Múltiplos orçamentos por categoria',
-                    ] as $benefit)
-                        <li class="flex items-start gap-2.5">
-                            <i class="ki-filled ki-check-circle text-green-600 text-base shrink-0 mt-0.5"></i>
-                            <span class="text-sm text-foreground">{{ $benefit }}</span>
-                        </li>
-                    @endforeach
-                </ul>
+                <div class="kt-card-table">
+                    <div class="kt-scrollable-x-auto">
+                        <table class="kt-table kt-table-border table-auto">
+                            <thead>
+                                <tr>
+                                    <th class="min-w-[260px]">Funcionalidade</th>
+                                    <th class="w-[100px] text-center">Grátis</th>
+                                    <th class="w-[100px] text-center">Pro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ([
+                                    ['label' => 'Orçamento geral (sem categoria)', 'free' => true],
+                                    ['label' => 'Exportação de relatórios em CSV', 'free' => true],
+                                    ['label' => 'Múltiplos orçamentos por categoria', 'free' => false],
+                                    ['label' => 'Exportação de relatórios em PDF', 'free' => false],
+                                    ['label' => 'Sugestões via Inteligência Artificial (categorias e nomes de produto)', 'free' => false],
+                                    ['label' => 'Histórico de preços por produto', 'free' => false],
+                                    ['label' => 'Comparação de preços entre lojas e cidades', 'free' => false],
+                                    ['label' => 'Detecção de compras recorrentes', 'free' => false],
+                                ] as $feature)
+                                    <tr>
+                                        <td class="py-2.5 text-sm text-foreground">{{ $feature['label'] }}</td>
+                                        <td class="py-2.5 text-center">
+                                            @if($feature['free'])
+                                                <i class="ki-filled ki-check-circle text-green-600 text-base"></i>
+                                            @else
+                                                <i class="ki-filled ki-cross text-secondary-foreground text-base"></i>
+                                            @endif
+                                        </td>
+                                        <td class="py-2.5 text-center">
+                                            <i class="ki-filled ki-check-circle text-green-600 text-base"></i>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                <button type="button" class="kt-btn kt-btn-primary w-full" disabled>
-                    Assinar Pro (em breve)
-                </button>
-                <p class="text-xs text-secondary-foreground text-center mt-3">
-                    O pagamento online ainda não está disponível. Em breve você poderá assinar diretamente por aqui.
-                </p>
+                <div class="kt-card-footer flex-col gap-3">
+                    <button type="button" class="kt-btn kt-btn-primary w-full" disabled>
+                        Assinar Pro (em breve)
+                    </button>
+                    <p class="text-xs text-secondary-foreground text-center">
+                        O pagamento online ainda não está disponível. Em breve você poderá assinar diretamente por aqui.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
