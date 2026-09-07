@@ -30,6 +30,10 @@
                     </a>
                 </div>
 
+                <div class="kt-menu-item pt-4 pb-1">
+                    <span class="kt-menu-heading ps-[10px] text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">Compras</span>
+                </div>
+
                 <div class="kt-menu-item{{ request()->routeIs('issuers.*') ? ' active' : '' }}">
                     <a href="{{ route('issuers.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
                         <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
@@ -48,15 +52,6 @@
                     </a>
                 </div>
 
-                <div class="kt-menu-item{{ request()->routeIs('recurring-purchases.*') ? ' active' : '' }}">
-                    <a href="{{ route('recurring-purchases.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
-                        <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
-                            <i class="ki-filled ki-arrows-loop text-lg"></i>
-                        </span>
-                        <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">Compras Recorrentes</span>
-                    </a>
-                </div>
-
                 <div class="kt-menu-item{{ request()->routeIs('shopping-list.*') ? ' active' : '' }}">
                     <a href="{{ route('shopping-list.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
                         <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
@@ -64,6 +59,10 @@
                         </span>
                         <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">Lista de Compras</span>
                     </a>
+                </div>
+
+                <div class="kt-menu-item pt-4 pb-1">
+                    <span class="kt-menu-heading ps-[10px] text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">Planejamento</span>
                 </div>
 
                 <div class="kt-menu-item{{ request()->routeIs('categories.*') ? ' active' : '' }}">
@@ -84,15 +83,6 @@
                     </a>
                 </div>
 
-                <div class="kt-menu-item{{ request()->routeIs('prices.*') ? ' active' : '' }}">
-                    <a href="{{ route('prices.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
-                        <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
-                            <i class="ki-filled ki-chart-line-star text-lg"></i>
-                        </span>
-                        <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">Preços</span>
-                    </a>
-                </div>
-
                 <div class="kt-menu-item{{ request()->routeIs('reports.*') ? ' active' : '' }}">
                     <a href="{{ route('reports.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
                         <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
@@ -102,7 +92,33 @@
                     </a>
                 </div>
 
+                <div class="kt-menu-item pt-4 pb-1">
+                    <span class="kt-menu-heading ps-[10px] text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">Preços</span>
+                </div>
+
+                <div class="kt-menu-item{{ request()->routeIs('prices.*') ? ' active' : '' }}">
+                    <a href="{{ route('prices.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
+                        <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
+                            <i class="ki-filled ki-chart-line-star text-lg"></i>
+                        </span>
+                        <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">Preços</span>
+                    </a>
+                </div>
+
+                <div class="kt-menu-item{{ request()->routeIs('recurring-purchases.*') ? ' active' : '' }}">
+                    <a href="{{ route('recurring-purchases.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
+                        <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
+                            <i class="ki-filled ki-arrows-loop text-lg"></i>
+                        </span>
+                        <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">Compras Recorrentes</span>
+                    </a>
+                </div>
+
                 @if(auth()->user()?->email === config('subscription.super_admin_email'))
+                    <div class="kt-menu-item pt-4 pb-1">
+                        <span class="kt-menu-heading ps-[10px] text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">Administração</span>
+                    </div>
+
                     <div class="kt-menu-item{{ request()->routeIs('admin.subscriptions.*') ? ' active' : '' }}">
                         <a href="{{ route('admin.subscriptions.index') }}" class="kt-menu-link gap-[10px] ps-[10px] pe-[10px] py-[6px] border border-transparent kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg" tabindex="0">
                             <span class="kt-menu-icon items-start text-muted-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary w-[20px]">
