@@ -36,8 +36,8 @@
                             <tbody>
                                 @foreach ([
                                     ['label' => 'Orçamento geral (sem categoria)', 'free' => true],
-                                    ['label' => 'Exportação de relatórios em CSV', 'free' => true],
                                     ['label' => 'Múltiplos orçamentos por categoria', 'free' => false],
+                                    ['label' => 'Exportação de relatórios em CSV', 'free' => false],
                                     ['label' => 'Exportação de relatórios em PDF', 'free' => false],
                                     ['label' => 'Sugestões via Inteligência Artificial (categorias e nomes de produto)', 'free' => false],
                                     ['label' => 'Histórico de preços por produto', 'free' => false],

@@ -128,7 +128,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         Route::post('generate', [ReportController::class, 'generate'])->name('generate');
         Route::post('pdf', [ReportController::class, 'exportPdf'])->name('pdf')->middleware('pro');
-        Route::post('csv', [ReportController::class, 'exportCsv'])->name('csv');
+        Route::post('csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro');
     });
 
     // Detecção de compras recorrentes — exclusivo do plano Pro.

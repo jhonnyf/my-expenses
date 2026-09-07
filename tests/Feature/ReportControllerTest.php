@@ -102,9 +102,18 @@ class ReportControllerTest extends TestCase
         );
     }
 
-    public function test_export_csv_returns_200_for_last_month_filter(): void
+    public function test_export_csv_redirects_to_upgrade_for_free_user(): void
     {
         $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/reports/csv', [])
+            ->assertRedirect(route('subscription.upgrade'));
+    }
+
+    public function test_export_csv_returns_200_for_last_month_filter(): void
+    {
+        $user = User::factory()->pro()->create();
         $issuer = Issuer::factory()->create();
         $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->startOfMonth()->subMonth()->addDays(5)]);
         InvoiceItem::factory()->for($invoice)->create();

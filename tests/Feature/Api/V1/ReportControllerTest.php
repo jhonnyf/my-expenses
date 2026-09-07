@@ -59,9 +59,19 @@ class ReportControllerTest extends TestCase
         $this->getJson('/api/v1/reports/csv')->assertStatus(401);
     }
 
-    public function test_export_csv_streams_csv_content(): void
+    public function test_export_csv_returns_402_for_free_user(): void
     {
         $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/reports/csv')
+            ->assertStatus(402)
+            ->assertJson(['upgrade_required' => true]);
+    }
+
+    public function test_export_csv_streams_csv_content(): void
+    {
+        $user = User::factory()->pro()->create();
 
         $response = $this->actingAs($user, 'sanctum')
             ->get('/api/v1/reports/csv');

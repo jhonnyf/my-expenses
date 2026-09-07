@@ -90,7 +90,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Relatórios
             Route::prefix('reports')->name('reports.')->group(function () {
                 Route::get('/', [ReportController::class, 'generate'])->name('generate');
-                Route::get('csv', [ReportController::class, 'exportCsv'])->name('csv');
+                Route::get('csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro');
                 Route::post('email', [ReportController::class, 'emailReport'])->name('email');
             });
 
