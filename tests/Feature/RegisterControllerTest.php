@@ -271,6 +271,7 @@ class RegisterControllerTest extends TestCase
 
         $user = User::where('email', 'aceitoutermos@example.com')->firstOrFail();
         $this->assertNotNull($user->terms_accepted_at);
+        $this->assertSame(config('legal.current_terms_version'), $user->terms_version);
     }
 
     public function test_register_page_has_links_to_legal_pages(): void

@@ -32,6 +32,8 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'terms_accepted_at' => now(),
+            'terms_version' => config('legal.current_terms_version'),
         ];
     }
 
@@ -42,6 +44,17 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user still needs to accept the current Terms/Privacy version.
+     */
+    public function withPendingTermsAcceptance(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'terms_accepted_at' => null,
+            'terms_version' => null,
         ]);
     }
 

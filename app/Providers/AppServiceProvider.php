@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Events\InvoiceImported;
 use App\Listeners\AutoCategorizeListener;
 use App\Models\User;
+use App\Models\UserProfile;
 use App\Observers\UserObserver;
+use App\Observers\UserProfileObserver;
 use Carbon\Carbon;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(SocialiteWasCalled::class, AppleExtendSocialite::class);
 
         User::observe(UserObserver::class);
+        UserProfile::observe(UserProfileObserver::class);
 
         $this->configureRateLimiting();
         $this->configureQueryMacros();

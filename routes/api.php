@@ -18,13 +18,11 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShoppingListController;
 use App\Http\Controllers\Api\V1\SocialAuthController;
+use App\Http\Controllers\Api\V1\TermsAcceptanceController;
 use App\Http\Controllers\MyPurchaseController;
-use App\Http\Controllers\NfceImportController;
 use Illuminate\Support\Facades\Route;
 
-// ─── Rotas legadas (mantidas intactas) ───────────────────────────────────────
 Route::middleware(['web', 'auth'])->group(function () {
-    Route::match(['get', 'post'], 'nfce/importar', [NfceImportController::class, 'importar'])->name('nfce.importar');
     Route::post('nfce/upload', [MyPurchaseController::class, 'upload'])->name('nfce.upload');
 });
 
@@ -50,8 +48,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('email/resend', [AuthController::class, 'resendVerificationEmail'])->name('email.resend');
         });
 
-        // Demais rotas exigem e-mail verificado
-        Route::middleware('verified')->group(function () {
+        Route::post('terms/accept', [TermsAcceptanceController::class, 'accept'])->name('terms.accept');
+
+        // Demais rotas exigem e-mail verificado e Termos/Política na versão vigente
+        Route::middleware(['verified', 'terms.accepted'])->group(function () {
 
             // Dashboard
             Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -145,6 +145,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('avatar', [AccountController::class, 'updateAvatar'])->name('avatar');
                 Route::post('location-suggestion/dismiss', [AccountController::class, 'dismissLocationSuggestion'])->name('location-suggestion.dismiss');
                 Route::post('location/capture', [AccountController::class, 'captureLocation'])->middleware('throttle:10,1')->name('location.capture');
+                Route::post('export', [AccountController::class, 'requestExport'])->middleware('throttle:5,60')->name('export');
+                Route::delete('/', [AccountController::class, 'destroy'])->name('destroy');
             });
 
             // Produtos favoritos (alerta de queda de preço)

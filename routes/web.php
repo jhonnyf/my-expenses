@@ -22,6 +22,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShoppingListController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TermsAcceptanceController;
 use App\Http\Controllers\VerificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -60,7 +61,12 @@ Route::group(['prefix' => 'email/verify', 'as' => 'verification.', 'middleware' 
     Route::post('resend', [VerificationController::class, 'resend'])->name('send')->middleware('throttle:6,1');
 });
 
-Route::group(['middleware' => ['auth', 'verified']], function () {
+Route::group(['prefix' => 'aceitar-termos', 'as' => 'terms.accept.', 'middleware' => 'auth'], function () {
+    Route::get('/', [TermsAcceptanceController::class, 'form'])->name('form');
+    Route::post('/', [TermsAcceptanceController::class, 'store'])->name('store');
+});
+
+Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function () {
 
     Route::group(['prefix' => 'dashboard', 'as' => 'dashboard.'], function () {
         Route::get('/', [DashboardController::class, 'index'])->name('index');
@@ -162,6 +168,9 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::post('avatar', [AccountController::class, 'updateAvatar'])->name('avatar');
         Route::post('location-suggestion/dismiss', [AccountController::class, 'dismissLocationSuggestion'])->name('location-suggestion.dismiss');
         Route::post('location/capture', [AccountController::class, 'captureLocation'])->middleware('throttle:10,1')->name('location.capture');
+        Route::post('export', [AccountController::class, 'requestExport'])->middleware('throttle:5,60')->name('export');
+        Route::get('export/download/{file}', [AccountController::class, 'downloadExport'])->middleware('signed')->name('export.download');
+        Route::delete('/', [AccountController::class, 'destroy'])->name('destroy');
     });
 
     Route::group(['prefix' => 'favorite-products', 'as' => 'favorite-products.'], function () {

@@ -456,6 +456,36 @@
           </div>
         @endif
 
+        @if(session('success_export'))
+          <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5">
+            <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+            <span class="text-sm text-green-600 font-medium">{{ session('success_export') }}</span>
+          </div>
+        @endif
+
+        <div class="kt-card mb-5 lg:mb-7.5">
+          <div class="kt-card-header">
+            <h3 class="kt-card-title">Meus Dados</h3>
+          </div>
+          <div class="kt-card-content p-6">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p class="text-sm font-medium text-foreground">Exportar meus dados</p>
+                <p class="text-xs text-secondary-foreground mt-0.5">
+                  Baixe uma cópia dos seus dados pessoais e histórico de compras (portabilidade, conforme a LGPD). Você receberá um link por e-mail.
+                </p>
+              </div>
+              <form method="POST" action="{{ route('account.export') }}" class="shrink-0">
+                @csrf
+                <button type="submit" class="kt-btn kt-btn-outline kt-btn-sm">
+                  <i class="ki-filled ki-exit-down"></i>
+                  Exportar dados
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
         <div class="kt-card">
           <div class="kt-card-header">
             <h3 class="kt-card-title">Alterar Senha</h3>
@@ -522,9 +552,70 @@
           </div>
         </div>
 
+        {{-- Card: Zona de Perigo --}}
+        <div class="kt-card border-destructive/30 mt-5 lg:mt-7.5">
+          <div class="kt-card-header">
+            <h3 class="kt-card-title text-destructive">Zona de Perigo</h3>
+          </div>
+          <div class="kt-card-content p-6">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p class="text-sm font-medium text-foreground">Excluir minha conta</p>
+                <p class="text-xs text-secondary-foreground mt-0.5">
+                  Remove seus dados pessoais permanentemente. Notas fiscais já importadas são mantidas de forma anônima, sem vínculo com você, para preservar o histórico de preços da comunidade.
+                </p>
+              </div>
+              <button type="button" class="kt-btn kt-btn-destructive kt-btn-sm shrink-0" data-kt-modal-toggle="#deleteAccountModal">
+                <i class="ki-filled ki-trash"></i>
+                Excluir conta
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>
+  </div>
+</div>
+
+<div class="kt-modal" data-kt-modal="true" id="deleteAccountModal">
+  <div class="kt-modal-content max-w-[440px] top-[15%]">
+    <div class="kt-modal-header">
+      <h3 class="kt-modal-title">Excluir sua conta</h3>
+      <button class="kt-modal-close" data-kt-modal-dismiss="#deleteAccountModal" aria-label="Fechar">
+        <i class="ki-filled ki-cross"></i>
+      </button>
+    </div>
+    <form method="POST" action="{{ route('account.destroy') }}">
+      @csrf
+      @method('DELETE')
+      <div class="kt-modal-body flex flex-col gap-3">
+        <p class="text-sm text-secondary-foreground">
+          Esta ação é permanente. Seu perfil, foto, categorias, listas e assinatura serão apagados. Confirme sua senha atual para continuar.
+        </p>
+        <div class="kt-form-item">
+          <label class="kt-form-label" for="delete_current_password">Senha atual</label>
+          <div class="kt-form-control">
+            <input
+              type="password"
+              id="delete_current_password"
+              name="current_password"
+              class="kt-input @error('current_password') border-destructive @enderror"
+              placeholder="Digite sua senha atual"
+              autocomplete="current-password"
+            />
+          </div>
+          @error('current_password')
+            <div class="kt-form-message text-destructive">{{ $message }}</div>
+          @enderror
+        </div>
+      </div>
+      <div class="kt-modal-footer">
+        <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="#deleteAccountModal">Cancelar</button>
+        <button type="submit" class="kt-btn kt-btn-destructive">Excluir permanentemente</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -533,10 +624,11 @@
 @push('scripts')
 <script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
-        openTab: @if($errors->has('current_password') || $errors->has('password') || session('success_password')) 'security'
+        openTab: @if($errors->has('current_password') || $errors->has('password') || session('success_password') || session('success_export')) 'security'
                  @elseif($errors->has('name') || $errors->has('email') || $errors->has('avatar') || session('success') || session('success_avatar')) 'settings'
                  @else null
                  @endif,
+        openDeleteAccountModal: @json(old('_method') === 'DELETE' && $errors->has('current_password')),
     });
 </script>
 @endpush

@@ -3,6 +3,7 @@
 use App\Exceptions\ProFeatureRequiredException;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\EnsureIsSuperAdmin;
+use App\Http\Middleware\EnsureTermsAccepted;
 use App\Http\Middleware\EnsureUserHasProPlan;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth' => Authenticate::class,
             'pro' => EnsureUserHasProPlan::class,
             'super-admin' => EnsureIsSuperAdmin::class,
+            'terms.accepted' => EnsureTermsAccepted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

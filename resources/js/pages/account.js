@@ -56,8 +56,11 @@ const Account = (() => {
 
             document.addEventListener('location:updated', handleLocationUpdated);
 
-            const { openTab: tab } = window.pageConfig ?? {};
+            const { openTab: tab, openDeleteAccountModal } = window.pageConfig ?? {};
             if (tab) openTab(tab);
+            if (openDeleteAccountModal) {
+                document.querySelector('[data-kt-modal-toggle="#deleteAccountModal"]')?.click();
+            }
         }
     };
 })();

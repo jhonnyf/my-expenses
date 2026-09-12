@@ -34,7 +34,21 @@ class User extends Authenticatable implements MustVerifyEmailContract
         'provider_id',
         'email_verified_at',
         'terms_accepted_at',
+        'terms_version',
     ];
+
+    public function hasAcceptedCurrentTerms(): bool
+    {
+        return $this->terms_version === config('legal.current_terms_version');
+    }
+
+    public function acceptCurrentTerms(): void
+    {
+        $this->forceFill([
+            'terms_accepted_at' => now(),
+            'terms_version' => config('legal.current_terms_version'),
+        ])->save();
+    }
 
     public function profile(): HasOne
     {

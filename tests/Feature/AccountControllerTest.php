@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ExportPersonalDataJob;
 use App\Jobs\GeocodeUserProfileJob;
 use App\Models\Invoice;
 use App\Models\Issuer;
@@ -9,9 +10,11 @@ use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AccountControllerTest extends TestCase
@@ -23,6 +26,13 @@ class AccountControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)->get('/account')->assertStatus(200);
+    }
+
+    public function test_index_shows_delete_account_section(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/account')->assertStatus(200)->assertSee('Excluir minha conta');
     }
 
     public function test_index_shows_free_plan_badge_for_free_user(): void
@@ -268,5 +278,106 @@ class AccountControllerTest extends TestCase
         Storage::disk('public')->assertMissing($firstPath);
         Storage::disk('public')->assertExists($user->avatar->path);
         $this->assertDatabaseCount('files', 1);
+    }
+
+    public function test_request_export_dispatches_job_and_redirects(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/account/export')
+            ->assertRedirect(route('account.index'));
+
+        Queue::assertPushed(ExportPersonalDataJob::class);
+    }
+
+    public function test_download_export_rejects_invalid_signature(): void
+    {
+        $user = User::factory()->create();
+        $file = $user->files()->create([
+            'collection' => 'personal-data-export',
+            'disk' => 'local',
+            'path' => 'exports/1/fake.json',
+            'original_name' => 'meus-dados.json',
+            'mime_type' => 'application/json',
+            'size' => 10,
+        ]);
+
+        $this->actingAs($user)
+            ->get("/account/export/download/{$file->id}")
+            ->assertForbidden();
+    }
+
+    public function test_download_export_rejects_when_not_owner(): void
+    {
+        Storage::fake('local');
+
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        Storage::disk('local')->put('exports/1/fake.json', '{}');
+        $file = $owner->files()->create([
+            'collection' => 'personal-data-export',
+            'disk' => 'local',
+            'path' => 'exports/1/fake.json',
+            'original_name' => 'meus-dados.json',
+            'mime_type' => 'application/json',
+            'size' => 2,
+        ]);
+
+        $url = URL::temporarySignedRoute('account.export.download', now()->addDay(), ['file' => $file->id]);
+
+        $this->actingAs($other)->get($url)->assertForbidden();
+    }
+
+    public function test_download_export_returns_file_for_owner(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        Storage::disk('local')->put('exports/1/fake.json', '{"foo":"bar"}');
+        $file = $user->files()->create([
+            'collection' => 'personal-data-export',
+            'disk' => 'local',
+            'path' => 'exports/1/fake.json',
+            'original_name' => 'meus-dados.json',
+            'mime_type' => 'application/json',
+            'size' => 13,
+        ]);
+
+        $url = URL::temporarySignedRoute('account.export.download', now()->addDay(), ['file' => $file->id]);
+
+        $this->actingAs($user)->get($url)->assertOk();
+    }
+
+    public function test_destroy_redirects_unauthenticated_user(): void
+    {
+        $this->delete('/account')->assertRedirect(route('login.index'));
+    }
+
+    public function test_destroy_rejects_wrong_current_password(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('password')]);
+
+        $this->actingAs($user)
+            ->from('/account')
+            ->delete('/account', ['current_password' => 'wrongpassword'])
+            ->assertRedirect('/account')
+            ->assertSessionHasErrors('current_password');
+
+        $this->assertModelExists($user);
+    }
+
+    public function test_destroy_deletes_account_and_logs_out(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('password')]);
+
+        $response = $this->actingAs($user)
+            ->delete('/account', ['current_password' => 'password']);
+
+        $response->assertRedirect(route('login.index'));
+        $this->assertModelMissing($user);
+        $this->assertGuest();
     }
 }

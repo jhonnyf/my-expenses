@@ -24,6 +24,8 @@ class UserProfile extends Model
     ];
 
     protected $casts = [
+        'cpf' => 'encrypted',
+        'cnpj' => 'encrypted',
         'latitude' => 'float',
         'longitude' => 'float',
         'location_suggestion_dismissed_at' => 'datetime',

@@ -44,15 +44,12 @@ Validação via Form Requests, serialização de API via API Resources (`Http/Re
 3. `ImportInvoiceAction::execute()` persiste em transação: `Issuer::firstOrCreate` (emitente, por CNPJ — nome não é atualizado em imports subsequentes), `Invoice::updateOrCreate` (vinculada ao `user_id` autenticado, não a um destinatário do XML) e sincroniza `InvoiceItem`/`InvoicePayment`
 4. O XML bruto é salvo no campo `raw_xml` da tabela `invoices`; duplicidade é checada por `user_id` + `access_key`
 
-### Fluxo legado (dev/debug, evitar para novas features)
+`MyPurchaseController` (rotas `my-purchases.*` e `POST /api/nfce/upload`) usa o mesmo `ImportInvoiceAction` + `ImportStrategyInterface` do fluxo atual (API v1), vinculado ao usuário autenticado via `Auth::id()`.
 
-`NfceImportController`/`GET|POST /api/nfce/importar` é o único ponto que ainda usa `NfceXmlImporter` (parser SimpleXML puro) + `InvoiceService`, que **cria um `User`/`UserProfile` a partir do destinatário do XML** em vez de vincular à sessão autenticada. Lê um arquivo fixo em `storage/app/private/import/nfc-e.xml` — é um endpoint de debug/dev, não faz parte do fluxo real de importação.
-
-`MyPurchaseController` (rotas `my-purchases.*` e `POST /api/nfce/upload`) **não** é legado: apesar do nome de rota parecido, já usa o mesmo `ImportInvoiceAction` + `ImportStrategyInterface` do fluxo atual (API v1), vinculado ao usuário autenticado via `Auth::id()`. `InvoiceService`/`NfceXmlImporter` estão parados desde os primeiros commits do projeto; `MyPurchaseController`/`ImportInvoiceAction` evoluíram bastante desde então — a documentação antiga estava desatualizada quanto a isso.
-
-- **`NfceXmlImporter`** — parseia XML de NFC-e (SimpleXML, namespace `http://www.portalfiscal.inf.br/nfe`). Retorna array com `chave`, `emitente`, `destinatario`, `itens`, `total`, `pagamento`. Usado só pelo `NfceImportController`.
-- **`InvoiceService`** — cria `Issuer`/`Invoice`/`InvoiceItem` + `User`/`UserProfile` a partir do destinatário. Usado só pelo `NfceImportController`.
+- **`NfceXmlImporter`** — parseia XML de NFC-e (SimpleXML, namespace `http://www.portalfiscal.inf.br/nfe`). Retorna array com `chave`, `emitente`, `destinatario`, `itens`, `total`, `pagamento`. Usado pelas `Import/Strategies/`.
 - **`NFCeService`** — integração com SEFAZ via certificado digital (`nfephp-org/sped-nfe`). Consulta NFC-e por chave de acesso ou QR Code. Requer variáveis `NFE_*`.
+
+> O antigo fluxo de debug (`NfceImportController`/`GET|POST /api/nfce/importar` + `InvoiceService`) foi removido: criava um `User`/`UserProfile` a partir do CPF/CNPJ do destinatário do XML, sem consentimento da pessoa titular desses dados — incompatível com a LGPD. Não recriar esse padrão (criação de conta a partir de dado de terceiro sem interação do titular).
 
 ### Modelos e banco
 
@@ -66,19 +63,18 @@ Validação via Form Requests, serialização de API via API Resources (`Http/Re
 | `categories` | `Category` | Categorias de despesa (com keywords para auto-categorização) |
 | `budgets` | `Budget` | Orçamentos por categoria (ou geral) |
 | `shopping_lists` / `shopping_list_items` | `ShoppingList` / `ShoppingListItem` | Listas de compras |
-| `users` | `User` | Usuários autenticados (via Sanctum) e destinatários criados pelo fluxo legado |
+| `users` | `User` | Usuários autenticados (via Sanctum) |
 | `users_profiles` | `UserProfile` | CPF/CNPJ do usuário |
 
 ### Rotas web (autenticadas via middleware `auth`, exceto onde indicado)
 
 Públicas: `register`, `login` (+ `login/social/{provider}` e callback), `forgot-password`, `reset-password` (todas com `throttle:5,1` ou `throttle:10,1` nos POSTs de auth social).
 
-Autenticadas: `dashboard`, `issuers` (+ `favorite`, `nickname`), `my-purchases` (upload/import legado), `categories` (+ `assign-item`, `auto-categorize`), `price-history`, `search` (busca global), `budgets`, `reports` (+ export `pdf`/`csv`), `recurring-purchases` (+ `add-to-list`), `shopping-list` (+ itens: add/update/remove/toggle-purchased), `account` (+ `password`, `avatar`).
+Autenticadas: `dashboard`, `issuers` (+ `favorite`, `nickname`), `my-purchases` (upload/import), `categories` (+ `assign-item`, `auto-categorize`), `price-history`, `search` (busca global), `budgets`, `reports` (+ export `pdf`/`csv`), `recurring-purchases` (+ `add-to-list`), `shopping-list` (+ itens: add/update/remove/toggle-purchased), `account` (+ `password`, `avatar`).
 
 ### Rotas de API (`routes/api.php`)
 
-- **Legada** (`web` + `auth`): `GET|POST /api/nfce/importar` (lê `storage/app/private/import/nfc-e.xml`, fluxo legado/debug via `NfceImportController`).
-- `POST /api/nfce/upload` (`web` + `auth`) — **não é legado**: mapeia para `MyPurchaseController::upload`, mesmo fluxo moderno (`ImportInvoiceAction`) das rotas `my-purchases.*`.
+- `POST /api/nfce/upload` (`web` + `auth`): mapeia para `MyPurchaseController::upload`, mesmo fluxo moderno (`ImportInvoiceAction`) das rotas `my-purchases.*`.
 - **v1 pública** (prefixo `api/v1/auth`, `throttle:api-auth` 10/min por IP): `login`, `register`, `forgot-password`, `reset-password`, `social/{provider}`.
 - **v1 protegida** (`auth:sanctum`, `throttle:api` 60/min por usuário): espelha os módulos web — `dashboard`, `search`, `invoices` (+ import xml/qrcode/key), `issuers` (+ favorite/nickname), `categories`, `budgets`, `reports`, `price-history` (+ `timeline`), `recurring-purchases`, `shopping-lists` (+ itens), `account` (+ `avatar`).
 

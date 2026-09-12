@@ -3,19 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CaptureUserLocationFromBrowserAction;
+use App\Actions\DeleteUserAccountAction;
 use App\Actions\UpdateUserAvatarAction;
 use App\Actions\UpdateUserLocationAction;
 use App\Http\Requests\CaptureLocationRequest;
+use App\Http\Requests\DeleteAccountRequest;
 use App\Http\Requests\UpdateAccountRequest;
 use App\Http\Requests\UpdateAvatarRequest;
 use App\Http\Requests\UpdatePasswordRequest;
+use App\Jobs\ExportPersonalDataJob;
+use App\Models\File;
 use App\Models\InvoiceItem;
+use App\Models\User;
 use App\Services\LocationSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AccountController extends Controller
 {
@@ -114,5 +121,38 @@ class AccountController extends Controller
             'latitude' => $profile->latitude,
             'longitude' => $profile->longitude,
         ]);
+    }
+
+    public function requestExport(): RedirectResponse
+    {
+        ExportPersonalDataJob::dispatch(Auth::id());
+
+        return redirect()
+            ->route('account.index')
+            ->with('success_export', 'Estamos preparando seus dados. Você receberá um e-mail com o link para download em instantes.');
+    }
+
+    public function downloadExport(File $file): StreamedResponse
+    {
+        abort_if($file->collection !== 'personal-data-export', 404);
+        abort_if($file->fileable_type !== User::class || $file->fileable_id !== Auth::id(), 403);
+
+        return Storage::disk($file->disk)->download($file->path, $file->original_name);
+    }
+
+    public function destroy(DeleteAccountRequest $request, DeleteUserAccountAction $action): RedirectResponse
+    {
+        $user = Auth::user();
+
+        // Logout precisa vir antes da exclusão: se ocorrer depois, o guard tenta
+        // gravar um novo "remember token" no model já deletado, o que faz o
+        // Eloquent reinserir a linha (exists=false -> save() vira INSERT).
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        $action->execute($user);
+
+        return redirect()->route('login.index')->with('success', 'Sua conta foi excluída.');
     }
 }

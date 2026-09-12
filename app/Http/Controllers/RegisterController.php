@@ -31,6 +31,7 @@ class RegisterController extends Controller
             'email' => $request->input('email'),
             'password' => $request->input('password'),
             'terms_accepted_at' => now(),
+            'terms_version' => config('legal.current_terms_version'),
         ]);
 
         $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));

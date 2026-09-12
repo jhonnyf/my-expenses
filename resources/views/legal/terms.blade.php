@@ -99,8 +99,11 @@
     <section>
         <h2>9. Rescisão e Encerramento de Conta</h2>
         <p>
-            Você pode encerrar sua conta a qualquer momento. Podemos suspender ou encerrar contas que violem
-            estes Termos, mediante notificação, sempre que possível.
+            Você pode encerrar sua conta a qualquer momento diretamente pela tela "Minha Conta" &rarr;
+            "Segurança", na opção "Excluir minha conta" — veja a
+            <a class="link" href="{{ route('legal.privacy') }}">Política de Privacidade</a> para detalhes
+            sobre quais dados são removidos e quais são anonimizados. Podemos suspender ou encerrar contas
+            que violem estes Termos, mediante notificação, sempre que possível.
         </p>
     </section>
 

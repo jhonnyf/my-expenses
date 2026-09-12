@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Issuer;
+use App\Support\NfceXmlRedactor;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -78,7 +79,7 @@ class ImportInvoiceAction
             'total_discount' => (float) Arr::get($parsed, 'total.valor_desconto', 0),
             'total_amount' => (float) Arr::get($parsed, 'total.valor_nota', 0),
             'total_taxes' => (float) Arr::get($parsed, 'total.valor_tributos', 0),
-            'raw_xml' => $rawContent,
+            'raw_xml' => NfceXmlRedactor::redact($rawContent),
         ];
     }
 

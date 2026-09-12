@@ -119,6 +119,9 @@ class InvoiceControllerTest extends TestCase
 
         $this->assertDatabaseHas('invoices', ['user_id' => $user->id]);
         $this->assertDatabaseHas('issuers', ['cnpj' => '00000000000191']);
+
+        $invoice = Invoice::where('user_id', $user->id)->firstOrFail();
+        $this->assertStringNotContainsString('11122233344', $invoice->raw_xml);
     }
 
     public function test_import_xml_returns_409_for_duplicate_invoice(): void

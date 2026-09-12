@@ -119,8 +119,7 @@ class GeocodingService
 
             if (! $response->successful()) {
                 Log::warning('Reverse geocoding: resposta não bem-sucedida do Nominatim', [
-                    'lat' => $lat,
-                    'lng' => $lng,
+                    ...$this->roundedCoordinatesForLog($lat, $lng),
                     'status' => $response->status(),
                 ]);
 
@@ -149,8 +148,7 @@ class GeocodingService
             return ['city' => $city, 'state' => $uf];
         } catch (\Throwable $e) {
             Log::warning('Reverse geocoding: falha ao consultar Nominatim', [
-                'lat' => $lat,
-                'lng' => $lng,
+                ...$this->roundedCoordinatesForLog($lat, $lng),
                 'message' => $e->getMessage(),
             ]);
 
@@ -164,5 +162,16 @@ class GeocodingService
         $namesToUf ??= array_flip(config('brazilian-states'));
 
         return $namesToUf[$stateName] ?? null;
+    }
+
+    /**
+     * Arredonda para ~1km de precisão antes de logar: suficiente para debug,
+     * insuficiente para identificar o endereço exato de onde o usuário está.
+     *
+     * @return array{lat: float, lng: float}
+     */
+    private function roundedCoordinatesForLog(float $lat, float $lng): array
+    {
+        return ['lat' => round($lat, 2), 'lng' => round($lng, 2)];
     }
 }

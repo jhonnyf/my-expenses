@@ -26,6 +26,18 @@ class LegalControllerTest extends TestCase
             ->assertSee('LGPD');
     }
 
+    public function test_privacy_page_discloses_dpo_third_parties_and_cookies(): void
+    {
+        $this->get('/politica-de-privacidade')
+            ->assertStatus(200)
+            ->assertSee('Encarregado de Dados')
+            ->assertSee('Nominatim')
+            ->assertSee('Google Gemini')
+            ->assertSee('Cookies')
+            ->assertSee('Excluir minha conta')
+            ->assertSee('Exportar meus dados');
+    }
+
     public function test_terms_page_accessible_to_authenticated_user(): void
     {
         $user = User::factory()->create();

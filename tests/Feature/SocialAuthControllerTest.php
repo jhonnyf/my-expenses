@@ -96,6 +96,9 @@ class SocialAuthControllerTest extends TestCase
 
         $user = User::where('email', 'newuser@example.com')->firstOrFail();
         $this->assertTrue($user->hasVerifiedEmail());
+        $this->assertNull($user->terms_version);
+
+        $this->get('/dashboard')->assertRedirect(route('terms.accept.form'));
     }
 
     public function test_callback_verifies_email_of_previously_unverified_existing_user(): void

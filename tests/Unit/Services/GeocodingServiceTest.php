@@ -6,6 +6,8 @@ use App\Services\GeocodingService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Mockery;
 use Tests\TestCase;
 
 class GeocodingServiceTest extends TestCase
@@ -138,6 +140,21 @@ class GeocodingServiceTest extends TestCase
         });
 
         $this->assertNull($this->service->reverseGeocode(-25.4284, -49.2733));
+    }
+
+    public function test_reverse_geocode_logs_only_low_precision_coordinates_on_failure(): void
+    {
+        Http::fake(['*nominatim*' => Http::response(null, 500)]);
+
+        Log::shouldReceive('warning')
+            ->once()
+            ->with('Reverse geocoding: resposta não bem-sucedida do Nominatim', Mockery::on(function (array $context) {
+                return $context['lat'] === -25.43
+                    && $context['lng'] === -49.27
+                    && $context['status'] === 500;
+            }));
+
+        $this->service->reverseGeocode(-25.428371234, -49.273312345);
     }
 
     public function test_reverse_geocode_caches_result_and_avoids_second_http_call(): void

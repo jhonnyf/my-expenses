@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\CaptureUserLocationFromBrowserAction;
+use App\Actions\DeleteUserAccountAction;
 use App\Actions\UpdateUserAvatarAction;
 use App\Actions\UpdateUserLocationAction;
 use App\Http\Requests\CaptureLocationRequest;
+use App\Http\Requests\DeleteAccountRequest;
 use App\Http\Requests\UpdateAccountRequest;
 use App\Http\Requests\UpdateAvatarRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Resources\Api\V1\InvoiceResource;
 use App\Http\Resources\Api\V1\UserResource;
+use App\Jobs\ExportPersonalDataJob;
 use App\Models\InvoiceItem;
 use App\Services\LocationSuggestionService;
 use Illuminate\Http\JsonResponse;
@@ -107,5 +110,21 @@ class AccountController extends Controller
             'latitude' => $profile->latitude,
             'longitude' => $profile->longitude,
         ]);
+    }
+
+    public function requestExport(Request $request): JsonResponse
+    {
+        ExportPersonalDataJob::dispatch($request->user()->id);
+
+        return response()->json([
+            'message' => 'Estamos preparando seus dados. Você receberá um e-mail com o link para download em instantes.',
+        ], 202);
+    }
+
+    public function destroy(DeleteAccountRequest $request, DeleteUserAccountAction $action): JsonResponse
+    {
+        $action->execute($request->user());
+
+        return response()->json(['message' => 'Sua conta foi excluída.']);
     }
 }

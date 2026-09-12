@@ -255,5 +255,6 @@ class AuthControllerTest extends TestCase
 
         $user = User::where('email', 'aceitoutermos@example.com')->firstOrFail();
         $this->assertNotNull($user->terms_accepted_at);
+        $this->assertSame(config('legal.current_terms_version'), $user->terms_version);
     }
 }

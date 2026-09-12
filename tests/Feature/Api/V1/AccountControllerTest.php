@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Jobs\ExportPersonalDataJob;
 use App\Jobs\GeocodeUserProfileJob;
 use App\Models\Invoice;
 use App\Models\Issuer;
@@ -287,5 +288,53 @@ class AccountControllerTest extends TestCase
         $user->refresh();
         $this->assertNotNull($user->avatar);
         Storage::disk('public')->assertExists($user->avatar->path);
+    }
+
+    public function test_request_export_dispatches_job(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/account/export')
+            ->assertStatus(202);
+
+        Queue::assertPushed(ExportPersonalDataJob::class);
+    }
+
+    public function test_request_export_returns_401_when_unauthenticated(): void
+    {
+        $this->postJson('/api/v1/account/export')->assertStatus(401);
+    }
+
+    public function test_destroy_returns_401_when_unauthenticated(): void
+    {
+        $this->deleteJson('/api/v1/account', ['current_password' => 'password'])->assertStatus(401);
+    }
+
+    public function test_destroy_rejects_wrong_current_password(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('password')]);
+
+        $this->actingAs($user, 'sanctum')
+            ->deleteJson('/api/v1/account', ['current_password' => 'wrongpassword'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['current_password']);
+
+        $this->assertModelExists($user);
+    }
+
+    public function test_destroy_deletes_account_and_revokes_token(): void
+    {
+        $user = User::factory()->create(['password' => Hash::make('password')]);
+        $token = $user->createToken('test-device');
+
+        $this->withHeader('Authorization', 'Bearer '.$token->plainTextToken)
+            ->deleteJson('/api/v1/account', ['current_password' => 'password'])
+            ->assertStatus(200);
+
+        $this->assertModelMissing($user);
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $token->accessToken->id]);
     }
 }
