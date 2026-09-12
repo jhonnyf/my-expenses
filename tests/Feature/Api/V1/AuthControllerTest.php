@@ -79,7 +79,18 @@ class AuthControllerTest extends TestCase
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/auth/me')
             ->assertStatus(200)
-            ->assertJsonPath('data.id', $user->id);
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.terms_acceptance_required', false);
+    }
+
+    public function test_me_flags_terms_acceptance_required_when_pending(): void
+    {
+        $user = User::factory()->withPendingTermsAcceptance()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/auth/me')
+            ->assertStatus(200)
+            ->assertJsonPath('data.terms_acceptance_required', true);
     }
 
     public function test_me_returns_401_when_unauthenticated(): void
