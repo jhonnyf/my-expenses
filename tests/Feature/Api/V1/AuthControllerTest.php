@@ -51,6 +51,7 @@ class AuthControllerTest extends TestCase
             'email' => 'joao@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => true,
         ])
             ->assertStatus(201)
             ->assertJsonStructure(['data' => ['token', 'user' => ['id', 'email']]]);
@@ -67,6 +68,7 @@ class AuthControllerTest extends TestCase
             'email' => 'joao@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => true,
         ])->assertStatus(422)->assertJsonValidationErrors(['email']);
     }
 
@@ -108,6 +110,7 @@ class AuthControllerTest extends TestCase
             'password_confirmation' => 'password123',
             'cidade' => 'Curitiba',
             'estado' => 'PR',
+            'accept_terms' => true,
         ])->assertStatus(201);
 
         $user = User::where('email', 'maria@example.com')->firstOrFail();
@@ -127,6 +130,7 @@ class AuthControllerTest extends TestCase
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'estado' => 'PRR',
+            'accept_terms' => true,
         ])->assertStatus(422)->assertJsonValidationErrors(['estado']);
     }
 
@@ -137,6 +141,7 @@ class AuthControllerTest extends TestCase
             'email' => 'categorias@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => true,
         ]);
 
         $user = User::where('email', 'categorias@example.com')->firstOrFail();
@@ -150,6 +155,7 @@ class AuthControllerTest extends TestCase
             'email' => 'naoverificado@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => true,
         ]);
 
         $user = User::where('email', 'naoverificado@example.com')->firstOrFail();
@@ -165,6 +171,7 @@ class AuthControllerTest extends TestCase
             'email' => 'naoverificado@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => true,
         ]);
 
         $user = User::where('email', 'naoverificado@example.com')->firstOrFail();
@@ -209,5 +216,44 @@ class AuthControllerTest extends TestCase
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/auth/email/resend')
             ->assertStatus(409);
+    }
+
+    public function test_register_rejects_request_without_accept_terms(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Test User',
+            'email' => 'semtermos@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertStatus(422)->assertJsonValidationErrors(['accept_terms']);
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_register_rejects_request_with_accept_terms_false(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Test User',
+            'email' => 'termosfalso@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'accept_terms' => false,
+        ])->assertStatus(422)->assertJsonValidationErrors(['accept_terms']);
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_register_records_terms_accepted_at_timestamp(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Test User',
+            'email' => 'aceitoutermos@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'accept_terms' => true,
+        ]);
+
+        $user = User::where('email', 'aceitoutermos@example.com')->firstOrFail();
+        $this->assertNotNull($user->terms_accepted_at);
     }
 }

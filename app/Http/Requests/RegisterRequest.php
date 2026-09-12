@@ -20,6 +20,7 @@ class RegisterRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::min(8)],
             'cidade' => ['nullable', 'string', 'max:255'],
             'estado' => ['nullable', 'string', 'size:2'],
+            'accept_terms' => ['required', 'accepted'],
         ];
     }
 
@@ -35,6 +36,8 @@ class RegisterRequest extends FormRequest
             'password.confirmed' => 'A confirmação de senha não confere.',
             'password.min' => 'A senha deve ter pelo menos 8 caracteres.',
             'estado.size' => 'Informe a sigla do estado (UF) com 2 letras.',
+            'accept_terms.required' => 'Você precisa aceitar os Termos de Uso e a Política de Privacidade.',
+            'accept_terms.accepted' => 'Você precisa aceitar os Termos de Uso e a Política de Privacidade.',
         ];
     }
 }

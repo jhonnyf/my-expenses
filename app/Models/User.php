@@ -33,6 +33,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
         'provider',
         'provider_id',
         'email_verified_at',
+        'terms_accepted_at',
     ];
 
     public function profile(): HasOne
@@ -89,6 +90,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
     {
         return [
             'email_verified_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

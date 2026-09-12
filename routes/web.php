@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FavoriteProductController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\IssuerController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MyPurchaseController;
 use App\Http\Controllers\NotificationController;
@@ -49,6 +50,9 @@ Route::group(['prefix' => 'login', 'as' => 'login.'], function () {
     Route::get('social/{provider}', [SocialAuthController::class, 'redirect'])->name('social.redirect')->middleware('throttle:10,1');
     Route::get('social/{provider}/callback', [SocialAuthController::class, 'callback'])->name('social.callback')->middleware('throttle:10,1');
 });
+
+Route::get('/termos-de-uso', [LegalController::class, 'terms'])->name('legal.terms');
+Route::get('/politica-de-privacidade', [LegalController::class, 'privacy'])->name('legal.privacy');
 
 Route::group(['prefix' => 'email/verify', 'as' => 'verification.', 'middleware' => 'auth'], function () {
     Route::get('/', [VerificationController::class, 'notice'])->name('notice');

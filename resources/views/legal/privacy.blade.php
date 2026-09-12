@@ -1,0 +1,119 @@
+@extends('layout.main-public')
+
+@section('page-title', 'Política de Privacidade')
+
+@section('content')
+    <p class="text-xs text-muted-foreground">Última atualização: {{ now()->translatedFormat('d \d\e F \d\e Y') }}</p>
+
+    <section>
+        <h2>1. Controlador dos Dados</h2>
+        <p>
+            Esta Política de Privacidade descreve como o {{ env('APP_NAME') }} trata os dados pessoais dos
+            seus usuários, em conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018
+            — LGPD). O {{ env('APP_NAME') }} atua como controlador dos dados pessoais coletados por meio da
+            plataforma.
+        </p>
+    </section>
+
+    <section>
+        <h2>2. Dados Coletados</h2>
+        <p>Coletamos os seguintes dados:</p>
+        <ul>
+            <li>Dados de cadastro: nome, e-mail, senha (armazenada de forma criptografada), cidade e estado (opcionais);</li>
+            <li>
+                Dados das notas fiscais (NFC-e) que você importa: emitente, produtos, preços, forma de
+                pagamento e o XML bruto da nota, que pode conter o CPF do consumidor caso ele tenha sido
+                informado no momento da compra;
+            </li>
+            <li>Dados técnicos de uso da plataforma, para fins de segurança e melhoria do serviço.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>3. Finalidade do Tratamento</h2>
+        <p>
+            Utilizamos seus dados para viabilizar o funcionamento do serviço (importação e organização de
+            notas fiscais, orçamentos, categorização automática, listas de compras), para gerar o histórico
+            agregado de preços compartilhado entre usuários, e para comunicações relacionadas à sua conta.
+        </p>
+    </section>
+
+    <section>
+        <h2>4. Base Legal</h2>
+        <p>
+            O tratamento de dados de cadastro e uso da plataforma se baseia na execução do contrato firmado
+            com você ao aceitar estes termos. O compartilhamento agregado de dados de produtos e preços se
+            baseia no seu consentimento, dado no momento em que você importa uma nota fiscal, conforme
+            descrito nos Termos de Uso.
+        </p>
+    </section>
+
+    <section>
+        <h2>5. Retenção de Dados</h2>
+        <p>
+            Mantemos seus dados enquanto sua conta estiver ativa. Caso você solicite a exclusão da conta,
+            seus dados pessoais são removidos ou anonimizados dentro do prazo necessário para cumprimento de
+            obrigações legais ou regulatórias aplicáveis.
+        </p>
+    </section>
+
+    <section>
+        <h2>6. Compartilhamento e Pseudonimização de Dados de Compra</h2>
+        <p>
+            Os dados de produto, preço e emitente das suas notas fiscais são exibidos a outros usuários de
+            forma agregada, sem qualquer identificação de quem realizou a compra.
+        </p>
+        <p>
+            É importante ser preciso quanto à natureza técnica desse tratamento: internamente, o registro do
+            preço permanece associado ao seu usuário no banco de dados, mesmo que essa associação não seja
+            exibida publicamente. Isso caracteriza <strong>pseudonimização</strong> — o dado pode, em tese,
+            ser revertido à sua identidade pelo controlador — e não uma anonimização irreversível. O
+            {{ env('APP_NAME') }} não expõe essa associação a outros usuários em nenhuma circunstância normal
+            de uso da plataforma.
+        </p>
+    </section>
+
+    <section>
+        <h2>7. Direitos do Titular</h2>
+        <p>Nos termos da LGPD, você tem direito a:</p>
+        <ul>
+            <li>Confirmar a existência de tratamento e acessar seus dados;</li>
+            <li>Corrigir dados incompletos, inexatos ou desatualizados;</li>
+            <li>Solicitar a exclusão ou anonimização de dados desnecessários ou excessivos;</li>
+            <li>Solicitar a portabilidade dos seus dados a outro fornecedor de serviço;</li>
+            <li>Revogar o consentimento e se opor a tratamentos realizados com base nele.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>8. Como Exercer seus Direitos</h2>
+        <p>
+            Para exercer qualquer um desses direitos, entre em contato pelo e-mail
+            <a class="link" href="mailto:contato@cestazen.com.br">contato@cestazen.com.br</a>.
+        </p>
+    </section>
+
+    <section>
+        <h2>9. Segurança da Informação</h2>
+        <p>
+            Adotamos medidas técnicas e organizacionais razoáveis para proteger seus dados contra acesso não
+            autorizado, perda, alteração ou destruição indevida.
+        </p>
+    </section>
+
+    <section>
+        <h2>10. Contato do Controlador</h2>
+        <p>
+            Em caso de dúvidas sobre esta Política ou sobre o tratamento dos seus dados pessoais, entre em
+            contato pelo e-mail <a class="link" href="mailto:contato@cestazen.com.br">contato@cestazen.com.br</a>.
+        </p>
+    </section>
+
+    <section>
+        <h2>11. Alterações desta Política</h2>
+        <p>
+            Esta Política pode ser atualizada periodicamente. Mudanças relevantes serão comunicadas por
+            e-mail ou por aviso na plataforma.
+        </p>
+    </section>
+@endsection

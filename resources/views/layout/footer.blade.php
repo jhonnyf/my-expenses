@@ -4,7 +4,11 @@
             <div class="flex order-2 md:order-1 gap-2 font-normal text-sm">
                 <span class="text-secondary-foreground">{{ date('Y') }}©</span>
                 <a class="text-secondary-foreground hover:text-primary" href="https://keenthemes.com">{{ env('APP_NAME') }}</a>
-            </div>                       
+            </div>
+            <div class="flex order-1 md:order-2 gap-4 font-normal text-sm">
+                <a class="text-secondary-foreground hover:text-primary" href="{{ route('legal.terms') }}">Termos de Uso</a>
+                <a class="text-secondary-foreground hover:text-primary" href="{{ route('legal.privacy') }}">Política de Privacidade</a>
+            </div>
         </div>
     </div>
 </footer>

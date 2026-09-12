@@ -89,6 +89,20 @@
                         </button>
                     </div>
                 </div>
+                <div class="flex flex-col gap-1">
+                    <label class="kt-label items-start">
+                        <input class="kt-checkbox kt-checkbox-sm mt-0.5 @error('accept_terms') border-destructive @enderror" name="accept_terms" type="checkbox" value="1" {{ old('accept_terms') ? 'checked' : '' }} />
+                        <span class="kt-checkbox-label text-sm">
+                            Li e aceito os
+                            <a class="link" href="{{ route('legal.terms') }}" target="_blank" rel="noopener">Termos de Uso</a>
+                            e a
+                            <a class="link" href="{{ route('legal.privacy') }}" target="_blank" rel="noopener">Política de Privacidade</a>.
+                        </span>
+                    </label>
+                    @error('accept_terms')
+                        <span class="text-xs text-destructive">{{ $message }}</span>
+                    @enderror
+                </div>
                 <button class="kt-btn kt-btn-primary flex justify-center grow">Criar Conta</button>
             </form>
         </div>

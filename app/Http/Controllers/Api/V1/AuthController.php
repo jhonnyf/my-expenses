@@ -39,6 +39,7 @@ class AuthController extends Controller
             'name' => $request->input('name'),
             'email' => $request->input('email'),
             'password' => $request->input('password'),
+            'terms_accepted_at' => now(),
         ]);
 
         $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));

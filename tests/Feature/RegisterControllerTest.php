@@ -36,6 +36,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'joao@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ])->assertRedirect(route('verification.notice'));
 
         $this->assertDatabaseHas('users', [
@@ -51,6 +52,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'joao@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ]);
 
         $user = User::where('email', 'joao@example.com')->firstOrFail();
@@ -66,6 +68,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'joao@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ]);
 
         $user = User::where('email', 'joao@example.com')->firstOrFail();
@@ -88,6 +91,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ]);
 
         $this->assertAuthenticated();
@@ -108,6 +112,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'existing@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ])->assertSessionHasErrors(['email']);
 
         $this->assertDatabaseCount('users', 1);
@@ -119,6 +124,7 @@ class RegisterControllerTest extends TestCase
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password123',
+            'accept_terms' => '1',
         ])->assertSessionHasErrors(['password']);
     }
 
@@ -129,6 +135,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'test@example.com',
             'password' => '123',
             'password_confirmation' => '123',
+            'accept_terms' => '1',
         ])->assertSessionHasErrors(['password']);
     }
 
@@ -139,6 +146,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ])->assertSessionHasErrors(['name']);
     }
 
@@ -149,6 +157,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'not-an-email',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ])->assertSessionHasErrors(['email']);
     }
 
@@ -170,6 +179,7 @@ class RegisterControllerTest extends TestCase
             'password_confirmation' => 'password123',
             'cidade' => 'Curitiba',
             'estado' => 'PR',
+            'accept_terms' => '1',
         ])->assertRedirect(route('verification.notice'));
 
         $user = User::where('email', 'maria@example.com')->firstOrFail();
@@ -190,6 +200,7 @@ class RegisterControllerTest extends TestCase
             'email' => 'semcidade@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ]);
 
         $user = User::where('email', 'semcidade@example.com')->firstOrFail();
@@ -205,6 +216,7 @@ class RegisterControllerTest extends TestCase
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'estado' => 'PRR',
+            'accept_terms' => '1',
         ])->assertSessionHasErrors(['estado']);
     }
 
@@ -215,9 +227,57 @@ class RegisterControllerTest extends TestCase
             'email' => 'categorias@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'accept_terms' => '1',
         ]);
 
         $user = User::where('email', 'categorias@example.com')->firstOrFail();
         $this->assertSame(11, Category::where('user_id', $user->id)->count());
+    }
+
+    public function test_store_rejects_registration_without_accept_terms(): void
+    {
+        $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'semtermos@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertSessionHasErrors(['accept_terms']);
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_store_rejects_registration_with_accept_terms_false(): void
+    {
+        $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'termosfalso@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'accept_terms' => '0',
+        ])->assertSessionHasErrors(['accept_terms']);
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_store_records_terms_accepted_at_timestamp(): void
+    {
+        $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'aceitoutermos@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'accept_terms' => '1',
+        ]);
+
+        $user = User::where('email', 'aceitoutermos@example.com')->firstOrFail();
+        $this->assertNotNull($user->terms_accepted_at);
+    }
+
+    public function test_register_page_has_links_to_legal_pages(): void
+    {
+        $this->get('/register')
+            ->assertStatus(200)
+            ->assertSee(route('legal.terms'))
+            ->assertSee(route('legal.privacy'));
     }
 }
