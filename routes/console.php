@@ -14,5 +14,5 @@ Schedule::command('sanctum:prune-expired --hours=720')->daily();
 // Notifica quedas de preço em produtos favoritados pelos usuários
 Schedule::command('prices:check-favorite-drops')->daily();
 
-// Remove exportações de dados pessoais (LGPD) expiradas
-Schedule::command('exports:prune-expired')->daily();
+// Remove exportações de dados pessoais (LGPD) expiradas (App\Models\File::prunable())
+Schedule::command('model:prune')->daily();
