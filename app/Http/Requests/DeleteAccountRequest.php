@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DeleteAccountRequest extends FormRequest
 {
@@ -14,7 +15,13 @@ class DeleteAccountRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'current_password' => ['required', 'string', 'current_password'],
+            // Contas criadas via login social (Google) não têm senha — pra elas a
+            // exclusão é confirmada só pelo token autenticado.
+            'current_password' => [
+                Rule::requiredIf(fn () => $this->user()->password !== null),
+                'string',
+                'current_password',
+            ],
         ];
     }
 

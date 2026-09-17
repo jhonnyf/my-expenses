@@ -54,6 +54,7 @@ Route::group(['prefix' => 'login', 'as' => 'login.'], function () {
 
 Route::get('/termos-de-uso', [LegalController::class, 'terms'])->name('legal.terms');
 Route::get('/politica-de-privacidade', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/excluir-conta', [LegalController::class, 'deleteAccount'])->name('legal.delete-account');
 
 Route::group(['prefix' => 'email/verify', 'as' => 'verification.', 'middleware' => 'auth'], function () {
     Route::get('/', [VerificationController::class, 'notice'])->name('notice');

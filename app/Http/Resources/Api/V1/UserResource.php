@@ -17,6 +17,7 @@ class UserResource extends JsonResource
             'cidade' => $this->profile?->cidade,
             'estado' => $this->profile?->estado,
             'email_verified_at' => $this->email_verified_at,
+            'has_password' => $this->password !== null,
             'created_at' => $this->created_at,
             'subscription' => $this->subscription ? new SubscriptionResource($this->subscription) : null,
             'terms_acceptance_required' => ! $this->hasAcceptedCurrentTerms(),
