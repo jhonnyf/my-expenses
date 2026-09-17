@@ -39,7 +39,7 @@
 
     <header class="kt-container-fixed py-5">
         <a href="{{ route('dashboard.index') }}">
-            <img class="h-[28px] max-w-none" src="{{ asset('assets/media/app/mini-logo.svg') }}" />
+            <img class="h-[28px] max-w-none" src="{{ asset('assets/media/app/mini-logo.png') }}" />
         </a>
     </header>
 
