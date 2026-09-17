@@ -69,6 +69,26 @@ class ReportControllerTest extends TestCase
             ->assertJson(['upgrade_required' => true]);
     }
 
+    public function test_email_report_returns_402_for_free_user(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/reports/email', ['format' => 'csv'])
+            ->assertStatus(402)
+            ->assertJson(['upgrade_required' => true]);
+    }
+
+    public function test_email_report_is_scheduled_for_pro_user(): void
+    {
+        $user = User::factory()->pro()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/reports/email', ['format' => 'csv'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.scheduled', true);
+    }
+
     public function test_export_csv_streams_csv_content(): void
     {
         $user = User::factory()->pro()->create();
