@@ -37,6 +37,7 @@ Route::group(['prefix' => 'forgot-password', 'as' => 'password.'], function () {
 });
 
 Route::get('/reset-password', [ResetPasswordController::class, 'index'])->name('password.reset');
+Route::get('/reset-password/app', [ResetPasswordController::class, 'openApp'])->name('password.reset.app');
 Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update')->middleware('throttle:5,1');
 
 Route::group(['prefix' => 'register', 'as' => 'register.'], function () {

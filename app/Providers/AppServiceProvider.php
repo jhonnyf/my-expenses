@@ -37,9 +37,16 @@ class AppServiceProvider extends ServiceProvider
 
         Scramble::routes(fn () => app()->environment('local', 'staging'));
 
-        ResetPassword::createUrlUsing(
-            fn ($user, $token) => url("/reset-password?token={$token}&email=".urlencode($user->email))
-        );
+        // O e-mail é enviado de forma síncrona dentro da requisição, então dá pra saber se
+        // o pedido veio do app mobile (API) ou do site. O app recebe uma página que abre o
+        // deep link cestazen://; o site continua indo direto pra tela de redefinição web.
+        ResetPassword::createUrlUsing(function ($user, $token) {
+            $query = ['token' => $token, 'email' => $user->email];
+
+            return request()->is('api/*')
+                ? route('password.reset.app', $query)
+                : route('password.reset', $query);
+        });
     }
 
     /**

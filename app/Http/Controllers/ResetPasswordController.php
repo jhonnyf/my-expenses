@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rules\Password as PasswordRule;
@@ -17,6 +18,27 @@ class ResetPasswordController extends Controller
             'token' => $request->query('token'),
             'email' => $request->query('email'),
         ]);
+    }
+
+    /**
+     * Ponte e-mail → app mobile: clientes de e-mail costumam não tornar clicáveis links
+     * com esquema próprio (cestazen://), então o e-mail aponta pra esta página https, que
+     * abre o app. O destino é fixo (só token/email são repassados) — nunca aceitar uma
+     * URL vinda da query, pra não virar open redirect.
+     */
+    public function openApp(Request $request): Response
+    {
+        $token = $request->query('token');
+        $email = $request->query('email');
+
+        abort_unless(is_string($token) && is_string($email), 404);
+
+        return response()
+            ->view('auth.open-app-reset', [
+                'appUrl' => 'cestazen://reset-password?'.http_build_query(['token' => $token, 'email' => $email]),
+                'webUrl' => route('password.reset', ['token' => $token, 'email' => $email]),
+            ])
+            ->header('Referrer-Policy', 'no-referrer');
     }
 
     public function reset(Request $request): RedirectResponse

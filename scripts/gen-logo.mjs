@@ -1,5 +1,6 @@
-// Gera os logos oficiais CestaZen (SVG) e rasteriza PNG/JPG/ICO via Chromium (Playwright).
-// Uso: node scripts/gen-logo.mjs
+// Gera os assets derivados do layout (logo, favicons, PWA, OG) a partir dos logos oficiais
+// em public/assets/logo/ (cestazen-texto.png = horizontal, cestazen-avatar.png = ícone).
+// Rasteriza via Chromium (Playwright). Uso: node scripts/gen-logo.mjs
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -7,132 +8,10 @@ import path from 'node:path';
 const ROOT = new URL('../public/', import.meta.url).pathname;
 const BRAND = '#4B7672';
 const BRAND_LIGHT = '#CFE0DE';
+const TAGLINE = 'Controle de gastos pessoais via importação de NFC-e';
 
-const f = (n) => Number(n.toFixed(2));
-
-// ---------- ÍCONE (viewBox 0 0 320 320, centro 160,160) ----------
-function petal(cx, cy, angleDeg, len, width) {
-  // pétala fechada: base em (cx,cy), ponta a `len` na direção `angleDeg`, bojo `width`
-  const a = (angleDeg * Math.PI) / 180;
-  const ux = Math.cos(a), uy = Math.sin(a);
-  const px = -uy, py = ux; // perpendicular
-  const tx = cx + ux * len, ty = cy + uy * len;
-  const mx = cx + ux * len * 0.5, my = cy + uy * len * 0.5;
-  const c1 = [mx + px * width, my + py * width];
-  const c2 = [mx - px * width, my - py * width];
-  return `M${f(cx)} ${f(cy)} Q${f(c1[0])} ${f(c1[1])} ${f(tx)} ${f(ty)} Q${f(c2[0])} ${f(c2[1])} ${f(cx)} ${f(cy)}Z`;
-}
-
-function wavyRing(cx, cy, r, amp, waves, phase, steps = 360) {
-  const pts = [];
-  for (let i = 0; i < steps; i++) {
-    const t = (i / steps) * Math.PI * 2;
-    const rr = r + amp * Math.sin(waves * t + phase);
-    pts.push(`${f(cx + rr * Math.cos(t))} ${f(cy + rr * Math.sin(t))}`);
-  }
-  return `M${pts.join('L')}Z`;
-}
-
-function iconPaths({ ring = true, simple = false, sw = 9 } = {}) {
-  const cx = 160, cy = 160;
-  const g = [];
-  const stroke = `fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"`;
-
-  if (ring) {
-    g.push(`<circle cx="${cx}" cy="${cy}" r="112" ${stroke}/>`);
-    g.push(`<path d="${wavyRing(cx, cy, 134, 9, 9, 0)}" ${stroke}/>`);
-    g.push(`<path d="${wavyRing(cx, cy, 134, 9, 9, Math.PI)}" ${stroke}/>`);
-  }
-
-  const inner = [];
-  // lótus: 5 pétalas cheias + 2 folhas baixas, base escondida atrás do rim do cesto
-  const bx = 160, by = 216; // base abaixo do rim: pétalas 'nascem' do cesto
-  const petals = simple
-    ? [[-90, 122, 56], [-128, 100, 48], [-52, 100, 48]]
-    : [
-      [-90, 122, 54],
-      [-116, 106, 48], [-64, 106, 48],
-      [-146, 86, 42], [-34, 86, 42],
-      [-172, 74, 26], [-8, 74, 26],
-    ];
-  inner.push(`<clipPath id="above-rim"><rect x="0" y="0" width="320" height="208"/></clipPath>`);
-  inner.push(`<g clip-path="url(#above-rim)">${petals.map(([ang, len, w]) => `<path d="${petal(bx, by, ang, len, w)}" ${stroke}/>`).join('')}</g>`);
-
-  // cesto: bojo + rim + ondas da trama (clipadas no bojo)
-  const bowl = `M96 208 Q160 290 224 208Z`;
-  inner.push(`<clipPath id="bowl"><path d="${bowl}"/></clipPath>`);
-  inner.push(`<path d="${bowl}" fill="#fff" fill-opacity="0" ${stroke}/>`);
-  inner.push(`<path d="M90 208 H230" ${stroke}/>`);
-  const weave = [];
-  for (const y of [226, 244, 262]) {
-    const pts = [];
-    for (let x = 96; x <= 224; x += 4) pts.push(`${x} ${f(y + 3.5 * Math.sin(((x - 96) / 14) * Math.PI))}`);
-    weave.push(`M${pts.join('L')}`);
-  }
-  if (!simple) inner.push(`<path d="${weave.join(' ')}" ${stroke} stroke-width="${sw * 0.7}" clip-path="url(#bowl)"/>`);
-
-  // sem anel (favicon): amplia lótus+cesto para preencher a caixa
-  const wrap = ring ? '' : ' transform="translate(160 160) scale(1.55) translate(-160 -176)"';
-  g.push(`<g${wrap}>${inner.join('\n    ')}</g>`);
-  return g.join('\n    ');
-}
-
-// ---------- WORDMARK monoline (cap height 100) ----------
-const H = 92;
-const arc = (cx, cy, rx, ry, a0, a1, large, sweep) => {
-  const P = (a) => `${f(cx + rx * Math.cos((a * Math.PI) / 180))} ${f(cy + ry * Math.sin((a * Math.PI) / 180))}`;
-  return `M${P(a0)} A${rx} ${ry} 0 ${large} ${sweep} ${P(a1)}`;
-};
-const LETTERS = {
-  C: { w: 78, d: arc(39, H / 2, 39, H / 2, -48, 48, 1, 0) },
-  E: { w: 50, d: `M48 0 H0 V${H} H48 M0 ${H / 2} H40` },
-  S: { w: 66, d: `${arc(33, H / 4, 30, H / 4, -25, 90, 1, 0)} A30 ${H / 4} 0 1 1 ${f(33 + 30 * Math.cos((155 * Math.PI) / 180))} ${f((3 * H) / 4 + (H / 4) * Math.sin((155 * Math.PI) / 180))}` },
-  T: { w: 66, d: `M0 0 H66 M33 0 V${H}` },
-  A: { w: 74, d: `M0 ${H} L37 0 L74 ${H} M12 ${f(H * 0.66)} H62` },
-  Z: { w: 62, d: `M0 0 H62 L0 ${H} H62` },
-  N: { w: 66, d: `M0 ${H} V0 L66 ${H} V0` },
-};
-
-function wordmarkPaths(text, x0, y0, gap = 16, sw = 9.5) {
-  let x = x0;
-  const out = [];
-  for (const ch of text) {
-    const L = LETTERS[ch];
-    out.push(`<path transform="translate(${f(x)} ${y0})" d="${L.d}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`);
-    x += L.w + gap;
-  }
-  return { svg: out.join('\n    '), width: x - gap - x0 };
-}
-
-// ---------- montagem dos SVGs ----------
-function iconSvg(color, opts) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320" role="img" aria-label="CestaZen">
-  <g color="${color}">
-    ${iconPaths(opts)}
-  </g>
-</svg>`;
-}
-
-function horizontalSvg(color) {
-  const wm = wordmarkPaths('CESTAZEN', 368, (330 - H) / 2);
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" width="1000" height="330" role="img" aria-label="CestaZen">
-  <g color="${color}">
-    <g transform="translate(5 5)">
-    ${iconPaths()}
-    </g>
-    ${wm.svg}
-  </g>
-</svg>`;
-}
-
-// ---------- raster ----------
-async function render(page, svg, { w, h, bg = null, pad = 0, type = 'png', quality }) {
-  await page.setViewportSize({ width: w, height: h });
-  await page.setContent(`<!doctype html><html><body style="margin:0;width:${w}px;height:${h}px;background:${bg ?? 'transparent'};display:flex;align-items:center;justify-content:center;padding:${pad}px;box-sizing:border-box">
-    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">${svg.replace(/width="\d+" height="\d+"/, 'style="width:100%;height:100%"')}</div>
-  </body></html>`);
-  return page.screenshot({ type, quality, omitBackground: bg === null, fullPage: false });
-}
+const b64 = (rel) => fs.readFileSync(path.join(ROOT, rel)).toString('base64');
+const write = (rel, data) => { fs.writeFileSync(path.join(ROOT, rel), data); console.log('wrote', rel); };
 
 function ico(pngs) {
   // ICO com entradas PNG (suportado por todos os browsers modernos)
@@ -142,58 +21,92 @@ function ico(pngs) {
   let offset = 6 + 16 * pngs.length;
   for (const { size, buf } of pngs) {
     const e = Buffer.alloc(16);
-    e.writeUInt8(size === 256 ? 0 : size, 0); e.writeUInt8(size === 256 ? 0 : size, 1);
-    e.writeUInt8(0, 2); e.writeUInt8(0, 3); e.writeUInt16LE(1, 4); e.writeUInt16LE(32, 6);
+    e.writeUInt8(size, 0); e.writeUInt8(size, 1);
+    e.writeUInt16LE(1, 4); e.writeUInt16LE(32, 6);
     e.writeUInt32LE(buf.length, 8); e.writeUInt32LE(offset, 12);
     entries.push(e); offset += buf.length;
   }
   return Buffer.concat([header, ...entries, ...pngs.map((p) => p.buf)]);
 }
 
-const write = (rel, data) => { fs.writeFileSync(path.join(ROOT, rel), data); console.log('wrote', rel); };
-
-const logo = horizontalSvg(BRAND);
-const logoDark = horizontalSvg(BRAND_LIGHT);
-const icon = iconSvg(BRAND);
-const iconSmall = iconSvg(BRAND, { ring: false, simple: true, sw: 18 });
-const iconWhiteSmall = iconSvg('#FFFFFF', { ring: false, simple: true, sw: 18 });
-
-write('assets/logo/cestazen.svg', logo);
-write('assets/logo/cestazen-dark.svg', logoDark);
-write('assets/logo/cestazen-icon.svg', icon);
-
 const browser = await chromium.launch();
-const page = await browser.newPage({ deviceScaleFactor: 1 });
+const page = await browser.newPage();
 
-// logos oficiais
-write('assets/logo/cestazen-bg-transparente.png', await render(page, logo, { w: 2000, h: 660 }));
-write('assets/logo/cestazen-bg-branco.jpg', await render(page, logo, { w: 2000, h: 660, bg: '#fff', type: 'jpeg', quality: 92 }));
+// Roda dentro do browser: recorta o conteúdo (bbox do alpha), opcionalmente recolore e desenha em canvas.
+const out = await page.evaluate(async ({ texto, avatar, BRAND, BRAND_LIGHT, TAGLINE }) => {
+  const load = async (b64) => { const i = new Image(); i.src = `data:image/png;base64,${b64}`; await i.decode(); return i; };
 
-// assets do layout
-write('assets/media/app/default-logo.png', await render(page, logo, { w: 1000, h: 330 }));
-write('assets/media/app/default-logo-dark.png', await render(page, logoDark, { w: 1000, h: 330 }));
-write('assets/media/app/mini-logo.png', await render(page, icon, { w: 320, h: 320 }));
+  // recorta o conteúdo visível e, se `tint`, recolore preservando o alpha
+  const trimmed = (img, tint) => {
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    let [x0, y0, x1, y1] = [c.width, c.height, 0, 0];
+    for (let i = 3; i < d.length; i += 4) {
+      if (d[i] < 16) continue;
+      const px = ((i - 3) / 4) % c.width, py = Math.floor((i - 3) / 4 / c.width);
+      x0 = Math.min(x0, px); y0 = Math.min(y0, py); x1 = Math.max(x1, px); y1 = Math.max(y1, py);
+    }
+    const w = x1 - x0 + 1, h = y1 - y0 + 1;
+    const t = document.createElement('canvas'); t.width = w; t.height = h;
+    const tx = t.getContext('2d'); tx.drawImage(c, x0, y0, w, h, 0, 0, w, h);
+    if (tint) { tx.globalCompositeOperation = 'source-in'; tx.fillStyle = tint; tx.fillRect(0, 0, w, h); }
+    return t;
+  };
 
-// favicons (versão simplificada, sem trança, traço grosso)
-const fav16 = await render(page, iconSmall, { w: 16, h: 16 });
-const fav32 = await render(page, iconSmall, { w: 32, h: 32 });
-write('assets/media/app/favicon-16x16.png', fav16);
-write('assets/media/app/favicon-32x32.png', fav32);
-write('assets/media/app/favicon.ico', ico([{ size: 16, buf: fav16 }, { size: 32, buf: fav32 }]));
-write('favicon.ico', ico([{ size: 16, buf: fav16 }, { size: 32, buf: fav32 }]));
-write('assets/media/app/apple-touch-icon.png', await render(page, icon, { w: 180, h: 180, bg: '#fff', pad: 14 }));
+  // desenha `src` contido e centrado num canvas W×H (com margem `pad`, fundo `bg` ou transparente)
+  const draw = (src, W, H, { pad = 0, bg = null } = {}) => {
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high';
+    if (bg) { x.fillStyle = bg; x.fillRect(0, 0, W, H); }
+    const s = Math.min((W - 2 * pad) / src.width, (H - 2 * pad) / src.height);
+    const w = src.width * s, h = src.height * s;
+    x.drawImage(src, (W - w) / 2, (H - h) / 2, w, h);
+    return c;
+  };
 
-// PWA
-write('assets/media/app/pwa/icon-192x192.png', await render(page, icon, { w: 192, h: 192, bg: '#fff', pad: 14 }));
-write('assets/media/app/pwa/icon-512x512.png', await render(page, icon, { w: 512, h: 512, bg: '#fff', pad: 36 }));
-write('assets/media/app/pwa/icon-maskable-512x512.png', await render(page, iconWhiteSmall, { w: 512, h: 512, bg: BRAND, pad: 100 }));
+  const png = (c) => c.toDataURL('image/png').split(',')[1];
 
-// Open Graph 1200x630
-await page.setViewportSize({ width: 1200, height: 630 });
-await page.setContent(`<!doctype html><html><body style="margin:0;width:1200px;height:630px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;font-family:system-ui,sans-serif">
-  <div style="width:900px">${logo.replace(/width="\d+" height="\d+"/, 'style="width:100%;height:auto"')}</div>
-  <p style="margin:0;color:${BRAND};font-size:30px;letter-spacing:.02em">Controle de gastos pessoais via importação de NFC-e</p>
-</body></html>`);
-write('assets/media/app/og-image.png', await page.screenshot({ type: 'png' }));
+  const [textoImg, avatarImg] = await Promise.all([load(texto), load(avatar)]);
+  const logo = trimmed(textoImg);
+  const logoDark = trimmed(textoImg, BRAND_LIGHT);
+  const icon = trimmed(avatarImg);
+  const iconWhite = trimmed(avatarImg, '#FFFFFF');
+  const logoH = (w) => Math.round((w * logo.height) / logo.width);
+
+  const files = {
+    'assets/media/app/default-logo.png': png(draw(logo, 1000, logoH(1000))),
+    'assets/media/app/default-logo-dark.png': png(draw(logoDark, 1000, logoH(1000))),
+    'assets/media/app/mini-logo.png': png(draw(icon, 320, 320)),
+    'assets/media/app/favicon-16x16.png': png(draw(icon, 16, 16)),
+    'assets/media/app/favicon-32x32.png': png(draw(icon, 32, 32)),
+    'assets/media/app/apple-touch-icon.png': png(draw(icon, 180, 180, { pad: 14, bg: '#fff' })),
+    'assets/media/app/pwa/icon-192x192.png': png(draw(icon, 192, 192, { pad: 14, bg: '#fff' })),
+    'assets/media/app/pwa/icon-512x512.png': png(draw(icon, 512, 512, { pad: 36, bg: '#fff' })),
+    'assets/media/app/pwa/icon-maskable-512x512.png': png(draw(iconWhite, 512, 512, { pad: 100, bg: BRAND })),
+  };
+
+  // Open Graph 1200x630: logo centralizado + tagline
+  const og = draw(logo, 1200, 630, { pad: 0, bg: '#fff' });
+  const ox = og.getContext('2d');
+  ox.fillStyle = '#fff'; ox.fillRect(0, 0, 1200, 630);
+  ox.imageSmoothingQuality = 'high';
+  const ow = 900, oh = logoH(ow);
+  ox.drawImage(logo, (1200 - ow) / 2, 250 - oh / 2, ow, oh);
+  ox.fillStyle = BRAND; ox.font = '30px system-ui, sans-serif'; ox.textAlign = 'center';
+  ox.fillText(TAGLINE, 600, 250 + oh / 2 + 70);
+  files['assets/media/app/og-image.png'] = png(og);
+
+  return files;
+}, { texto: b64('assets/logo/cestazen-texto.png'), avatar: b64('assets/logo/cestazen-avatar.png'), BRAND, BRAND_LIGHT, TAGLINE });
 
 await browser.close();
+
+for (const [rel, data] of Object.entries(out)) write(rel, Buffer.from(data, 'base64'));
+
+const ico16 = Buffer.from(out['assets/media/app/favicon-16x16.png'], 'base64');
+const ico32 = Buffer.from(out['assets/media/app/favicon-32x32.png'], 'base64');
+const icoBuf = ico([{ size: 16, buf: ico16 }, { size: 32, buf: ico32 }]);
+write('assets/media/app/favicon.ico', icoBuf);
+write('favicon.ico', icoBuf);
