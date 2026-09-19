@@ -14,6 +14,7 @@ class ShoppingListResource extends JsonResource
             'name' => $this->name,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'items_count' => $this->whenCounted('items'),
             'items' => ShoppingListItemResource::collection($this->whenLoaded('items')),
         ];
     }

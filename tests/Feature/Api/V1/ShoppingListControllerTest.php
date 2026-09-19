@@ -25,13 +25,16 @@ class ShoppingListControllerTest extends TestCase
     public function test_index_returns_lists_for_authenticated_user(): void
     {
         $user = User::factory()->create();
-        ShoppingList::factory()->count(2)->for($user)->create();
+        $list = ShoppingList::factory()->for($user)->create();
+        ShoppingListItem::factory()->count(3)->for($list)->create();
+        ShoppingList::factory()->for($user)->create();
         ShoppingList::factory()->create(); // de outro usuário
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/shopping-lists')
             ->assertStatus(200)
-            ->assertJsonCount(2, 'data');
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['id' => $list->id, 'items_count' => 3]);
     }
 
     public function test_store_creates_shopping_list(): void
