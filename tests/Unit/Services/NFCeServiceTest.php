@@ -20,6 +20,45 @@ class NFCeServiceTest extends TestCase
     // Pos: 0-1=cUF, 2-5=AAMM, 6-19=CNPJ, 20-21=mod, 22-24=serie, 25-33=nNF, 34=tpEmis, 35-43=cNF, 44=cDV
     private string $sampleKey = '35260600000000000191650010000012341234567890';
 
+    public function test_is_contingencia_is_false_for_normal_emission(): void
+    {
+        $this->assertFalse($this->service->isContingencia($this->sampleKey));
+    }
+
+    public function test_is_contingencia_is_true_for_offline_contingency(): void
+    {
+        $offlineKey = substr_replace($this->sampleKey, '9', 34, 1);
+
+        $this->assertTrue($this->service->isContingencia($offlineKey));
+    }
+
+    public function test_extrair_serie_returns_3_digit_series(): void
+    {
+        $this->assertSame('001', $this->service->extrairSerie($this->sampleKey));
+    }
+
+    public function test_dados_provisorios_do_qr_reads_value_and_day_from_offline_qr(): void
+    {
+        $url = "https://nfce.exemplo.gov.br/consulta?p={$this->sampleKey}|2|1|15|45.90|abcdef|000001|HASH";
+
+        $dados = $this->service->dadosProvisoriosDoQr($url);
+
+        $this->assertSame('2026-06-15', $dados['emitido_em']);
+        $this->assertSame(45.90, $dados['valor_nota']);
+    }
+
+    public function test_dados_provisorios_do_qr_is_empty_for_online_qr(): void
+    {
+        $url = "https://nfce.exemplo.gov.br/consulta?p={$this->sampleKey}|2|1|000001|HASH";
+
+        $this->assertSame([], $this->service->dadosProvisoriosDoQr($url));
+    }
+
+    public function test_dados_provisorios_do_qr_is_empty_without_p_param(): void
+    {
+        $this->assertSame([], $this->service->dadosProvisoriosDoQr("https://nfce.exemplo.gov.br/consulta?chNFe={$this->sampleKey}"));
+    }
+
     public function test_extrair_uf_returns_state_code(): void
     {
         $uf = $this->service->extrairUF($this->sampleKey);

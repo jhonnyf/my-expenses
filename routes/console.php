@@ -14,5 +14,8 @@ Schedule::command('sanctum:prune-expired --hours=720')->daily();
 // Notifica quedas de preço em produtos favoritados pelos usuários
 Schedule::command('prices:check-favorite-drops')->daily();
 
+// Confirma notas em contingência pendentes de autorização (portal SEFAZ) e expira as antigas
+Schedule::command('invoices:reconcile-pending')->everyThirtyMinutes()->withoutOverlapping();
+
 // Remove exportações de dados pessoais (LGPD) expiradas (App\Models\File::prunable())
 Schedule::command('model:prune')->daily();

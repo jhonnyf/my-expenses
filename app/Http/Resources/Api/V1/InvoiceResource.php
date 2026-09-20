@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Enums\InvoiceStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,6 +17,9 @@ class InvoiceResource extends JsonResource
             'series' => $this->series,
             'issued_at' => $this->issued_at,
             'environment' => $this->environment,
+            'status' => $this->whenHas('status'),
+            'status_label' => $this->whenHas('status', fn (InvoiceStatus $status) => $status->label()),
+            'status_description' => $this->whenHas('status', fn (InvoiceStatus $status) => $status->description()),
             'total_icms_base' => $this->total_icms_base,
             'total_icms' => $this->total_icms,
             'total_products' => $this->total_products,

@@ -151,6 +151,12 @@
                                                         <p class="text-xs text-secondary-foreground font-mono truncate">
                                                             Nº {{ $item->number }} / Série {{ $item->series }}
                                                         </p>
+                                                        @if($item->status->hint())
+                                                            <span class="kt-badge kt-badge-warning kt-badge-sm mt-1" data-kt-tooltip="true" data-kt-tooltip-placement="top">
+                                                                {{ $item->status->label() }}
+                                                                <span data-kt-tooltip-content="true" class="kt-tooltip">{{ $item->status->hint() }}</span>
+                                                            </span>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </td>
@@ -190,6 +196,12 @@
                                         <p class="text-xs text-secondary-foreground font-mono truncate">
                                             Nº {{ $item->number }} / Série {{ $item->series }}
                                         </p>
+                                        @if($item->status->hint())
+                                            <span class="kt-badge kt-badge-warning kt-badge-sm mt-1" data-kt-tooltip="true" data-kt-tooltip-placement="top">
+                                                {{ $item->status->label() }}
+                                                <span data-kt-tooltip-content="true" class="kt-tooltip">{{ $item->status->hint() }}</span>
+                                            </span>
+                                        @endif
                                     </div>
                                     <a href="{{ route('my-purchases.detail', $item->id) }}"
                                        class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm shrink-0"

@@ -149,7 +149,7 @@ class InvoiceControllerTest extends TestCase
         $this->mock(NFCeService::class, function ($mock) use ($chave) {
             $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn($chave);
             $mock->shouldReceive('isCertificadoConfigurado')->once()->andReturn(false);
-            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => [], 'html' => '']);
+            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => ['itens' => [['numero_item' => 1]]], 'html' => '']);
             $mock->shouldReceive('normalizarDadosPortal')->once()->andReturn([
                 'chave' => $chave,
                 'emitente' => ['cnpj' => '12345678000199', 'nome' => 'Loja Teste'],
@@ -214,7 +214,7 @@ class InvoiceControllerTest extends TestCase
         $this->mock(NFCeService::class, function ($mock) use ($chave) {
             $mock->shouldReceive('extrairChaveDeUrl')->once()->andReturn($chave);
             $mock->shouldReceive('isCertificadoConfigurado')->once()->andReturn(false);
-            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => [], 'html' => '']);
+            $mock->shouldReceive('consultarPorQRCode')->once()->andReturn(['dados' => ['itens' => [['numero_item' => 1]]], 'html' => '']);
             $mock->shouldReceive('normalizarDadosPortal')->once()->andReturn(['chave' => $chave]);
         });
 

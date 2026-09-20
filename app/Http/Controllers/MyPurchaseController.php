@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\ImportInvoiceAction;
 use App\Actions\LogQrCodeReadAction;
 use App\Contracts\ImportStrategyInterface;
+use App\Enums\InvoiceStatus;
 use App\Events\InvoiceImported;
 use App\Http\Requests\ImportByAccessKeyRequest;
 use App\Http\Requests\ImportByQrCodeRequest;
@@ -42,7 +43,8 @@ class MyPurchaseController extends Controller
         $start = $request->query('start_date') ?: Carbon::now()->startOfMonth()->format('Y-m-d');
         $end = $request->query('end_date') ?: Carbon::now()->format('Y-m-d');
 
-        $records = Invoice::where('user_id', $userId)
+        $records = Invoice::includingUnauthorized()
+            ->where('user_id', $userId)
             ->with('issuer.nicknameForUser')
             ->whereDateBetween('issued_at', $start, $end)
             ->when($search !== '', fn ($query) => $query->whereHas(
@@ -141,7 +143,10 @@ class MyPurchaseController extends Controller
 
         try {
             $invoice = $this->importAction->execute($payload->parsed, $payload->rawContent, $userId);
-            InvoiceImported::dispatch($invoice);
+
+            if ($invoice->status === InvoiceStatus::Authorized) {
+                InvoiceImported::dispatch($invoice);
+            }
 
             if ($qrcodeUrl !== null) {
                 $this->logQrCodeReadAction->execute($userId, $qrcodeUrl, success: true, invoiceId: $invoice->id);

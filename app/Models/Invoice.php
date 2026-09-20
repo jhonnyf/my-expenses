@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\InvoiceStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +13,8 @@ class Invoice extends Model
 {
     use HasFactory;
 
+    private const AUTHORIZED_SCOPE = 'authorized';
+
     protected $fillable = [
         'user_id',
         'access_key',
@@ -18,6 +22,7 @@ class Invoice extends Model
         'series',
         'issued_at',
         'environment',
+        'status',
         'issuer_id',
         'total_icms_base',
         'total_icms',
@@ -26,9 +31,15 @@ class Invoice extends Model
         'total_amount',
         'total_taxes',
         'raw_xml',
+        'qrcode_url',
+    ];
+
+    protected $attributes = [
+        'status' => 'authorized',
     ];
 
     protected $casts = [
+        'status' => InvoiceStatus::class,
         'issued_at' => 'datetime',
         'total_icms_base' => 'decimal:2',
         'total_icms' => 'decimal:2',
@@ -37,6 +48,41 @@ class Invoice extends Model
         'total_amount' => 'decimal:2',
         'total_taxes' => 'decimal:2',
     ];
+
+    /**
+     * Por padrão só notas autorizadas contam (totais, orçamentos, relatórios, preços).
+     * Quem precisa ver as demais (lista, detalhe, exportação de dados) usa includingUnauthorized().
+     *
+     * Não cobre DB::table('invoices') cru. Joins a partir de InvoiceItem/InvoicePayment são seguros sem
+     * filtro: só nota autorizada tem itens e pagamentos (a promoção grava itens e status na mesma transação).
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(
+            self::AUTHORIZED_SCOPE,
+            fn (Builder $query) => $query->where('invoices.status', InvoiceStatus::Authorized)
+        );
+    }
+
+    public function scopeIncludingUnauthorized(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(self::AUTHORIZED_SCOPE);
+    }
+
+    public function scopePending(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(self::AUTHORIZED_SCOPE)
+            ->where('invoices.status', InvoiceStatus::Pending);
+    }
+
+    /** O detalhe da nota precisa abrir também para notas pendentes/não confirmadas. */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        return $this->newQuery()
+            ->includingUnauthorized()
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->first();
+    }
 
     public function user(): BelongsTo
     {

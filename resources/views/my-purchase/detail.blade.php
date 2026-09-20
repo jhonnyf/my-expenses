@@ -46,6 +46,12 @@
                         @else
                             <span class="kt-badge kt-badge-success kt-badge-outline kt-badge-sm">Produção</span>
                         @endif
+                        @if($invoice->status->hint())
+                            <span class="kt-badge kt-badge-warning kt-badge-sm" data-kt-tooltip="true" data-kt-tooltip-placement="top">
+                                {{ $invoice->status->label() }}
+                                <span data-kt-tooltip-content="true" class="kt-tooltip">{{ $invoice->status->hint() }}</span>
+                            </span>
+                        @endif
                     </div>
                     <p class="text-sm text-secondary-foreground mt-1.5">
                         <i class="ki-filled ki-calendar text-xs me-1"></i>
@@ -65,6 +71,17 @@
     </div>
 
     <div class="kt-container-fixed space-y-5 pb-10">
+
+        {{-- Explicação para notas ainda não autorizadas (contingência) --}}
+        @if($invoice->status->description())
+            <div class="kt-alert kt-alert-warning flex items-start gap-3 p-4 rounded-md bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800" role="status">
+                <i class="ki-filled ki-information-2 text-lg mt-0.5 shrink-0"></i>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-foreground">{{ $invoice->status->label() }}</p>
+                    <p class="text-sm text-secondary-foreground mt-1">{{ $invoice->status->description() }}</p>
+                </div>
+            </div>
+        @endif
 
         {{-- Cards de destaque: Total, Produtos, Impostos, Itens --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

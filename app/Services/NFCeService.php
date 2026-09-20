@@ -753,4 +753,46 @@ class NFCeService
     {
         return substr($key, 25, 9);
     }
+
+    public function extrairSerie(string $key): string
+    {
+        return substr($key, 22, 3);
+    }
+
+    /**
+     * tpEmis fica na posição 34 da chave: 1 = emissão normal; 2 a 9 = algum tipo de contingência.
+     */
+    public function isContingencia(string $key): bool
+    {
+        return substr($key, 34, 1) !== '1';
+    }
+
+    /**
+     * Dados que o QR Code de contingência offline carrega (p=chave|2|tpAmb|dia|vNF|digVal|idToken|hash),
+     * usados como valor provisório enquanto a nota não é autorizada. QR de emissão normal não traz
+     * esses campos e devolve array vazio. O mês/ano vêm da chave (AAMM); o QR só informa o dia.
+     *
+     * @return array{emitido_em?: string, valor_nota?: float}
+     */
+    public function dadosProvisoriosDoQr(string $url): array
+    {
+        $query = urldecode(parse_url($url, PHP_URL_QUERY) ?? '');
+
+        if (! preg_match('/(?:^|&)p=([^&]+)/', $query, $m)) {
+            return [];
+        }
+
+        $partes = explode('|', $m[1]);
+
+        if (count($partes) < 8 || ! ctype_digit($partes[3]) || ! is_numeric($partes[4])) {
+            return [];
+        }
+
+        $chave = $partes[0];
+
+        return [
+            'emitido_em' => sprintf('20%s-%s-%02d', substr($chave, 2, 2), substr($chave, 4, 2), (int) $partes[3]),
+            'valor_nota' => (float) $partes[4],
+        ];
+    }
 }

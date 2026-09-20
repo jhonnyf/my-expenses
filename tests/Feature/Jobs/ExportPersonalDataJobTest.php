@@ -42,6 +42,23 @@ class ExportPersonalDataJobTest extends TestCase
         Notification::assertSentTo($user, PersonalDataExportReady::class);
     }
 
+    public function test_handle_includes_pending_invoices_in_export(): void
+    {
+        Storage::fake('local');
+        Notification::fake();
+
+        $user = User::factory()->create();
+        Invoice::factory()->for($user)->pending()->create(['total_amount' => 45.9]);
+
+        (new ExportPersonalDataJob($user->id))->handle();
+
+        $file = $user->files()->where('collection', 'personal-data-export')->first();
+        $content = json_decode(Storage::disk('local')->get($file->path), true);
+
+        $this->assertCount(1, $content['notas_fiscais']);
+        $this->assertSame('pending', $content['notas_fiscais'][0]['status']);
+    }
+
     public function test_handle_does_nothing_when_user_no_longer_exists(): void
     {
         Storage::fake('local');

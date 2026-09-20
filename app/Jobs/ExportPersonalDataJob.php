@@ -24,9 +24,7 @@ class ExportPersonalDataJob implements ShouldQueue
         $user = User::with([
             'profile',
             'subscription',
-            'invoices.issuer',
-            'invoices.items',
-            'invoices.payments',
+            'invoices' => fn ($query) => $query->includingUnauthorized()->with(['issuer', 'items', 'payments']),
             'favoriteIssuers',
         ])->find($this->userId);
 
@@ -79,6 +77,7 @@ class ExportPersonalDataJob implements ShouldQueue
             'notas_fiscais' => $user->invoices->map(fn ($invoice) => [
                 'numero' => $invoice->number,
                 'serie' => $invoice->series,
+                'status' => $invoice->status->value,
                 'emitida_em' => $invoice->issued_at?->toIso8601String(),
                 'emitente' => $invoice->issuer?->name,
                 'total' => $invoice->total_amount,

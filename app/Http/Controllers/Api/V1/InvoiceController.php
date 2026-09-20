@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Actions\ImportInvoiceAction;
 use App\Actions\LogQrCodeReadAction;
 use App\Contracts\ImportStrategyInterface;
+use App\Enums\InvoiceStatus;
 use App\Events\InvoiceImported;
 use App\Http\Requests\ImportByAccessKeyRequest;
 use App\Http\Requests\ImportByQrCodeRequest;
@@ -35,7 +36,8 @@ class InvoiceController extends Controller
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
 
-        $invoices = Invoice::where('user_id', $request->user()->id)
+        $invoices = Invoice::includingUnauthorized()
+            ->where('user_id', $request->user()->id)
             ->with('issuer.nicknameForUser')
             ->when($startDate && $endDate, fn ($query) => $query->whereDateBetween('issued_at', $startDate, $endDate))
             ->orderByDesc('issued_at')
@@ -94,7 +96,10 @@ class InvoiceController extends Controller
 
         try {
             $invoice = $this->importAction->execute($payload->parsed, $payload->rawContent, $userId);
-            InvoiceImported::dispatch($invoice);
+
+            if ($invoice->status === InvoiceStatus::Authorized) {
+                InvoiceImported::dispatch($invoice);
+            }
 
             if ($qrcodeUrl !== null) {
                 $this->logQrCodeReadAction->execute($userId, $qrcodeUrl, success: true, invoiceId: $invoice->id);

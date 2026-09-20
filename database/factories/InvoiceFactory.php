@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\Issuer;
 use App\Models\User;
@@ -29,5 +30,19 @@ class InvoiceFactory extends Factory
             'total_taxes' => fake()->randomFloat(2, 0, 50),
             'raw_xml' => '<nfeProc/>',
         ];
+    }
+
+    public function pending(): static
+    {
+        return $this->state(fn () => [
+            'status' => InvoiceStatus::Pending,
+            'issuer_id' => null,
+            'raw_xml' => null,
+            'qrcode_url' => fake()->url(),
+            'total_products' => 0,
+            'total_icms_base' => 0,
+            'total_icms' => 0,
+            'total_taxes' => 0,
+        ]);
     }
 }

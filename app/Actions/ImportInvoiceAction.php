@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\InvoiceStatus;
 use App\Jobs\GeocodeIssuerJob;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -22,7 +23,8 @@ class ImportInvoiceAction
     {
         $issuer = $this->findOrCreateIssuer(Arr::get($parsed, 'emitente', []));
 
-        $invoice = Invoice::updateOrCreate(
+        // includingUnauthorized: uma nota pendente já existente precisa ser encontrada e atualizada, não duplicada.
+        $invoice = Invoice::includingUnauthorized()->updateOrCreate(
             [
                 'access_key' => Arr::get($parsed, 'chave'),
                 'user_id' => $userId,
@@ -42,6 +44,12 @@ class ImportInvoiceAction
 
         if (empty($cnpj)) {
             return null;
+        }
+
+        // Sem nome (nota pendente, só temos o CNPJ da chave) não criamos o emitente: Issuer.name é fixado
+        // no 1º import e ficaria vazio para sempre. Se ele já existe, reaproveitamos.
+        if (empty(Arr::get($emitente, 'nome'))) {
+            return Issuer::where('cnpj', $cnpj)->first();
         }
 
         $issuer = Issuer::firstOrCreate(
@@ -72,6 +80,8 @@ class ImportInvoiceAction
             'series' => Arr::get($parsed, 'serie', ''),
             'issued_at' => Arr::get($parsed, 'emitido_em') ?: now(),
             'environment' => Arr::get($parsed, 'ambiente', 'producao') === 'producao' ? 'production' : 'staging',
+            'status' => Arr::get($parsed, 'status', InvoiceStatus::Authorized),
+            'qrcode_url' => Arr::get($parsed, 'qrcode_url'),
             'issuer_id' => $issuer?->id,
             'total_icms_base' => (float) Arr::get($parsed, 'total.base_calculo_icms', 0),
             'total_icms' => (float) Arr::get($parsed, 'total.valor_icms', 0),
