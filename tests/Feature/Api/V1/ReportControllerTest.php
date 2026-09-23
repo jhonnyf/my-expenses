@@ -2,11 +2,16 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Jobs\SendReportByEmailJob;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Models\User;
+use App\Notifications\ReportByEmail;
+use App\Services\ReportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class ReportControllerTest extends TestCase
@@ -81,12 +86,45 @@ class ReportControllerTest extends TestCase
 
     public function test_email_report_is_scheduled_for_pro_user(): void
     {
+        Queue::fake();
         $user = User::factory()->pro()->create();
 
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/reports/email', ['format' => 'csv'])
             ->assertStatus(200)
             ->assertJsonPath('data.scheduled', true);
+
+        Queue::assertPushed(SendReportByEmailJob::class);
+    }
+
+    public function test_email_report_rejects_invalid_format(): void
+    {
+        $this->actingAs(User::factory()->pro()->create(), 'sanctum')
+            ->postJson('/api/v1/reports/email', ['format' => 'xls'])
+            ->assertStatus(422);
+    }
+
+    /**
+     * @dataProvider reportFormats
+     */
+    public function test_job_sends_report_attachment(string $format, string $mime): void
+    {
+        Notification::fake();
+        $user = User::factory()->pro()->create();
+
+        (new SendReportByEmailJob($user->id, $format, []))->handle(app(ReportService::class));
+
+        Notification::assertSentTo($user, ReportByEmail::class, function ($notification) use ($user, $format, $mime) {
+            $mail = $notification->toMail($user);
+
+            return $mail->rawAttachments[0]['name'] === 'relatorio_'.now()->format('Y-m-d').'.'.$format
+                && $mail->rawAttachments[0]['options']['mime'] === $mime;
+        });
+    }
+
+    public static function reportFormats(): array
+    {
+        return [['csv', 'text/csv'], ['pdf', 'application/pdf']];
     }
 
     public function test_export_csv_streams_csv_content(): void

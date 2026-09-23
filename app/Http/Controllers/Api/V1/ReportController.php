@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Jobs\SendReportByEmailJob;
 use App\Services\ReportService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -26,10 +26,17 @@ class ReportController extends Controller
     {
         $request->validate([
             'format' => ['required', 'in:pdf,csv'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+            'issuer_id' => ['nullable', 'integer'],
+            'category_id' => ['nullable', 'integer'],
         ]);
 
-        // TODO: montar o relatório (buildReportData) e disparar e-mail com o
-        // anexo no formato solicitado — geração/envio ainda não implementados.
+        SendReportByEmailJob::dispatch(
+            $request->user()->id,
+            $request->input('format'),
+            $request->only(['start_date', 'end_date', 'issuer_id', 'category_id'])
+        );
 
         return $this->success(['scheduled' => true]);
     }
@@ -42,26 +49,7 @@ class ReportController extends Controller
         );
 
         return new StreamedResponse(function () use ($data) {
-            $handle = fopen('php://output', 'w');
-
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-
-            fputcsv($handle, ['Data', 'Emissor', 'Produto', 'Categoria', 'Qtd', 'Unidade', 'Preço Unit.', 'Total'], ';');
-
-            foreach ($data['items'] as $item) {
-                fputcsv($handle, [
-                    Carbon::parse($item->issued_at)->format('d/m/Y'),
-                    $item->issuer_name,
-                    $item->description,
-                    $item->category_name ?? 'Sem categoria',
-                    number_format($item->quantity, 4, ',', '.'),
-                    $item->unit,
-                    number_format($item->unit_price, 2, ',', '.'),
-                    number_format($item->total_price, 2, ',', '.'),
-                ], ';');
-            }
-
-            fclose($handle);
+            echo $this->service->renderCsv($data);
         }, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="relatorio_'.now()->format('Y-m-d').'.csv"',

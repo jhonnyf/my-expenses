@@ -12,6 +12,36 @@ class ReportService
 {
     public function __construct(private readonly ProductAliasService $aliasService) {}
 
+    /**
+     * CSV (UTF-8 com BOM, separador ";") dos itens do relatório.
+     */
+    public function renderCsv(array $data): string
+    {
+        $handle = fopen('php://temp', 'w+');
+
+        fwrite($handle, "\xEF\xBB\xBF");
+        fputcsv($handle, ['Data', 'Emissor', 'Produto', 'Categoria', 'Qtd', 'Unidade', 'Preço Unit.', 'Total'], ';');
+
+        foreach ($data['items'] as $item) {
+            fputcsv($handle, [
+                Carbon::parse($item->issued_at)->format('d/m/Y'),
+                $item->issuer_name,
+                $item->description,
+                $item->category_name ?? 'Sem categoria',
+                number_format($item->quantity, 4, ',', '.'),
+                $item->unit,
+                number_format($item->unit_price, 2, ',', '.'),
+                number_format($item->total_price, 2, ',', '.'),
+            ], ';');
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return $csv;
+    }
+
     public function buildReportData(int $userId, array $filters): array
     {
         // ?: (não só ??) pra tratar tanto ausência quanto string vazia (campo de data
