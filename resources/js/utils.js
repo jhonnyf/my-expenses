@@ -48,6 +48,20 @@ const Utils = (() => {
         }
     };
 
+    // Reflete a categoria escolhida em todos os selects do item (par desktop/mobile)
+    // e persiste no backend. `changedSelect` já está com o valor certo (troca manual).
+    const applyItemCategory = (assignCategoryUrl, itemId, categoryId, changedSelect = null) => {
+        document.querySelectorAll(`[data-action="assign-category"][data-item-id="${itemId}"]`).forEach(s => {
+            if (s !== changedSelect) syncSelectValue(s, categoryId);
+            updateCategoryDot(s);
+        });
+
+        return http(assignCategoryUrl, {
+            method: 'POST',
+            body: { item_id: itemId, category_id: categoryId || null },
+        });
+    };
+
     const initCategoryAssignment = (assignCategoryUrl) => {
         document.addEventListener('change', (e) => {
             // KTUI redispara os eventos dos próprios componentes direto em `document`
@@ -59,18 +73,39 @@ const Utils = (() => {
             const select = e.target.closest('[data-action="assign-category"]');
             if (!select) return;
 
-            const { itemId } = select.dataset;
-            const categoryId = select.value;
+            applyItemCategory(assignCategoryUrl, select.dataset.itemId, select.value, select);
+        });
+    };
 
-            document.querySelectorAll(`[data-action="assign-category"][data-item-id="${itemId}"]`).forEach(s => {
-                if (s !== select) syncSelectValue(s, categoryId);
-                updateCategoryDot(s);
-            });
+    // Botão "Sugerir categoria com IA" (só Pro) ao lado do select do item: pede a
+    // sugestão ao Gemini e, se houver uma confiável, aplica como se o usuário
+    // tivesse escolhido — ele vê o resultado no select e pode trocar.
+    const initCategoryAiSuggestion = (suggestUrl, assignCategoryUrl) => {
+        document.addEventListener('click', (e) => {
+            if (!(e.target instanceof Element)) return;
 
-            http(assignCategoryUrl, {
-                method: 'POST',
-                body: { item_id: itemId, category_id: categoryId || null },
-            });
+            const btn = e.target.closest('[data-action="suggest-category-ai"]');
+            if (!btn || btn.disabled) return;
+
+            const { itemId } = btn.dataset;
+            btn.disabled = true;
+            btn.classList.add('animate-pulse');
+
+            http(suggestUrl, { method: 'POST', body: { item_id: itemId } })
+                .then(({ category_id: categoryId }) => {
+                    if (!categoryId) {
+                        alert('A IA não encontrou uma categoria com segurança para este item.');
+                        return;
+                    }
+                    return applyItemCategory(assignCategoryUrl, itemId, String(categoryId));
+                })
+                .catch((error) => {
+                    alert(error.response?.data?.message || 'Não foi possível obter a sugestão da IA.');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.classList.remove('animate-pulse');
+                });
         });
     };
 
@@ -208,7 +243,7 @@ const Utils = (() => {
     };
 
     return {
-        http, formatCurrency, escapeHtml, initCategoryAssignment, initFavoriteProduct,
+        http, formatCurrency, escapeHtml, initCategoryAssignment, initCategoryAiSuggestion, initFavoriteProduct,
         initLocationCapture, initPeriodFilter, syncSelectValue, setSelectDisabled,
     };
 })();

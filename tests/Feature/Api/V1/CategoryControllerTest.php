@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Jobs\AiCategorizeItemsJob;
 use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -9,6 +10,7 @@ use App\Models\Issuer;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class CategoryControllerTest extends TestCase
@@ -205,6 +207,18 @@ class CategoryControllerTest extends TestCase
             ->assertStatus(403);
     }
 
+    public function test_auto_categorize_dispatches_ai_job(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/categories/auto-categorize')
+            ->assertStatus(200);
+
+        Queue::assertPushed(AiCategorizeItemsJob::class);
+    }
+
     public function test_auto_categorize_returns_categorized_count(): void
     {
         $user = User::factory()->create();
@@ -257,5 +271,84 @@ class CategoryControllerTest extends TestCase
             ->postJson('/api/v1/categories/suggest-keywords', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors('name');
+    }
+
+    private function fakeItemSuggestion(?int $categoryId, float $confidence = 0.95): void
+    {
+        config(['ai.gemini.api_key' => 'test-key']);
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [['content' => ['parts' => [['text' => json_encode([
+                    'results' => [['index' => 0, 'category_id' => $categoryId, 'confidence' => $confidence]],
+                ])]]]]],
+            ], 200),
+        ]);
+    }
+
+    private function makeItemFor(User $user): InvoiceItem
+    {
+        $invoice = Invoice::factory()->for($user)->for(Issuer::factory()->create())->create();
+
+        return InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
+    }
+
+    public function test_suggest_item_category_returns_402_for_free_user(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->makeItemFor($user);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/categories/suggest-item-category', ['item_id' => $item->id])
+            ->assertStatus(402);
+    }
+
+    public function test_suggest_item_category_returns_suggested_category_without_assigning(): void
+    {
+        $user = User::factory()->pro()->create();
+        $category = Category::factory()->for($user)->create();
+        $item = $this->makeItemFor($user);
+        $this->fakeItemSuggestion($category->id);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/categories/suggest-item-category', ['item_id' => $item->id])
+            ->assertStatus(200)
+            ->assertJsonPath('data.category_id', $category->id);
+
+        $this->assertDatabaseHas('invoices_items', ['id' => $item->id, 'category_id' => null]);
+    }
+
+    public function test_suggest_item_category_returns_null_when_ai_is_not_confident(): void
+    {
+        $user = User::factory()->pro()->create();
+        $category = Category::factory()->for($user)->create();
+        $item = $this->makeItemFor($user);
+        $this->fakeItemSuggestion($category->id, 0.2);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/categories/suggest-item-category', ['item_id' => $item->id])
+            ->assertStatus(200)
+            ->assertJsonPath('data.category_id', null);
+    }
+
+    public function test_suggest_item_category_returns_403_for_item_of_another_user(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->pro()->create();
+        $item = $this->makeItemFor($owner);
+
+        $this->actingAs($other, 'sanctum')
+            ->postJson('/api/v1/categories/suggest-item-category', ['item_id' => $item->id])
+            ->assertStatus(403);
+    }
+
+    public function test_suggest_item_category_returns_503_when_ai_is_unavailable(): void
+    {
+        $user = User::factory()->pro()->create();
+        $item = $this->makeItemFor($user);
+        config(['ai.gemini.api_key' => null]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/categories/suggest-item-category', ['item_id' => $item->id])
+            ->assertStatus(503);
     }
 }

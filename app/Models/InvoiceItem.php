@@ -10,6 +10,14 @@ class InvoiceItem extends Model
 {
     use HasFactory;
 
+    public const SOURCE_MANUAL = 'manual';
+
+    public const SOURCE_LEARNED = 'learned';
+
+    public const SOURCE_KEYWORD = 'keyword';
+
+    public const SOURCE_AI = 'ai';
+
     protected $table = 'invoices_items';
 
     protected $fillable = [
@@ -24,6 +32,7 @@ class InvoiceItem extends Model
         'unit_price',
         'total_price',
         'category_id',
+        'categorization_source',
     ];
 
     protected $casts = [

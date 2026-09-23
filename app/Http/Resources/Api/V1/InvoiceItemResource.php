@@ -21,6 +21,7 @@ class InvoiceItemResource extends JsonResource
             'unit_price' => $this->unit_price,
             'total_price' => $this->total_price,
             'canonical_name' => $this->canonical_name,
+            'categorization_source' => $this->categorization_source,
             'category' => new CategoryResource($this->whenLoaded('category')),
         ];
     }

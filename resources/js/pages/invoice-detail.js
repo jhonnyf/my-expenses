@@ -16,9 +16,10 @@ const InvoiceDetail = (() => {
             if (initialized) return;
             initialized = true;
 
-            const { assignCategoryUrl } = window.pageConfig || {};
+            const { assignCategoryUrl, suggestItemCategoryUrl } = window.pageConfig || {};
 
             Utils.initCategoryAssignment(assignCategoryUrl);
+            if (suggestItemCategoryUrl) Utils.initCategoryAiSuggestion(suggestItemCategoryUrl, assignCategoryUrl);
             document.addEventListener('product-alias:updated', handleAliasUpdated);
         }
     };

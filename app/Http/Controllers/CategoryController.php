@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\SuggestItemCategoryAction;
 use App\Http\Requests\AiSuggestCategoryKeywordsRequest;
+use App\Http\Requests\AiSuggestItemCategoryRequest;
 use App\Http\Requests\AssignCategoryItemRequest;
 use App\Http\Requests\SaveCategoryRequest;
+use App\Jobs\AiCategorizeItemsJob;
 use App\Models\Category;
 use App\Models\InvoiceItem;
 use App\Services\CategoryKeywordsAiSuggestionService;
@@ -75,7 +78,7 @@ class CategoryController extends Controller
         $item = InvoiceItem::findOrFail($request->input('item_id'));
         abort_if($item->invoice->user_id !== Auth::id(), 403);
 
-        $item->update(['category_id' => $request->input('category_id')]);
+        $this->service->assignItem($item, $request->input('category_id'));
 
         return response()->json(['success' => true]);
     }
@@ -83,6 +86,7 @@ class CategoryController extends Controller
     public function autoCategorize(): JsonResponse
     {
         $count = $this->service->autoCategorize(Auth::id());
+        AiCategorizeItemsJob::dispatch(Auth::id());
 
         return response()->json(['categorized' => $count]);
     }
@@ -92,5 +96,15 @@ class CategoryController extends Controller
         $suggestion = $this->aiSuggestionService->suggestKeywords($request->input('name'));
 
         return response()->json($suggestion->toArray());
+    }
+
+    public function suggestItemCategory(AiSuggestItemCategoryRequest $request, SuggestItemCategoryAction $action): JsonResponse
+    {
+        $item = InvoiceItem::findOrFail($request->input('item_id'));
+        abort_if($item->invoice->user_id !== Auth::id(), 403);
+
+        $categoryId = $action->execute($item);
+
+        return response()->json(['category_id' => $categoryId]);
     }
 }

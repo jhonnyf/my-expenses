@@ -97,6 +97,9 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
         Route::delete('{category}', [CategoryController::class, 'destroy'])->name('destroy');
         Route::post('assign-item', [CategoryController::class, 'assignItem'])->name('assign-item');
         Route::post('auto-categorize', [CategoryController::class, 'autoCategorize'])->name('auto-categorize');
+        Route::post('suggest-item-category', [CategoryController::class, 'suggestItemCategory'])
+            ->name('suggest-item-category')
+            ->middleware(['throttle:ai-suggestions', 'pro']);
         Route::post('suggest-keywords', [CategoryController::class, 'suggestKeywords'])
             ->name('suggest-keywords')
             ->middleware(['throttle:ai-suggestions', 'pro']);

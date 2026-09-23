@@ -110,4 +110,57 @@ class CategoryControllerTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors('name');
     }
+
+    private function fakeItemSuggestion(?int $categoryId, float $confidence = 0.95): void
+    {
+        config(['ai.gemini.api_key' => 'test-key']);
+        Http::fake([
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [['content' => ['parts' => [['text' => json_encode([
+                    'results' => [['index' => 0, 'category_id' => $categoryId, 'confidence' => $confidence]],
+                ])]]]]],
+            ], 200),
+        ]);
+    }
+
+    private function makeItemFor(User $user): InvoiceItem
+    {
+        $invoice = Invoice::factory()->for($user)->for(Issuer::factory()->create())->create();
+
+        return InvoiceItem::factory()->for($invoice)->create(['category_id' => null]);
+    }
+
+    public function test_suggest_item_category_redirects_to_upgrade_for_free_user(): void
+    {
+        $user = User::factory()->create();
+        $item = $this->makeItemFor($user);
+
+        $this->actingAs($user)
+            ->post('/categories/suggest-item-category', ['item_id' => $item->id])
+            ->assertRedirect(route('subscription.upgrade'));
+    }
+
+    public function test_suggest_item_category_returns_suggested_category(): void
+    {
+        $user = User::factory()->pro()->create();
+        $category = Category::factory()->for($user)->create();
+        $item = $this->makeItemFor($user);
+        $this->fakeItemSuggestion($category->id);
+
+        $this->actingAs($user)
+            ->postJson('/categories/suggest-item-category', ['item_id' => $item->id])
+            ->assertStatus(200)
+            ->assertJson(['category_id' => $category->id]);
+    }
+
+    public function test_suggest_item_category_returns_403_for_item_of_another_user(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->pro()->create();
+        $item = $this->makeItemFor($owner);
+
+        $this->actingAs($other)
+            ->postJson('/categories/suggest-item-category', ['item_id' => $item->id])
+            ->assertStatus(403);
+    }
 }

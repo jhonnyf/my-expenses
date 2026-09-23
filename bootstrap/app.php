@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\AiSuggestionUnavailableException;
 use App\Exceptions\ProFeatureRequiredException;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\EnsureIsSuperAdmin;
@@ -30,6 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request, Throwable $e) => $request->is('api/*')
         );
+
+        $exceptions->render(fn (AiSuggestionUnavailableException $e) => response()->json(['message' => $e->getMessage()], 503));
 
         $exceptions->render(function (ProFeatureRequiredException $e, Request $request) {
             if ($request->is('api/*')) {

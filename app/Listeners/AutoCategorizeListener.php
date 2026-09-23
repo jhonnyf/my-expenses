@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\InvoiceImported;
+use App\Jobs\AiCategorizeItemsJob;
 use App\Services\CategoryService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -12,6 +13,9 @@ class AutoCategorizeListener implements ShouldQueue
 
     public function handle(InvoiceImported $event): void
     {
-        $this->categoryService->autoCategorize($event->invoice->user_id);
+        $userId = $event->invoice->user_id;
+
+        $this->categoryService->autoCategorize($userId);
+        AiCategorizeItemsJob::dispatch($userId);
     }
 }

@@ -40,6 +40,7 @@
                                     ['label' => 'Exportação de relatórios em CSV', 'free' => false],
                                     ['label' => 'Exportação de relatórios em PDF', 'free' => false],
                                     ['label' => 'Sugestões via Inteligência Artificial (categorias e nomes de produto)', 'free' => false],
+                                    ['label' => 'Categorização de itens por Inteligência Artificial (automática e sob demanda)', 'free' => false],
                                     ['label' => 'Histórico de preços por produto', 'free' => false],
                                     ['label' => 'Comparação de preços entre lojas e cidades', 'free' => false],
                                     ['label' => 'Detecção de compras recorrentes', 'free' => false],

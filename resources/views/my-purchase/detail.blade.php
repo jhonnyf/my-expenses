@@ -399,6 +399,12 @@
                                                         </option>
                                                     @endforeach
                                                 </select>
+                                                @if(auth()->user()->isPro())
+                                                    <button type="button" data-action="suggest-category-ai" data-item-id="{{ $item->id }}"
+                                                            class="kt-btn kt-btn-ghost kt-btn-xs shrink-0" title="Sugerir categoria com IA">
+                                                        <i class="ki-filled ki-artificial-intelligence"></i>
+                                                    </button>
+                                                @endif
                                             </div>
                                         </td>
                                         <td class="text-right font-mono text-sm py-2.5">{{ rtrim(rtrim(number_format($item->quantity, 4, ',', '.'), '0'), ',') }}</td>
@@ -475,6 +481,12 @@
                                         </option>
                                     @endforeach
                                 </select>
+                                @if(auth()->user()->isPro())
+                                    <button type="button" data-action="suggest-category-ai" data-item-id="{{ $item->id }}"
+                                            class="kt-btn kt-btn-ghost kt-btn-xs shrink-0" title="Sugerir categoria com IA">
+                                        <i class="ki-filled ki-artificial-intelligence"></i>
+                                    </button>
+                                @endif
                             </div>
 
                             <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs text-secondary-foreground">
@@ -499,6 +511,7 @@
 <script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         assignCategoryUrl: '{{ route("categories.assign-item") }}',
+        suggestItemCategoryUrl: '{{ auth()->user()->isPro() ? route("categories.suggest-item-category") : "" }}',
         issuerBaseUrl: '{{ url("issuers") }}',
         productAliasStoreUrl: '{{ route("product-aliases.store") }}',
         productAliasAiSuggestUrl: '{{ route("product-aliases.ai-suggest-name") }}',

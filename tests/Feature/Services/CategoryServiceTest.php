@@ -180,4 +180,95 @@ class CategoryServiceTest extends TestCase
 
         $this->assertEquals(2, $count);
     }
+
+    private function makeItem(User $user, string $description): InvoiceItem
+    {
+        $invoice = Invoice::factory()->for($user)->for(Issuer::factory()->create())->create();
+
+        return InvoiceItem::factory()->for($invoice)->create(['description' => $description, 'category_id' => null]);
+    }
+
+    public function test_auto_categorize_ignores_accents_and_marks_keyword_source(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->for($user)->create(['keywords' => ['açúcar']]);
+        $item = $this->makeItem($user, 'ACUCAR CRISTAL 1KG');
+
+        $this->service->autoCategorize($user->id);
+
+        $this->assertDatabaseHas('invoices_items', [
+            'id' => $item->id,
+            'category_id' => $category->id,
+            'categorization_source' => 'keyword',
+        ]);
+    }
+
+    public function test_auto_categorize_keyword_matches_word_start_only(): void
+    {
+        $user = User::factory()->create();
+        Category::factory()->for($user)->create(['keywords' => ['ovo']]);
+        $item = $this->makeItem($user, 'NOVO SABAO EM PO');
+
+        $count = $this->service->autoCategorize($user->id);
+
+        $this->assertSame(0, $count);
+        $this->assertDatabaseHas('invoices_items', ['id' => $item->id, 'category_id' => null]);
+    }
+
+    public function test_auto_categorize_prefers_longest_keyword(): void
+    {
+        $user = User::factory()->create();
+        Category::factory()->for($user)->create(['name' => 'Alimentação', 'keywords' => ['arroz']]);
+        $sweets = Category::factory()->for($user)->create(['name' => 'Doces', 'keywords' => ['arroz doce']]);
+        $item = $this->makeItem($user, 'ARROZ DOCE 200G');
+
+        $this->service->autoCategorize($user->id);
+
+        $this->assertDatabaseHas('invoices_items', ['id' => $item->id, 'category_id' => $sweets->id]);
+    }
+
+    public function test_auto_categorize_uses_outros_only_as_fallback(): void
+    {
+        $user = User::factory()->create();
+        Category::factory()->for($user)->create(['name' => 'Outros', 'keywords' => ['leite integral']]);
+        $dairy = Category::factory()->for($user)->create(['name' => 'Laticínios', 'keywords' => ['leite']]);
+        $item = $this->makeItem($user, 'LEITE INTEGRAL 1L');
+
+        $this->service->autoCategorize($user->id);
+
+        $this->assertDatabaseHas('invoices_items', ['id' => $item->id, 'category_id' => $dairy->id]);
+    }
+
+    public function test_assign_item_learns_rule_and_applies_it_to_future_items(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->for($user)->create(['keywords' => ['leite']]);
+        $chosen = Category::factory()->for($user)->create();
+        $first = $this->makeItem($user, 'LEITE ESPECIAL XYZ');
+
+        $this->service->assignItem($first, $chosen->id);
+        $second = $this->makeItem($user, 'Leite Especial XYZ');
+        $this->service->autoCategorize($user->id);
+
+        $this->assertDatabaseHas('invoices_items', ['id' => $first->id, 'categorization_source' => 'manual']);
+        $this->assertDatabaseHas('invoices_items', [
+            'id' => $second->id,
+            'category_id' => $chosen->id,
+            'categorization_source' => 'learned',
+        ]);
+        $this->assertNotSame($category->id, $chosen->id);
+    }
+
+    public function test_assign_item_with_null_category_removes_learned_rule(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->for($user)->create();
+        $item = $this->makeItem($user, 'PRODUTO QUALQUER');
+        $this->service->assignItem($item, $category->id);
+
+        $this->service->assignItem($item, null);
+
+        $this->assertDatabaseEmpty('item_category_rules');
+        $this->assertDatabaseHas('invoices_items', ['id' => $item->id, 'category_id' => null, 'categorization_source' => null]);
+    }
 }
