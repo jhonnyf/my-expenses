@@ -277,6 +277,12 @@
                                                                 </option>
                                                             @endforeach
                                                         </select>
+                                                        @if(auth()->user()->isPro())
+                                                            <button type="button" data-action="suggest-category-ai" data-item-id="{{ $item->item_id }}"
+                                                                    class="kt-btn kt-btn-ghost kt-btn-xs shrink-0" title="Sugerir categoria com IA">
+                                                                <i class="ki-filled ki-artificial-intelligence"></i>
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                 </td>
                                                 <td class="text-end font-mono text-sm">
@@ -336,6 +342,12 @@
                                                 </option>
                                             @endforeach
                                         </select>
+                                        @if(auth()->user()->isPro())
+                                            <button type="button" data-action="suggest-category-ai" data-item-id="{{ $item->item_id }}"
+                                                    class="kt-btn kt-btn-ghost kt-btn-xs shrink-0" title="Sugerir categoria com IA">
+                                                <i class="ki-filled ki-artificial-intelligence"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                     <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60 text-xs text-secondary-foreground">
                                         <span class="truncate">{{ $item->issuer_name }}</span>
@@ -365,6 +377,7 @@
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         generateUrl: '{{ route("reports.generate") }}',
         assignCategoryUrl: '{{ route("categories.assign-item") }}',
+        suggestItemCategoryUrl: '{{ auth()->user()->isPro() ? route("categories.suggest-item-category") : "" }}',
         categoryBreakdown: @json($categoryBreakdown ?? []),
         productAliasStoreUrl: '{{ route("product-aliases.store") }}',
         productAliasAiSuggestUrl: '{{ route("product-aliases.ai-suggest-name") }}',

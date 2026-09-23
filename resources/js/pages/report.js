@@ -118,8 +118,9 @@ const Report = (() => {
             document.addEventListener('click', handleClick);
             document.addEventListener('product-alias:updated', handleAliasUpdated);
 
-            const { categoryBreakdown, assignCategoryUrl } = window.pageConfig;
+            const { categoryBreakdown, assignCategoryUrl, suggestItemCategoryUrl } = window.pageConfig;
             Utils.initCategoryAssignment(assignCategoryUrl);
+            if (suggestItemCategoryUrl) Utils.initCategoryAiSuggestion(suggestItemCategoryUrl, assignCategoryUrl);
 
             if (categoryBreakdown?.length) {
                 renderCategoryChart(categoryBreakdown);

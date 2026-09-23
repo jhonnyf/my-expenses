@@ -151,4 +151,31 @@ class ReportControllerTest extends TestCase
             ->assertViewHas('filters', fn ($filters) => (int) $filters['issuer_id'] === $issuer->id
                 && (int) $filters['category_id'] === $category->id);
     }
+
+    private function generateReportFor(User $user)
+    {
+        $invoice = Invoice::factory()->for($user)->for(Issuer::factory()->create())->create(['issued_at' => now()]);
+        InvoiceItem::factory()->for($invoice)->create();
+
+        return $this->actingAs($user)->post('/reports/generate', [
+            'start_date' => now()->startOfMonth()->format('Y-m-d'),
+            'end_date' => now()->format('Y-m-d'),
+        ]);
+    }
+
+    public function test_generate_shows_ai_category_button_for_pro_user(): void
+    {
+        $this->generateReportFor(User::factory()->pro()->create())
+            ->assertOk()
+            ->assertSee('data-action="suggest-category-ai"', false)
+            ->assertSee(route('categories.suggest-item-category'), false);
+    }
+
+    public function test_generate_hides_ai_category_button_for_free_user(): void
+    {
+        $this->generateReportFor(User::factory()->create())
+            ->assertOk()
+            ->assertDontSee('data-action="suggest-category-ai"', false)
+            ->assertDontSee(route('categories.suggest-item-category'), false);
+    }
 }
