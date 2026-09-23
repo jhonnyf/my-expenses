@@ -34,8 +34,8 @@ class PersonalDataExportReady extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Seus dados estão prontos para download')
             ->greeting('Olá!')
-            ->line('A exportação dos seus dados pessoais foi concluída.')
+            ->line('Concluímos a exportação dos seus dados pessoais, conforme você solicitou.')
             ->action('Baixar meus dados', $url)
-            ->line('O link expira em 7 dias por segurança.');
+            ->line('Por segurança, o link fica disponível por 7 dias. Depois disso, será preciso solicitar uma nova exportação.');
     }
 }

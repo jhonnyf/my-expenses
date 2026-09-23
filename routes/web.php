@@ -24,6 +24,11 @@ use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TermsAcceptanceController;
 use App\Http\Controllers\VerificationController;
+use App\Models\File;
+use App\Models\User;
+use App\Notifications\PersonalDataExportReady;
+use App\Notifications\VerifyEmailNotification;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -199,3 +204,25 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
     });
 
 });
+
+// Preview dos layouts de e-mail — só em local/staging.
+if (app()->environment(['local', 'staging'])) {
+    Route::get('mail-preview/{email?}', function (?string $email = null) {
+        $user = new User(['name' => 'Usuário Exemplo', 'email' => 'exemplo@example.com']);
+        $user->id = 1;
+
+        $emails = [
+            'verify-email' => fn () => (new VerifyEmailNotification)->toMail($user),
+            'reset-password' => fn () => (new ResetPassword('token-exemplo'))->toMail($user),
+            'data-export' => fn () => (new PersonalDataExportReady((new File)->forceFill(['id' => 1])))->toMail($user),
+        ];
+
+        if (! isset($emails[$email])) {
+            return collect(array_keys($emails))
+                ->map(fn ($key) => '<li><a href="'.url("mail-preview/{$key}").'">'.$key.'</a></li>')
+                ->prepend('<h1>E-mails</h1><ul>')->push('</ul>')->implode('');
+        }
+
+        return $emails[$email]();
+    })->name('mail-preview');
+}

@@ -14,6 +14,7 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -40,13 +41,23 @@ class AppServiceProvider extends ServiceProvider
         // O e-mail é enviado de forma síncrona dentro da requisição, então dá pra saber se
         // o pedido veio do app mobile (API) ou do site. O app recebe uma página que abre o
         // deep link cestazen://; o site continua indo direto pra tela de redefinição web.
-        ResetPassword::createUrlUsing(function ($user, $token) {
+        $resetUrl = function ($user, $token) {
             $query = ['token' => $token, 'email' => $user->email];
 
             return request()->is('api/*')
                 ? route('password.reset.app', $query)
                 : route('password.reset', $query);
-        });
+        };
+
+        ResetPassword::createUrlUsing($resetUrl);
+
+        ResetPassword::toMailUsing(fn ($user, $token) => (new MailMessage)
+            ->subject('Redefina sua senha do CestaZen')
+            ->greeting('Olá!')
+            ->line('Recebemos um pedido para redefinir a senha da sua conta.')
+            ->action('Criar nova senha', $resetUrl($user, $token))
+            ->line('Por segurança, este link expira em '.config('auth.passwords.'.config('auth.defaults.passwords').'.expire').' minutos.')
+            ->line('Se não foi você quem pediu, ignore este e-mail: sua senha continua a mesma.'));
     }
 
     /**
