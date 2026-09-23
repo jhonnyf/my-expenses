@@ -3,11 +3,11 @@
     <div class="kt-sidebar-header hidden lg:flex items-center relative justify-between px-3 lg:px-6 shrink-0"
         id="sidebar_header">
         <a class="dark:hidden" href="{{ route('dashboard.index') }}">
-            <img class="default-logo w-[136px] h-[22px] object-contain object-left" src="assets/media/app/default-logo.png" />
+            <img class="default-logo w-[170px] h-auto" src="{{ asset('assets/media/app/default-logo.png') }}?v={{ filemtime(public_path('assets/media/app/default-logo.png')) }}" />
             <img class="small-logo h-[22px] max-w-none" src="assets/media/app/mini-logo.png" />
         </a>
         <a class="hidden dark:block" href="{{ route('dashboard.index') }}">
-            <img class="default-logo w-[136px] h-[22px] object-contain object-left" src="assets/media/app/default-logo-dark.png" />
+            <img class="default-logo w-[170px] h-auto" src="{{ asset('assets/media/app/default-logo-dark.png') }}?v={{ filemtime(public_path('assets/media/app/default-logo-dark.png')) }}" />
             <img class="small-logo h-[22px] max-w-none" src="assets/media/app/mini-logo.png" />
         </a>
         <button

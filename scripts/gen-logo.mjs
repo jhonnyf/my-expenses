@@ -7,7 +7,7 @@ import path from 'node:path';
 
 const ROOT = new URL('../public/', import.meta.url).pathname;
 const BRAND = '#4B7672';
-const BRAND_LIGHT = '#CFE0DE';
+const LOGO_TINT = '#345853'; // mais escuro que o PNG original: traço fino reduzido a ~136px perde contraste
 const TAGLINE = 'Controle de gastos pessoais via importação de NFC-e';
 
 const b64 = (rel) => fs.readFileSync(path.join(ROOT, rel)).toString('base64');
@@ -33,7 +33,7 @@ const browser = await chromium.launch();
 const page = await browser.newPage();
 
 // Roda dentro do browser: recorta o conteúdo (bbox do alpha), opcionalmente recolore e desenha em canvas.
-const out = await page.evaluate(async ({ texto, avatar, BRAND, BRAND_LIGHT, TAGLINE }) => {
+const out = await page.evaluate(async ({ texto, avatar, BRAND, LOGO_TINT, TAGLINE }) => {
   const load = async (b64) => { const i = new Image(); i.src = `data:image/png;base64,${b64}`; await i.decode(); return i; };
 
   // recorta o conteúdo visível e, se `tint`, recolore preservando o alpha
@@ -69,8 +69,8 @@ const out = await page.evaluate(async ({ texto, avatar, BRAND, BRAND_LIGHT, TAGL
   const png = (c) => c.toDataURL('image/png').split(',')[1];
 
   const [textoImg, avatarImg] = await Promise.all([load(texto), load(avatar)]);
-  const logo = trimmed(textoImg);
-  const logoDark = trimmed(textoImg, BRAND_LIGHT);
+  const logo = trimmed(textoImg, LOGO_TINT);
+  const logoDark = logo;
   const icon = trimmed(avatarImg);
   const iconWhite = trimmed(avatarImg, '#FFFFFF');
   const logoH = (w) => Math.round((w * logo.height) / logo.width);
@@ -99,7 +99,7 @@ const out = await page.evaluate(async ({ texto, avatar, BRAND, BRAND_LIGHT, TAGL
   files['assets/media/app/og-image.png'] = png(og);
 
   return files;
-}, { texto: b64('assets/logo/cestazen-texto.png'), avatar: b64('assets/logo/cestazen-avatar.png'), BRAND, BRAND_LIGHT, TAGLINE });
+}, { texto: b64('assets/logo/cestazen-texto.png'), avatar: b64('assets/logo/cestazen-avatar.png'), BRAND, LOGO_TINT, TAGLINE });
 
 await browser.close();
 
