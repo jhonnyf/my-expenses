@@ -13,10 +13,10 @@ composer dev
 
 # Testes — SEMPRE dentro do container Docker (o PHP do host não tem a extensão gd,
 # causando falsos positivos em testes de upload de avatar/imagem)
-docker exec my-expenses php artisan test
+docker exec CestaZen php artisan test
 
 # Rodar um único teste
-docker exec my-expenses php artisan test --filter NomeDoTeste
+docker exec CestaZen php artisan test --filter NomeDoTeste
 
 # Lint / formatação (Laravel Pint, preset padrão — sem pint.json customizado)
 ./vendor/bin/pint
@@ -31,7 +31,7 @@ Nota: `composer.json` exige PHP `^8.2`, mas o `Dockerfile` usa `php:8.4-fpm-alpi
 
 Aplicação Laravel 12 para controle de gastos pessoais via importação de NFC-e (Nota Fiscal de Consumidor Eletrônica). Stack: Sanctum (API v1), Socialite (login social Google/Facebook/Apple), Scramble (docs de API automáticas, só em `local`/`staging`), dompdf (export de relatórios em PDF).
 
-Padrão geral: Controllers finos delegam para **Services** (regra de negócio: `BudgetService`, `CategoryService`, `DashboardService`, `PriceHistoryService`, `RecurringPurchaseService`, `ReportService`, `SearchService`) e **Actions** (operação pontual e transacional: `ImportInvoiceAction`, `FindOrCreateSocialUser`, `UpdateUserAvatarAction`). Duas famílias de Strategy pattern via interface + DI:
+Padrão geral: Controllers finos delegam para **Services** (regra de negócio: `BudgetService`, `CategoryService`, `DashboardService`, `IssuerService`, `PriceHistoryService`, `RecurringPurchaseService`, `ReportService`, `SearchService`) e **Actions** (operação pontual e transacional: `ImportInvoiceAction`, `FindOrCreateSocialUser`, `UpdateUserAvatarAction`). `IssuerService` concentra todo acesso a emissor (web e API): o emissor só é listado/aberto/favoritado/apelidado se o usuário tiver ao menos uma nota dele (senão 404), e a lista só mostra emissores com nota autorizada. Duas famílias de Strategy pattern via interface + DI:
 - `Import/Strategies/` (`ImportStrategyInterface`) — `XmlFileImportStrategy`, `QrCodeImportStrategy`, `AccessKeyImportStrategy`, usadas por `Api\V1\InvoiceController`.
 - `Search/Strategies/` (`SearchStrategyInterface`) — `InvoiceSearchStrategy`, `IssuerSearchStrategy`, `ProductSearchStrategy`, usadas por `SearchService`/`SearchController` (busca global).
 
