@@ -150,12 +150,13 @@ class BudgetServiceTest extends TestCase
         $category = Category::factory()->for($user)->create();
         $budget = Budget::factory()->for($user)->create(['category_id' => null, 'amount' => 100.00]);
 
-        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()]);
+        // O Geral soma o valor da nota (líquido de desconto), não os itens: 20,00 de itens, nota de 18,00.
+        $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now(), 'total_amount' => 18.00]);
         InvoiceItem::factory()->for($invoice)->create(['category_id' => $category->id, 'total_price' => 15.00]);
         InvoiceItem::factory()->for($invoice)->create(['category_id' => null, 'total_price' => 5.00]);
 
         $result = $this->service->attachSpending($budget);
 
-        $this->assertEquals(20.00, (float) $result->spent);
+        $this->assertEquals(18.00, (float) $result->spent);
     }
 }

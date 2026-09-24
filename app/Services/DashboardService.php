@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\DTOs\OverallStats;
-use App\Models\Budget;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
@@ -14,7 +13,10 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
-    public function __construct(private readonly ProductAliasService $aliasService) {}
+    public function __construct(
+        private readonly ProductAliasService $aliasService,
+        private readonly BudgetService $budgetService,
+    ) {}
 
     public function getViewData(int $userId, ?string $startDate = null, ?string $endDate = null): array
     {
@@ -40,7 +42,7 @@ class DashboardService
             'previousPeriodEnd' => $previousEnd,
             'lastPurchase' => $this->getLastPurchase($userId, $start, $end),
             'paymentDistribution' => $this->getPaymentDistribution($userId, $start, $end),
-            'budgets' => $this->getBudgets($userId, $start, $end, $periodComparison['periodExpenses']),
+            'budgets' => $this->budgetService->getBudgetsWithSpending($userId)['budgets'],
             'monthlyExpenses' => $this->getMonthlyExpenses($userId, Carbon::now()),
             'spendingByCategory' => $this->getSpendingByCategory($userId, $start, $end),
             'topIssuers' => $this->getTopIssuers($userId, $start, $end),
@@ -138,28 +140,6 @@ class DashboardService
                 ->groupBy('invoices_payments.method')
                 ->orderByDesc('total')
                 ->get();
-        });
-    }
-
-    private function getBudgets(int $userId, string $start, string $end, float $periodExpenses): Collection
-    {
-        $budgets = Budget::where('user_id', $userId)->with('category')->get();
-
-        $periodSpending = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-            ->where('invoices.user_id', $userId)
-            ->whereDateBetween('invoices.issued_at', $start, $end)
-            ->select('invoices_items.category_id', DB::raw('SUM(invoices_items.total_price) as total'))
-            ->groupBy('invoices_items.category_id')
-            ->pluck('total', 'category_id');
-
-        return $budgets->map(function (Budget $budget) use ($periodSpending, $periodExpenses) {
-            $budget->spent = $budget->category_id
-                ? (float) ($periodSpending[$budget->category_id] ?? 0)
-                : (float) $periodExpenses;
-            $budget->percentage = $budget->amount > 0 ? ($budget->spent / $budget->amount) * 100 : 0.0;
-            $budget->remaining = (float) $budget->amount - $budget->spent;
-
-            return $budget;
         });
     }
 

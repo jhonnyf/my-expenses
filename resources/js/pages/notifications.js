@@ -3,6 +3,14 @@ import Utils from '../utils';
 const MESSAGE_BUILDERS = {
     'App\\Notifications\\FavoriteProductPriceDropped': (data) =>
         `<strong>${Utils.escapeHtml(data.product_name)}</strong> caiu para R$ ${Utils.formatCurrency(data.new_price)} em ${Utils.escapeHtml(data.issuer_name)} (${Utils.escapeHtml(data.city)}/${Utils.escapeHtml(data.state)}).`,
+    'App\\Notifications\\BudgetThresholdReached': (data) => {
+        const name = data.category_name ? Utils.escapeHtml(data.category_name) : 'Geral';
+        const values = `R$ ${Utils.formatCurrency(data.spent)} de R$ ${Utils.formatCurrency(data.amount)}`;
+
+        return data.level >= 100
+            ? `O orçamento <strong>${name}</strong> foi excedido este mês (${values}).`
+            : `O orçamento <strong>${name}</strong> chegou a ${data.level}% do limite (${values}).`;
+    },
 };
 
 const Notifications = (() => {

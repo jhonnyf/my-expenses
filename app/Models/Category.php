@@ -26,6 +26,15 @@ class Category extends Model
         'keywords' => 'array',
     ];
 
+    /**
+     * A FK do orçamento é nullOnDelete: sem isto, apagar a categoria transformaria o orçamento dela num
+     * segundo orçamento "Geral" (o índice único aceita vários nulos).
+     */
+    protected static function booted(): void
+    {
+        static::deleting(fn (Category $category) => Budget::where('category_id', $category->id)->delete());
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -220,6 +220,54 @@ const Utils = (() => {
     // start_date/end_date — usado em qualquer página com filtro de período
     // (dashboard, categorias). Os ids/data-action são fixos de propósito para
     // não precisar duplicar esta função por página.
+    // ---------- Aviso inline (sem Toast no bundle) ----------
+    // Caixa `<div id="pageFlash" class="hidden ..."><i/><span data-flash-text></span></div>` na página.
+
+    const FLASH_STORAGE_KEY = 'pageFlash';
+    const FLASH_CLASSES = {
+        success: ['border-green-500/30', 'bg-green-500/10', 'text-green-600'],
+        error: ['border-destructive/30', 'bg-destructive/10', 'text-destructive'],
+    };
+
+    const showFlash = (message, variant = 'success') => {
+        const box = document.getElementById('pageFlash');
+        if (!box) return;
+
+        Object.values(FLASH_CLASSES).flat().forEach(c => box.classList.remove(c));
+        box.classList.add(...FLASH_CLASSES[variant]);
+        box.querySelector('[data-flash-text]').textContent = message;
+        box.classList.remove('hidden');
+        box.classList.add('flex');
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    // Ações que recarregam a página deixam a mensagem para depois do reload.
+    const reloadWithFlash = (message) => {
+        try {
+            sessionStorage.setItem(FLASH_STORAGE_KEY, message);
+        } catch {
+            // sem sessionStorage (modo privado): só perde a mensagem
+        }
+        location.reload();
+    };
+
+    const restoreFlash = () => {
+        try {
+            const message = sessionStorage.getItem(FLASH_STORAGE_KEY);
+            if (!message) return;
+            sessionStorage.removeItem(FLASH_STORAGE_KEY);
+            showFlash(message);
+        } catch {
+            // ignora
+        }
+    };
+
+    // Mensagem de um erro do axios: 1º erro de validação, senão `message` do servidor, senão o fallback.
+    const errorMessage = (error, fallback) => {
+        const errors = error.response?.data?.errors;
+        return (errors && Object.values(errors).flat()[0]) || error.response?.data?.message || fallback;
+    };
+
     const formatBRL = (value) => parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     // Barras dos últimos meses ({ month: 'YYYY-MM', total }) num elemento; sem dados ou sem ApexCharts, não faz nada.
@@ -280,6 +328,7 @@ const Utils = (() => {
     return {
         http, formatCurrency, escapeHtml, initCategoryAssignment, initCategoryAiSuggestion, initFavoriteProduct,
         initLocationCapture, initPeriodFilter, renderMonthlyBars, syncSelectValue, setSelectDisabled,
+        showFlash, reloadWithFlash, restoreFlash, errorMessage,
     };
 })();
 

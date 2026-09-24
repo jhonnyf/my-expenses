@@ -78,14 +78,14 @@ class BudgetControllerTest extends TestCase
         $this->deleteJson("/api/v1/budgets/{$budget->id}")->assertStatus(401);
     }
 
-    public function test_destroy_returns_403_when_budget_belongs_to_another_user(): void
+    public function test_destroy_returns_404_when_budget_belongs_to_another_user(): void
     {
         $budget = Budget::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->deleteJson("/api/v1/budgets/{$budget->id}")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_destroy_deletes_own_budget(): void

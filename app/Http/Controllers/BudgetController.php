@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\StoreBudgetAction;
+use App\Http\Requests\BudgetMonthRequest;
 use App\Http\Requests\StoreBudgetRequest;
 use App\Models\Budget;
 use App\Services\BudgetService;
@@ -14,9 +15,12 @@ class BudgetController extends Controller
 {
     public function __construct(private readonly BudgetService $service) {}
 
-    public function index(): View
+    public function index(BudgetMonthRequest $request): View
     {
-        return view('budget.index', $this->service->getBudgetsWithSpending(Auth::id()));
+        return view('budget.index', [
+            ...$this->service->getBudgetsWithSpending(Auth::id(), $request->month()),
+            'isPro' => Auth::user()->isPro(),
+        ]);
     }
 
     public function store(StoreBudgetRequest $request, StoreBudgetAction $action): JsonResponse

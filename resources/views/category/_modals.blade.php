@@ -12,7 +12,7 @@
             <ul class="text-xs text-secondary-foreground list-disc ps-4 grid gap-1">
                 <li id="deleteCategoryItems"></li>
                 <li>As regras aprendidas para esta categoria também são removidas.</li>
-                <li id="deleteCategoryBudget" class="hidden">O orçamento desta categoria passa a ser um orçamento geral.</li>
+                <li id="deleteCategoryBudget" class="hidden">O orçamento desta categoria também é excluído.</li>
             </ul>
             <p class="text-xs text-secondary-foreground">Para manter o histórico, use <strong>Mesclar</strong> em vez de excluir.</p>
             <p id="deleteCategoryError" class="text-xs text-destructive hidden"></p>

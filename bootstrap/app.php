@@ -35,7 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(fn (AiSuggestionUnavailableException $e) => response()->json(['message' => $e->getMessage()], 503));
 
         $exceptions->render(function (ProFeatureRequiredException $e, Request $request) {
-            if ($request->is('api/*')) {
+            // AJAX da web (axios) também: um redirect para a página de upgrade chegaria como HTML no lugar do JSON esperado.
+            if ($request->is('api/*') || $request->ajax() || $request->expectsJson()) {
                 return response()->json([
                     'message' => $e->getMessage(),
                     'upgrade_required' => true,

@@ -1,57 +1,13 @@
 import Utils from '../utils';
 
-const FLASH_STORAGE_KEY = 'categoryFlash';
 const PREVIEW_DEBOUNCE_MS = 600;
-
-const FLASH_CLASSES = {
-    success: ['border-green-500/30', 'bg-green-500/10', 'text-green-600'],
-    error: ['border-destructive/30', 'bg-destructive/10', 'text-destructive'],
-};
 
 const Category = (() => {
     let initialized = false;
     let baseUrl;
     const previewTimers = {};
 
-    // ---------- Aviso inline (a página não tem Toast) ----------
-
-    const showFlash = (message, variant = 'success') => {
-        const box = document.getElementById('categoryFlash');
-        if (!box) return;
-
-        Object.values(FLASH_CLASSES).flat().forEach(c => box.classList.remove(c));
-        box.classList.add(...FLASH_CLASSES[variant]);
-        box.querySelector('[data-flash-text]').textContent = message;
-        box.classList.remove('hidden');
-        box.classList.add('flex');
-        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    };
-
-    // Ações que recarregam a página (números de vários cards mudam) deixam a mensagem para depois do reload.
-    const reloadWithFlash = (message) => {
-        try {
-            sessionStorage.setItem(FLASH_STORAGE_KEY, message);
-        } catch {
-            // sem sessionStorage (modo privado): só perde a mensagem
-        }
-        location.reload();
-    };
-
-    const restoreFlash = () => {
-        try {
-            const message = sessionStorage.getItem(FLASH_STORAGE_KEY);
-            if (!message) return;
-            sessionStorage.removeItem(FLASH_STORAGE_KEY);
-            showFlash(message);
-        } catch {
-            // ignora
-        }
-    };
-
-    const errorMessage = (error, fallback) => {
-        const errors = error.response?.data?.errors;
-        return (errors && Object.values(errors).flat()[0]) || error.response?.data?.message || fallback;
-    };
+    const { showFlash, reloadWithFlash, restoreFlash, errorMessage } = Utils;
 
     const closeModal = (id) => window.KTModal?.getInstance(document.getElementById(id))?.hide();
 

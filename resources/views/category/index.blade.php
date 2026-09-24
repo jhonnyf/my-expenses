@@ -29,7 +29,7 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
-            <div id="categoryFlash" role="status" class="hidden items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+            <div id="pageFlash" role="status" class="hidden items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
                 <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
                 <span class="text-sm text-green-600 font-medium" data-flash-text></span>
             </div>
