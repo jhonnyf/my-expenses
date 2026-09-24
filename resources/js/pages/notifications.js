@@ -1,79 +1,119 @@
 import Utils from '../utils';
 
-const MESSAGE_BUILDERS = {
-    'App\\Notifications\\FavoriteProductPriceDropped': (data) =>
-        `<strong>${Utils.escapeHtml(data.product_name)}</strong> caiu para R$ ${Utils.formatCurrency(data.new_price)} em ${Utils.escapeHtml(data.issuer_name)} (${Utils.escapeHtml(data.city)}/${Utils.escapeHtml(data.state)}).`,
-    'App\\Notifications\\BudgetThresholdReached': (data) => {
-        const name = data.category_name ? Utils.escapeHtml(data.category_name) : 'Geral';
-        const values = `R$ ${Utils.formatCurrency(data.spent)} de R$ ${Utils.formatCurrency(data.amount)}`;
-
-        return data.level >= 100
-            ? `O orçamento <strong>${name}</strong> foi excedido este mês (${values}).`
-            : `O orçamento <strong>${name}</strong> chegou a ${data.level}% do limite (${values}).`;
-    },
+const LEVEL_ICONS = {
+    info: { icon: 'ki-price-tag', color: 'text-primary' },
+    warning: { icon: 'ki-information-2', color: 'text-yellow-600' },
+    danger: { icon: 'ki-information-2', color: 'text-destructive' },
 };
+
+const RELATIVE_UNITS = [
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60],
+];
 
 const Notifications = (() => {
     let initialized = false;
-    let notificationsUrl, notificationsReadUrl;
-    let toggle, badge, list;
+    let notificationsUrl, notificationsReadUrl, unreadCountUrl, readAllUrl;
+    let toggle, badge, list, readAllButton;
 
-    const buildMessage = (notification) => {
-        const builder = MESSAGE_BUILDERS[notification.type];
-        return builder ? builder(notification.data) : 'Você tem uma nova notificação.';
+    const relativeTime = (isoDate) => {
+        const seconds = Math.round((new Date(isoDate).getTime() - Date.now()) / 1000);
+        if (Math.abs(seconds) < 60) return 'agora';
+
+        const formatter = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
+        const [unit, size] = RELATIVE_UNITS.find(([, size]) => Math.abs(seconds) >= size);
+
+        // Passado das últimas semanas vira data; "há 45 dias" não ajuda a achar o aviso.
+        return Math.abs(seconds) >= 7 * 86400
+            ? new Date(isoDate).toLocaleDateString('pt-BR')
+            : formatter.format(Math.trunc(seconds / size), unit);
+    };
+
+    const setUnread = (count) => {
+        badge.textContent = count > 9 ? '9+' : String(count);
+        badge.classList.toggle('hidden', count === 0);
+        badge.setAttribute('aria-label', `${count} notificações não lidas`);
+        readAllButton.classList.toggle('hidden', count === 0);
+    };
+
+    const itemHtml = (n) => {
+        const { icon, color } = LEVEL_ICONS[n.level] ?? LEVEL_ICONS.info;
+        const unread = !n.read_at;
+        const body = `
+            <p class="text-xs text-foreground leading-4.5">${Utils.escapeHtml(n.message)}</p>
+            <p class="text-[11px] text-secondary-foreground mt-0.5">${relativeTime(n.created_at)}</p>`;
+
+        return `
+            <div class="flex items-start gap-2 px-3 py-2.5 ${unread ? 'bg-accent/30' : ''}">
+                <i class="ki-filled ${icon} ${color} text-sm mt-0.5 shrink-0" aria-hidden="true"></i>
+                ${n.url
+                    ? `<a href="${Utils.escapeHtml(n.url)}" class="min-w-0 flex-1 hover:underline" data-notification-link="${n.id}" data-unread="${unread}">${body}</a>`
+                    : `<div class="min-w-0 flex-1">${body}</div>`}
+                ${unread ? `<button type="button" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm shrink-0" data-mark-read="${n.id}" title="Marcar como lida" aria-label="Marcar como lida"><i class="ki-filled ki-check text-xs" aria-hidden="true"></i></button>` : ''}
+            </div>`;
     };
 
     const render = ({ unread_count: unreadCount, notifications }) => {
-        badge.classList.toggle('hidden', unreadCount === 0);
+        setUnread(unreadCount);
+        list.innerHTML = notifications.length === 0
+            ? '<div class="px-3 py-4 text-xs text-secondary-foreground text-center">Nenhuma notificação.</div>'
+            : notifications.map(itemHtml).join('');
+    };
 
-        if (notifications.length === 0) {
-            list.innerHTML = '<div class="px-3 py-4 text-xs text-secondary-foreground text-center">Nenhuma notificação.</div>';
+    const showError = () => {
+        list.innerHTML = '<div class="px-3 py-4 text-xs text-destructive text-center">Não foi possível carregar as notificações.</div>';
+    };
+
+    const loadList = () => Utils.http(notificationsUrl).then(render).catch(showError);
+
+    const loadCount = () => Utils.http(unreadCountUrl)
+        .then(({ unread_count: count }) => setUnread(count))
+        .catch(() => {}); // sem contador o sino só fica sem a bolinha
+
+    const markAsRead = (id) => Utils.http(`${notificationsReadUrl}/${id}/read`, { method: 'POST' });
+
+    const handleListClick = async (e) => {
+        const markButton = e.target.closest('[data-mark-read]');
+        if (markButton) {
+            await markAsRead(markButton.dataset.markRead).catch(() => {});
+            loadList();
             return;
         }
 
-        list.innerHTML = notifications.map(n => `
-            <div class="flex items-start gap-2 px-3 py-2.5 ${!n.read_at ? 'bg-accent/30' : ''}" data-notification-id="${n.id}">
-                <i class="ki-filled ki-price-tag text-primary text-sm mt-0.5 shrink-0"></i>
-                <div class="min-w-0 flex-1">
-                    <p class="text-xs text-foreground leading-4.5">${buildMessage(n)}</p>
-                    <p class="text-[11px] text-secondary-foreground mt-0.5">${new Date(n.created_at).toLocaleDateString('pt-BR')}</p>
-                </div>
-                ${!n.read_at ? `<button type="button" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm shrink-0" data-mark-read="${n.id}" title="Marcar como lida"><i class="ki-filled ki-check text-xs"></i></button>` : ''}
-            </div>`).join('');
+        // Link da notificação: marca como lida antes de sair, mas nunca bloqueia a navegação.
+        const link = e.target.closest('[data-notification-link]');
+        if (link && link.dataset.unread === 'true') {
+            e.preventDefault();
+            await markAsRead(link.dataset.notificationLink).catch(() => {});
+            location.href = link.href;
+        }
     };
 
-    const load = () => {
-        Utils.http(notificationsUrl).then(render);
-    };
-
-    const markAsRead = async (id) => {
-        await Utils.http(`${notificationsReadUrl}/${id}/read`, { method: 'POST' });
-        load();
-    };
-
-    const handleListClick = (e) => {
-        const btn = e.target.closest('[data-mark-read]');
-        if (btn) markAsRead(btn.dataset.markRead);
+    const handleReadAll = async () => {
+        await Utils.http(readAllUrl, { method: 'POST' }).catch(() => {});
+        loadList();
     };
 
     return {
         init: () => {
             if (initialized) return;
 
-            notificationsUrl = window.pageConfig?.notificationsUrl;
-            notificationsReadUrl = window.pageConfig?.notificationsReadUrl;
+            ({ notificationsUrl, notificationsReadUrl, unreadCountUrl, readAllUrl } = window.pageConfig ?? {});
             toggle = document.getElementById('notificationsToggle');
             badge = document.getElementById('notificationBadge');
             list = document.getElementById('notificationsList');
+            readAllButton = document.getElementById('notificationsReadAll');
 
             if (!notificationsUrl || !toggle) return;
 
             initialized = true;
 
             list.addEventListener('click', handleListClick);
-            toggle.addEventListener('click', load);
-            load();
-        }
+            readAllButton.addEventListener('click', handleReadAll);
+            toggle.addEventListener('click', loadList);
+            loadCount();
+        },
     };
 })();
 

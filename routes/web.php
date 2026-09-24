@@ -211,6 +211,8 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
 
     Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+        Route::post('read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
         Route::post('{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
     });
 

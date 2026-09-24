@@ -184,6 +184,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Notificações
             Route::prefix('notifications')->name('notifications.')->group(function () {
                 Route::get('/', [NotificationController::class, 'index'])->name('index');
+                Route::get('unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+                Route::post('read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
                 Route::post('{notification}/read', [NotificationController::class, 'markAsRead'])->name('read');
             });
 

@@ -85,14 +85,15 @@
                         <!-- Notifications -->
                         <div class="shrink-0" data-kt-dropdown="true" data-kt-dropdown-offset="10px, 10px" data-kt-dropdown-placement="bottom-end" data-kt-dropdown-trigger="click">
                             <div class="cursor-pointer shrink-0 relative" data-kt-dropdown-toggle="true" id="notificationsToggle">
-                                <button type="button" class="kt-btn kt-btn-icon kt-btn-ghost">
-                                    <i class="ki-filled ki-notification-status text-lg"></i>
+                                <button type="button" class="kt-btn kt-btn-icon kt-btn-ghost" aria-label="Notificações" aria-haspopup="true">
+                                    <i class="ki-filled ki-notification-status text-lg" aria-hidden="true"></i>
                                 </button>
-                                <span id="notificationBadge" class="hidden absolute top-0.5 end-0.5 size-2 rounded-full bg-destructive"></span>
+                                <span id="notificationBadge" class="hidden absolute -top-0.5 -end-0.5 min-w-4 h-4 px-1 rounded-full bg-destructive text-white text-[10px] font-semibold leading-4 text-center" role="status" aria-live="polite"></span>
                             </div>
                             <div class="kt-dropdown-menu w-[320px]" data-kt-dropdown-menu="true">
                                 <div class="flex items-center justify-between px-3 py-2.5">
                                     <span class="text-sm font-semibold text-foreground">Notificações</span>
+                                    <button type="button" id="notificationsReadAll" class="hidden text-xs text-primary hover:underline">Marcar todas como lidas</button>
                                 </div>
                                 <div class="kt-dropdown-menu-separator"></div>
                                 <div id="notificationsList" class="max-h-80 overflow-y-auto divide-y divide-border">
@@ -192,6 +193,8 @@
         window.pageConfig = window.pageConfig || {};
         window.pageConfig.notificationsUrl = '{{ route("notifications.index") }}';
         window.pageConfig.notificationsReadUrl = '{{ url("notifications") }}';
+        window.pageConfig.unreadCountUrl = '{{ route("notifications.unread-count") }}';
+        window.pageConfig.readAllUrl = '{{ route("notifications.read-all") }}';
         window.pageConfig.favoriteProductToggleUrl = '{{ route("favorite-products.toggle") }}';
         window.pageConfig.captureLocationUrl = '{{ route("account.location.capture") }}';
     </script>

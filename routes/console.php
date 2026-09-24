@@ -22,3 +22,6 @@ Schedule::command('model:prune')->daily();
 
 // Relatórios agendados por e-mail (semanal às segundas, mensal no dia 1º) — plano Pro
 Schedule::command('reports:send-scheduled')->dailyAt('06:00')->withoutOverlapping();
+
+// Notificações do sino com mais de 90 dias (LGPD: sem retenção indefinida)
+Schedule::command('notifications:prune')->daily();
