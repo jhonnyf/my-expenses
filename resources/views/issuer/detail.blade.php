@@ -89,43 +89,53 @@
                     <div class="border-t border-border mx-5"></div>
 
                     {{-- Stats --}}
-                    <div class="kt-card-content px-5 py-4 grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-xs text-secondary-foreground">Total de Notas</span>
-                            <span class="text-xl font-semibold text-mono tabular-nums">{{ number_format($stats->total_count) }}</span>
+                    <div class="kt-card-content px-5 py-5 grid gap-5">
+
+                        {{-- Destaques --}}
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-xs text-secondary-foreground">Total de notas</span>
+                                <span class="text-xl font-semibold text-mono tabular-nums">{{ number_format($stats->total_count) }}</span>
+                            </div>
+                            <div class="flex flex-col items-end text-end gap-0.5 min-w-0">
+                                <span class="text-xs text-secondary-foreground">Valor total</span>
+                                <span class="text-xl font-semibold text-primary tabular-nums truncate">R$ {{ number_format($stats->total_sum, 2, ',', '.') }}</span>
+                            </div>
                         </div>
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-xs text-secondary-foreground">Valor Total</span>
-                            <span class="text-xl font-semibold text-primary tabular-nums truncate">R$ {{ number_format($stats->total_sum, 2, ',', '.') }}</span>
-                        </div>
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-xs text-secondary-foreground">Ticket médio</span>
-                            <span class="text-sm font-semibold text-foreground tabular-nums">R$ {{ number_format($insights['average_ticket'], 2, ',', '.') }}</span>
-                            @if($insights['ticket_trend_pct'] !== null && $insights['ticket_trend_pct'] != 0)
-                                <span class="text-xs tabular-nums {{ $insights['ticket_trend_pct'] > 0 ? 'text-destructive' : 'text-green-600' }}"
-                                      title="Média das compras mais recentes comparada às anteriores">
-                                    {{ $insights['ticket_trend_pct'] > 0 ? '▲' : '▼' }} {{ number_format(abs($insights['ticket_trend_pct']), 1, ',', '.') }}% nas últimas compras
-                                </span>
-                            @endif
-                        </div>
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-xs text-secondary-foreground">Frequência</span>
-                            <span class="text-sm font-semibold text-foreground">
-                                {{ $insights['visit_interval_days'] ? 'a cada ~'.$insights['visit_interval_days'].' '.($insights['visit_interval_days'] == 1 ? 'dia' : 'dias') : '—' }}
-                            </span>
-                        </div>
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-xs text-secondary-foreground">Primeira Compra</span>
-                            <span class="text-sm font-semibold text-foreground tabular-nums">
-                                {{ $stats->first_at ? \Carbon\Carbon::parse($stats->first_at)->format('d/m/Y') : '—' }}
-                            </span>
-                        </div>
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-xs text-secondary-foreground">Última Compra</span>
-                            <span class="text-sm font-semibold text-foreground tabular-nums">
-                                {{ $stats->last_at ? \Carbon\Carbon::parse($stats->last_at)->format('d/m/Y') : '—' }}
-                            </span>
-                        </div>
+
+                        {{-- Detalhes --}}
+                        <dl class="grid gap-3 border-t border-border pt-4 text-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <dt class="text-secondary-foreground">Ticket médio</dt>
+                                <dd class="flex items-center justify-end gap-2 font-semibold text-foreground tabular-nums">
+                                    @if($insights['ticket_trend_pct'] !== null && $insights['ticket_trend_pct'] != 0)
+                                        <span class="kt-badge kt-badge-outline kt-badge-sm {{ $insights['ticket_trend_pct'] > 0 ? 'kt-badge-destructive' : 'kt-badge-success' }}"
+                                              title="Média das compras mais recentes comparada às anteriores">
+                                            {{ $insights['ticket_trend_pct'] > 0 ? '▲' : '▼' }} {{ number_format(abs($insights['ticket_trend_pct']), 1, ',', '.') }}%
+                                        </span>
+                                    @endif
+                                    R$ {{ number_format($insights['average_ticket'], 2, ',', '.') }}
+                                </dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <dt class="text-secondary-foreground">Frequência</dt>
+                                <dd class="font-semibold text-foreground">
+                                    {{ $insights['visit_interval_days'] ? 'a cada ~'.$insights['visit_interval_days'].' '.($insights['visit_interval_days'] == 1 ? 'dia' : 'dias') : '—' }}
+                                </dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <dt class="text-secondary-foreground">Primeira compra</dt>
+                                <dd class="font-semibold text-foreground tabular-nums">
+                                    {{ $stats->first_at ? \Carbon\Carbon::parse($stats->first_at)->format('d/m/Y') : '—' }}
+                                </dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <dt class="text-secondary-foreground">Última compra</dt>
+                                <dd class="font-semibold text-foreground tabular-nums">
+                                    {{ $stats->last_at ? \Carbon\Carbon::parse($stats->last_at)->format('d/m/Y') : '—' }}
+                                </dd>
+                            </div>
+                        </dl>
                     </div>
                 </div>
 
@@ -249,29 +259,26 @@
                             <div class="kt-card-header">
                                 <h3 class="kt-card-title">Produtos que você mais compra aqui</h3>
                             </div>
-                            <div class="kt-card-content px-5 pb-5 grid gap-3">
+                            <div class="kt-card-content px-5 pb-2 flex flex-col">
                                 @foreach($insights['top_products'] as $product)
-                                    <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-start justify-between gap-4 py-3 border-b border-border last:border-b-0">
                                         <div class="min-w-0">
-                                            <p class="text-sm font-medium text-foreground truncate" title="{{ $product['name'] }}">{{ $product['name'] }}</p>
-                                            <p class="text-xs text-secondary-foreground tabular-nums">
+                                            <p class="text-sm font-medium text-foreground leading-snug line-clamp-2" title="{{ $product['name'] }}">{{ $product['name'] }}</p>
+                                            <p class="mt-0.5 text-xs text-secondary-foreground tabular-nums">
                                                 {{ $product['purchases'] }}x · média R$ {{ number_format($product['average_price'], 2, ',', '.') }}
+                                                @if($canComparePrices)
+                                                    · <a href="{{ route('prices.index', ['product' => $product['name']]) }}"
+                                                         class="inline-flex items-center gap-1 font-medium text-primary hover:underline whitespace-nowrap">
+                                                        <i class="ki-filled ki-chart-line"></i>Comparar preços</a>
+                                                @endif
                                             </p>
                                         </div>
-                                        <div class="flex items-center gap-1 shrink-0">
-                                            <div class="flex flex-col items-end shrink-0">
-                                                <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($product['last_price'], 2, ',', '.') }}</span>
-                                                @if($product['variation_pct'] !== null && $product['variation_pct'] != 0)
-                                                    <span class="text-xs tabular-nums {{ $product['variation_pct'] > 0 ? 'text-destructive' : 'text-green-600' }}">
-                                                        {{ $product['variation_pct'] > 0 ? '▲' : '▼' }} {{ number_format(abs($product['variation_pct']), 1, ',', '.') }}%
-                                                    </span>
-                                                @endif
-                                            </div>
-                                            @if($canComparePrices)
-                                                <a href="{{ route('prices.index', ['product' => $product['name']]) }}"
-                                                   class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm shrink-0" title="Comparar preços">
-                                                    <i class="ki-filled ki-chart-line"></i>
-                                                </a>
+                                        <div class="flex flex-col items-end shrink-0 min-w-20">
+                                            <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($product['last_price'], 2, ',', '.') }}</span>
+                                            @if($product['variation_pct'] !== null && $product['variation_pct'] != 0)
+                                                <span class="text-xs tabular-nums {{ $product['variation_pct'] > 0 ? 'text-destructive' : 'text-green-600' }}">
+                                                    {{ $product['variation_pct'] > 0 ? '▲' : '▼' }} {{ number_format(abs($product['variation_pct']), 1, ',', '.') }}%
+                                                </span>
                                             @endif
                                         </div>
                                     </div>
