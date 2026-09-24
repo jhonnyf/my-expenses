@@ -24,6 +24,11 @@ class IssuerResource extends JsonResource
             'is_favorite' => $this->when(isset($this->is_favorite), $this->is_favorite),
             'purchase_count' => $this->when(isset($this->purchase_count), $this->purchase_count),
             'total_spent' => $this->when(isset($this->total_spent), $this->total_spent),
+            'last_purchase_at' => $this->when(isset($this->last_purchase_at), $this->last_purchase_at),
+            'average_ticket' => $this->when(
+                isset($this->purchase_count, $this->total_spent) && $this->purchase_count > 0,
+                fn () => round($this->total_spent / $this->purchase_count, 2)
+            ),
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Issuer;
@@ -76,6 +77,7 @@ class IssuerControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
 
         $this->actingAs($user, 'sanctum')
             ->getJson("/api/v1/issuers/{$issuer->id}")
@@ -115,6 +117,7 @@ class IssuerControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
 
         $this->actingAs($user, 'sanctum')
             ->postJson("/api/v1/issuers/{$issuer->id}/favorite")
@@ -126,6 +129,7 @@ class IssuerControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
         $user->favoriteIssuers()->attach($issuer->id);
 
         $this->actingAs($user, 'sanctum')
@@ -138,6 +142,7 @@ class IssuerControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['name' => 'Nome Oficial Ltda']);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
         IssuerNickname::create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'nickname' => 'Padaria']);
 
         $this->actingAs($user, 'sanctum')
@@ -171,6 +176,7 @@ class IssuerControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['name' => 'Nome Oficial Ltda']);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
 
         $this->actingAs($user, 'sanctum')
             ->putJson("/api/v1/issuers/{$issuer->id}/nickname", ['nickname' => 'Padaria'])
@@ -188,12 +194,139 @@ class IssuerControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuerA = Issuer::factory()->create();
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuerA->id]);
         $issuerB = Issuer::factory()->create();
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuerB->id]);
         IssuerNickname::create(['user_id' => $user->id, 'issuer_id' => $issuerA->id, 'nickname' => 'Mercado']);
 
         $this->actingAs($user, 'sanctum')
             ->putJson("/api/v1/issuers/{$issuerB->id}/nickname", ['nickname' => 'Mercado'])
             ->assertStatus(422)
             ->assertJsonValidationErrors('nickname');
+    }
+
+    public function test_show_returns_404_for_issuer_the_user_never_bought_from(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        $this->actingAs($user, 'sanctum')->getJson("/api/v1/issuers/{$issuer->id}")->assertStatus(404);
+    }
+
+    public function test_toggle_favorite_returns_404_for_issuer_the_user_never_bought_from(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        $this->actingAs($user, 'sanctum')->postJson("/api/v1/issuers/{$issuer->id}/favorite")->assertStatus(404);
+
+        $this->assertDatabaseMissing('favorite_issuers', ['issuer_id' => $issuer->id]);
+    }
+
+    public function test_update_nickname_returns_404_for_issuer_the_user_never_bought_from(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson("/api/v1/issuers/{$issuer->id}/nickname", ['nickname' => 'Padaria'])
+            ->assertStatus(404);
+
+        $this->assertDatabaseMissing('issuer_nicknames', ['issuer_id' => $issuer->id]);
+    }
+
+    public function test_index_filters_by_search_term(): void
+    {
+        $user = User::factory()->create();
+        $match = Issuer::factory()->create(['name' => 'Atacadao Central']);
+        $miss = Issuer::factory()->create(['name' => 'Padaria Doce']);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $match->id]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $miss->id]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/issuers?q=atacadao')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $match->id);
+    }
+
+    public function test_index_sorts_and_exposes_last_purchase_and_average_ticket(): void
+    {
+        $user = User::factory()->create();
+        $cheap = Issuer::factory()->create(['name' => 'A Barato']);
+        $pricey = Issuer::factory()->create(['name' => 'B Caro']);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $cheap->id, 'total_amount' => 10, 'issued_at' => '2026-01-05 09:00:00']);
+        Invoice::factory()->count(2)->create(['user_id' => $user->id, 'issuer_id' => $pricey->id, 'total_amount' => 50, 'issued_at' => '2026-06-05 09:00:00']);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/issuers?sort=spent')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.id', $pricey->id)
+            ->assertJsonPath('data.0.average_ticket', 50)
+            ->assertJsonPath('data.1.id', $cheap->id);
+    }
+
+    public function test_index_filters_only_favorites(): void
+    {
+        $user = User::factory()->create();
+        $fav = Issuer::factory()->create();
+        $other = Issuer::factory()->create();
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $fav->id]);
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $other->id]);
+        $user->favoriteIssuers()->attach($fav->id);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/issuers?favorites=1')
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $fav->id);
+    }
+
+    public function test_index_rejects_unknown_sort(): void
+    {
+        $this->actingAs(User::factory()->create(), 'sanctum')
+            ->getJson('/api/v1/issuers?sort=nope')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('sort');
+    }
+
+    public function test_show_returns_insights_and_invoices_meta(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        Invoice::factory()->count(17)->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 10]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/issuers/{$issuer->id}")
+            ->assertStatus(200)
+            ->assertJsonCount(15, 'data.invoices')
+            ->assertJsonPath('data.invoices_meta.total', 17)
+            ->assertJsonPath('data.invoices_meta.last_page', 2)
+            ->assertJsonPath('data.insights.average_ticket', 10)
+            ->assertJsonCount(12, 'data.insights.monthly')
+            ->assertJsonStructure(['data' => ['insights' => ['visit_interval_days', 'top_products', 'categories']]]);
+    }
+
+    public function test_show_second_page_of_invoices(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        Invoice::factory()->count(17)->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/issuers/{$issuer->id}?page=2")
+            ->assertJsonCount(2, 'data.invoices')
+            ->assertJsonPath('data.invoices_meta.current_page', 2);
+    }
+
+    public function test_issuer_of_a_pending_invoice_is_reachable_but_not_listed(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'status' => InvoiceStatus::Pending]);
+
+        $this->actingAs($user, 'sanctum')->getJson("/api/v1/issuers/{$issuer->id}")->assertStatus(200);
+        $this->actingAs($user, 'sanctum')->postJson("/api/v1/issuers/{$issuer->id}/favorite")->assertStatus(200);
+        $this->actingAs($user, 'sanctum')->putJson("/api/v1/issuers/{$issuer->id}/nickname", ['nickname' => 'Novo'])->assertStatus(200);
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/issuers')->assertJsonCount(0, 'data');
     }
 }

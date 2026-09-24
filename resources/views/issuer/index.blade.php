@@ -18,37 +18,45 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
-            <div class="grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-7.5">
-
-                <div class="kt-card flex-row items-center gap-4 p-5">
-                    <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 shrink-0">
-                        <i class="ki-filled ki-shop text-primary text-xl"></i>
-                    </div>
-                    <div class="flex flex-col gap-0.5 min-w-0">
-                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">{{ $records->total() }}</span>
-                        <span class="text-xs font-normal text-secondary-foreground">Emissores</span>
-                    </div>
-                </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-7.5">
 
                 <div class="kt-card flex-row items-center gap-4 p-5">
                     <div class="flex items-center justify-center size-10 rounded-xl bg-yellow-500/10 shrink-0">
                         <i class="ki-filled ki-star text-yellow-500 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
-                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">{{ $favoriteIds->count() }}</span>
-                        <span class="text-xs font-normal text-secondary-foreground">Favoritos</span>
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">{{ $favoriteIds->count() }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground truncate">Favoritos</span>
                     </div>
                 </div>
 
-                <div class="kt-card flex-row items-center gap-4 p-5 col-span-2 lg:col-span-1">
+                <div class="kt-card flex-row items-center gap-4 p-5">
                     <div class="flex items-center justify-center size-10 rounded-xl bg-green-500/10 shrink-0">
                         <i class="ki-filled ki-dollar text-green-600 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
-                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
-                            R$ {{ number_format($totalSpent, 2, ',', '.') }}
-                        </span>
-                        <span class="text-xs font-normal text-secondary-foreground">Total Gasto</span>
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">R$ {{ number_format($summary['total_spent'], 2, ',', '.') }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground truncate">Total Gasto</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 shrink-0">
+                        <i class="ki-filled ki-chart-line-up text-primary text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">R$ {{ number_format($summary['average_ticket'], 2, ',', '.') }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground truncate">Ticket médio por compra</span>
+                    </div>
+                </div>
+
+                <div class="kt-card flex-row items-center gap-4 p-5">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-blue-500/10 shrink-0">
+                        <i class="ki-filled ki-shop text-blue-500 text-xl"></i>
+                    </div>
+                    <div class="flex flex-col gap-0.5 min-w-0">
+                        <span class="text-base font-semibold text-mono leading-snug line-clamp-2" title="{{ $summary['top_issuer']['name'] ?? '' }}">{{ $summary['top_issuer']['name'] ?? '—' }}</span>
+                        <span class="text-xs font-normal text-secondary-foreground truncate">Mais visitado{{ $summary['top_issuer'] ? ' · '.$summary['top_issuer']['visits'].' '.($summary['top_issuer']['visits'] == 1 ? 'compra' : 'compras') : '' }}</span>
                     </div>
                 </div>
 
@@ -65,24 +73,68 @@
                             <span id="issuerFavoritesLabel">{{ $favoriteIds->count() == 1 ? 'favorito' : 'favoritos' }}</span>
                         </span>
                     </div>
-                    <div class="flex items-center gap-3 w-full lg:w-auto">
-                        <label class="kt-input w-full lg:max-w-56">
-                            <i class="ki-filled ki-magnifier"></i>
-                            <input type="text" id="issuerSearchInput" placeholder="Buscar emissor..." autocomplete="off" />
-                        </label>
-                    </div>
                 </div>
+
+                <form method="GET" action="{{ route('issuers.index') }}" id="issuerFilterForm"
+                      class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 py-3 border-b border-border">
+
+                    {{-- Filtros --}}
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <label class="kt-input w-full sm:w-72">
+                                <i class="ki-filled ki-magnifier"></i>
+                                <input type="search" name="q" id="issuerSearchInput" value="{{ $filters['q'] }}" placeholder="Buscar por nome, apelido ou CNPJ..." autocomplete="off" />
+                            </label>
+                            <button type="submit" class="kt-btn kt-btn-mono shrink-0">Buscar</button>
+                        </div>
+                        @if(count($cities) > 1)
+                            <select name="city" class="kt-select w-full sm:w-48" aria-label="Filtrar por cidade">
+                                <option value="">Todas as cidades</option>
+                                @foreach($cities as $city)
+                                    <option value="{{ $city }}" @selected($filters['city'] === $city)>{{ $city }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+                        <label class="flex items-center gap-2 text-sm text-secondary-foreground shrink-0">
+                            <input type="checkbox" class="kt-switch kt-switch-sm" name="favorites" value="1" @checked($filters['favorites']) />
+                            Só favoritos
+                        </label>
+                        @if($hasFilters)
+                            <a href="{{ route('issuers.index') }}" class="kt-btn kt-btn-ghost kt-btn-sm shrink-0">
+                                <i class="ki-filled ki-cross"></i>
+                                Limpar
+                            </a>
+                        @endif
+                    </div>
+
+                    {{-- Ordenação --}}
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <label for="issuerSortSelect" class="text-sm text-secondary-foreground shrink-0">Ordenar por</label>
+                        <select name="sort" id="issuerSortSelect" class="kt-select w-full sm:w-52">
+                            <option value="name" @selected($filters['sort'] === 'name')>Favoritos e nome</option>
+                            <option value="spent" @selected($filters['sort'] === 'spent')>Maior gasto</option>
+                            <option value="visits" @selected($filters['sort'] === 'visits')>Mais compras</option>
+                            <option value="last" @selected($filters['sort'] === 'last')>Compra mais recente</option>
+                        </select>
+                    </div>
+                </form>
 
                 @if($records->isEmpty())
                     <div class="kt-card-content p-5">
                         <div class="flex flex-col items-center justify-center py-16 text-center">
-                            <i class="ki-filled ki-shop text-5xl text-secondary-foreground/30 mb-4"></i>
-                            <p class="text-sm font-medium text-foreground mb-1">Nenhum emissor encontrado</p>
-                            <p class="text-xs text-secondary-foreground">Importe uma NF-e para registrar emissores.</p>
-                            <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm mt-4">
-                                <i class="ki-filled ki-file-up"></i>
-                                Importar NF-e
-                            </a>
+                            @if($hasFilters)
+                                <i class="ki-filled ki-magnifier text-5xl text-secondary-foreground/30 mb-4"></i>
+                                <p class="text-sm font-medium text-foreground mb-1">Nenhum emissor corresponde aos filtros</p>
+                                <a href="{{ route('issuers.index') }}" class="kt-btn kt-btn-outline kt-btn-sm mt-4">Limpar filtros</a>
+                            @else
+                                <i class="ki-filled ki-shop text-5xl text-secondary-foreground/30 mb-4"></i>
+                                <p class="text-sm font-medium text-foreground mb-1">Nenhum emissor encontrado</p>
+                                <p class="text-xs text-secondary-foreground">Importe uma NFC-e para registrar emissores.</p>
+                                <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm mt-4">
+                                    <i class="ki-filled ki-file-up"></i>
+                                    Importar NFC-e
+                                </a>
+                            @endif
                         </div>
                     </div>
                 @else
@@ -98,6 +150,7 @@
                                         <th class="min-w-[180px]">Localização</th>
                                         <th class="min-w-[90px] text-center">Compras</th>
                                         <th class="min-w-[130px] text-end">Total Gasto</th>
+                                        <th class="min-w-[120px] text-end whitespace-nowrap">Última compra</th>
                                         <th class="w-[110px] text-end">Ações</th>
                                     </tr>
                                 </thead>
@@ -129,7 +182,7 @@
                                                 </div>
                                             </td>
                                             <td class="py-2.5">
-                                                <span class="text-sm text-foreground font-mono">
+                                                <span class="text-sm text-foreground font-mono whitespace-nowrap">
                                                     {{ preg_replace('/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/', '$1.$2.$3/$4-$5', $item->cnpj) }}
                                                 </span>
                                             </td>
@@ -154,10 +207,14 @@
                                             </td>
                                             <td class="text-end py-2.5">
                                                 @if($item->total_spent)
-                                                    <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($item->total_spent, 2, ',', '.') }}</span>
+                                                    <span class="block text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($item->total_spent, 2, ',', '.') }}</span>
+                                                    <span class="block text-xs text-secondary-foreground tabular-nums">média R$ {{ number_format($item->total_spent / $item->purchase_count, 2, ',', '.') }}</span>
                                                 @else
                                                     <span class="text-sm text-secondary-foreground">—</span>
                                                 @endif
+                                            </td>
+                                            <td class="text-end py-2.5 text-sm text-foreground tabular-nums">
+                                                {{ $item->last_purchase_at ? \Carbon\Carbon::parse($item->last_purchase_at)->format('d/m/Y') : '—' }}
                                             </td>
                                             <td class="text-center py-2.5">
                                                 <div class="flex items-center justify-end gap-1">
@@ -234,6 +291,10 @@
                                                 <span class="text-sm text-secondary-foreground">—</span>
                                             @endif
                                         </div>
+                                        <div class="flex flex-col gap-0.5">
+                                            <span class="text-xs text-secondary-foreground">Última compra</span>
+                                            <span class="text-sm text-foreground tabular-nums">{{ $item->last_purchase_at ? \Carbon\Carbon::parse($item->last_purchase_at)->format('d/m/Y') : '—' }}</span>
+                                        </div>
                                     </div>
                                     <div class="flex items-center gap-1 shrink-0">
                                         <button
@@ -253,13 +314,6 @@
                             </div>
                         @endforeach
                     </div>
-
-                    <div id="issuerNoSearchResults" class="hidden px-5">
-                        <div class="flex flex-col items-center justify-center py-12 text-center">
-                            <i class="ki-filled ki-magnifier text-4xl text-secondary-foreground/30 mb-3"></i>
-                            <p class="text-sm text-secondary-foreground">Nenhum emissor corresponde à busca.</p>
-                        </div>
-                    </div>
                 @endif
 
                 @if($records->hasPages())
@@ -268,7 +322,7 @@
                             Exibindo {{ $records->firstItem() }}–{{ $records->lastItem() }} de {{ $records->total() }} emissores
                         </span>
                         <div class="flex items-center gap-2 order-1 md:order-2">
-                            {{ $records->links() }}
+                            {{ $records->links('vendor.pagination.metronic') }}
                         </div>
                     </div>
                 @endif

@@ -99,6 +99,16 @@
                             <span class="text-xl font-semibold text-primary tabular-nums truncate">R$ {{ number_format($stats->total_sum, 2, ',', '.') }}</span>
                         </div>
                         <div class="flex flex-col gap-0.5">
+                            <span class="text-xs text-secondary-foreground">Ticket médio</span>
+                            <span class="text-sm font-semibold text-foreground tabular-nums">R$ {{ number_format($insights['average_ticket'], 2, ',', '.') }}</span>
+                        </div>
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-xs text-secondary-foreground">Frequência</span>
+                            <span class="text-sm font-semibold text-foreground">
+                                {{ $insights['visit_interval_days'] ? 'a cada ~'.$insights['visit_interval_days'].' '.($insights['visit_interval_days'] == 1 ? 'dia' : 'dias') : '—' }}
+                            </span>
+                        </div>
+                        <div class="flex flex-col gap-0.5">
                             <span class="text-xs text-secondary-foreground">Primeira Compra</span>
                             <span class="text-sm font-semibold text-foreground tabular-nums">
                                 {{ $stats->first_at ? \Carbon\Carbon::parse($stats->first_at)->format('d/m/Y') : '—' }}
@@ -182,6 +192,13 @@
                         ]);
                     @endphp
                     @if(count($mapParts) > 1)
+                        <div class="px-5 lg:px-7.5 pb-4">
+                            <a href="https://www.google.com/maps/dir/?api=1&destination={{ $record->latitude && $record->longitude ? $record->latitude.','.$record->longitude : urlencode(implode(', ', $mapParts)) }}"
+                               target="_blank" rel="noopener noreferrer" class="kt-btn kt-btn-outline kt-btn-sm w-full">
+                                <i class="ki-filled ki-geolocation"></i>
+                                Como chegar
+                            </a>
+                        </div>
                         <div class="overflow-hidden rounded-b-xl border-t border-border">
                             <iframe
                                 src="https://maps.google.com/maps?q={{ urlencode(implode(', ', $mapParts)) }}&output=embed&z=16&hl=pt-BR"
@@ -200,8 +217,79 @@
 
             </div>
 
-            {{-- COLUNA DIREITA — Notas Fiscais --}}
-            <div class="lg:col-span-2">
+            {{-- COLUNA DIREITA — Insights + Notas Fiscais --}}
+            <div class="lg:col-span-2 flex flex-col gap-5 lg:gap-7.5">
+
+                {{-- Gasto mensal --}}
+                <div class="kt-card">
+                    <div class="kt-card-header">
+                        <h3 class="kt-card-title">Gasto por mês</h3>
+                        <span class="text-xs text-secondary-foreground">últimos 12 meses</span>
+                    </div>
+                    <div class="kt-card-content pb-4">
+                        @if(collect($insights['monthly'])->sum('total') > 0)
+                            <div id="issuerMonthlyChart" style="height: 240px;"></div>
+                        @else
+                            <p class="text-sm text-secondary-foreground text-center py-10">Nenhuma compra nos últimos 12 meses.</p>
+                        @endif
+                    </div>
+                </div>
+
+                @if($insights['top_products'] || $insights['categories'])
+                    <div class="grid md:grid-cols-2 gap-5 lg:gap-7.5">
+
+                        {{-- Top produtos --}}
+                        <div class="kt-card">
+                            <div class="kt-card-header">
+                                <h3 class="kt-card-title">Produtos que você mais compra aqui</h3>
+                            </div>
+                            <div class="kt-card-content px-5 pb-5 grid gap-3">
+                                @foreach($insights['top_products'] as $product)
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-foreground truncate" title="{{ $product['name'] }}">{{ $product['name'] }}</p>
+                                            <p class="text-xs text-secondary-foreground tabular-nums">
+                                                {{ $product['purchases'] }}x · média R$ {{ number_format($product['average_price'], 2, ',', '.') }}
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-col items-end shrink-0">
+                                            <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($product['last_price'], 2, ',', '.') }}</span>
+                                            @if($product['variation_pct'] !== null && $product['variation_pct'] != 0)
+                                                <span class="text-xs tabular-nums {{ $product['variation_pct'] > 0 ? 'text-destructive' : 'text-green-600' }}">
+                                                    {{ $product['variation_pct'] > 0 ? '▲' : '▼' }} {{ number_format(abs($product['variation_pct']), 1, ',', '.') }}%
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Categorias --}}
+                        <div class="kt-card">
+                            <div class="kt-card-header">
+                                <h3 class="kt-card-title">Gasto por categoria</h3>
+                            </div>
+                            <div class="kt-card-content px-5 pb-5 grid gap-3">
+                                @foreach($insights['categories'] as $category)
+                                    <div class="grid gap-1">
+                                        <div class="flex items-center justify-between gap-2 text-sm">
+                                            <span class="truncate text-foreground">{{ $category['name'] }}</span>
+                                            <span class="shrink-0 text-secondary-foreground tabular-nums">
+                                                R$ {{ number_format($category['total'], 2, ',', '.') }} · {{ number_format($category['share'], 0) }}%
+                                            </span>
+                                        </div>
+                                        <div class="kt-progress h-1">
+                                            <div class="kt-progress-indicator" style="width: {{ min($category['share'], 100) }}%; background-color: {{ $category['color'] }}"></div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                    </div>
+                @endif
+
                 <div class="kt-card kt-card-grid">
                     <div class="kt-card-header flex-wrap gap-3 py-3 lg:py-0">
                         <h3 class="kt-card-title">Notas Fiscais</h3>
@@ -209,17 +297,20 @@
                             <span class="kt-badge kt-badge-secondary kt-badge-outline kt-badge-sm shrink-0">
                                 {{ $stats->total_count }} {{ $stats->total_count == 1 ? 'nota' : 'notas' }}
                             </span>
-                            <label class="kt-input w-full lg:max-w-48">
-                                <i class="ki-filled ki-magnifier"></i>
-                                <input type="text" id="invoiceSearchInput" placeholder="Buscar nota..." autocomplete="off" />
-                            </label>
+                            <form method="GET" id="invoiceSearchForm" class="flex items-center gap-2 w-full lg:w-auto">
+                                <label class="kt-input w-full lg:w-48">
+                                    <i class="ki-filled ki-magnifier"></i>
+                                    <input type="search" name="q" id="invoiceSearchInput" value="{{ $invoiceSearch }}" placeholder="Nº da nota..." autocomplete="off" />
+                                </label>
+                                <button type="submit" class="kt-btn kt-btn-mono kt-btn-sm shrink-0">Buscar</button>
+                            </form>
                         </div>
                     </div>
-                    @if($record->invoices->isEmpty())
+                    @if($invoices->isEmpty())
                         <div class="kt-card-content p-5">
                             <div class="flex flex-col items-center justify-center py-12 text-center">
                                 <i class="ki-filled ki-document text-4xl text-secondary-foreground/30 mb-3"></i>
-                                <p class="text-sm text-secondary-foreground">Nenhuma nota fiscal encontrada.</p>
+                                <p class="text-sm text-secondary-foreground">{{ $invoiceSearch !== '' ? 'Nenhuma nota corresponde à busca.' : 'Nenhuma nota fiscal encontrada.' }}</p>
                             </div>
                         </div>
                     @else
@@ -237,7 +328,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($record->invoices as $invoice)
+                                        @foreach($invoices as $invoice)
                                             <tr class="invoice-row transition-colors hover:bg-accent/60">
                                                 <td>
                                                     <span class="text-sm font-mono text-foreground">
@@ -282,7 +373,7 @@
 
                         {{-- MOBILE (< lg): cards --}}
                         <div class="kt-card-content lg:hidden grid gap-3 p-5">
-                            @foreach($record->invoices as $invoice)
+                            @foreach($invoices as $invoice)
                                 <div class="invoice-row rounded-xl border border-border p-4 flex flex-col gap-2 transition-colors hover:bg-accent/60">
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="text-sm font-mono text-foreground">
@@ -318,6 +409,17 @@
                             @endforeach
                         </div>
                     @endif
+
+                    @if($invoices->hasPages())
+                        <div class="kt-card-footer justify-center md:justify-between flex-col md:flex-row gap-3 text-secondary-foreground text-sm font-medium">
+                            <span class="order-2 md:order-1">
+                                Exibindo {{ $invoices->firstItem() }}–{{ $invoices->lastItem() }} de {{ $invoices->total() }} notas
+                            </span>
+                            <div class="flex items-center gap-2 order-1 md:order-2">
+                                {{ $invoices->links('vendor.pagination.metronic') }}
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -332,6 +434,7 @@
 <script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         issuerBaseUrl: '{{ url("issuers") }}',
+        issuerMonthly: @json($insights['monthly']),
     });
 </script>
 @endpush
