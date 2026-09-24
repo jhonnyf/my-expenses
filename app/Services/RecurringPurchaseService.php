@@ -254,7 +254,7 @@ class RecurringPurchaseService
             ->selectRaw('MAX(invoices_items.unit_price) as max_price')
             ->selectRaw('SUM(invoices_items.quantity) as total_quantity')
             ->selectRaw('SUM(invoices_items.total_price) as total_spent')
-            ->groupBy(DB::raw($name), DB::raw($unit))
+            ->groupByRaw('1, 2') // posição no select: o MySQL/MariaDB do host não reconhece a expressão repetida sob ONLY_FULL_GROUP_BY
             ->havingRaw('COUNT(DISTINCT substr(invoices.issued_at, 1, 10)) >= ?', [self::MIN_PURCHASE_DAYS])
             ->get();
     }
@@ -275,7 +275,7 @@ class RecurringPurchaseService
             ->selectRaw("{$name} as description")
             ->selectRaw("{$unit} as unit")
             ->selectRaw('substr(invoices.issued_at, 1, 10) as day')
-            ->groupBy(DB::raw($name), DB::raw($unit), DB::raw('substr(invoices.issued_at, 1, 10)'))
+            ->groupByRaw('1, 2, 3')
             ->orderBy('day')
             ->get()
             ->groupBy(fn ($row) => $this->key($row->description, $row->unit))
