@@ -40,9 +40,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'message' => $e->getMessage(),
                     'upgrade_required' => true,
+                    'feature' => $e->feature(),
                 ], 402);
             }
 
-            return redirect()->route('subscription.upgrade')->with('paywall_message', $e->getMessage());
+            return redirect()->route('subscription.upgrade')
+                ->with('paywall_message', $e->getMessage())
+                ->with('paywall_feature', $e->feature());
         });
     })->create();

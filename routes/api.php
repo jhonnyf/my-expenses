@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\ShoppingListController;
 use App\Http\Controllers\Api\V1\SocialAuthController;
+use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\TermsAcceptanceController;
 use App\Http\Controllers\MyPurchaseController;
 use Illuminate\Support\Facades\Route;
@@ -86,10 +87,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('categories/{category}/merge', [CategoryController::class, 'merge'])->name('categories.merge');
             Route::post('categories/suggest-item-category', [CategoryController::class, 'suggestItemCategory'])
                 ->name('categories.suggest-item-category')
-                ->middleware(['throttle:ai-suggestions', 'pro']);
+                ->middleware(['throttle:ai-suggestions', 'pro:ai_suggestions']);
             Route::post('categories/suggest-keywords', [CategoryController::class, 'suggestKeywords'])
                 ->name('categories.suggest-keywords')
-                ->middleware(['throttle:ai-suggestions', 'pro']);
+                ->middleware(['throttle:ai-suggestions', 'pro:ai_suggestions']);
             Route::apiResource('categories', CategoryController::class);
 
             // Orçamentos
@@ -98,21 +99,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Relatórios
             Route::prefix('reports')->name('reports.')->group(function () {
                 Route::get('/', [ReportController::class, 'generate'])->name('generate');
-                Route::get('csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro');
-                Route::post('email', [ReportController::class, 'emailReport'])->name('email')->middleware('pro');
+                Route::get('csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro:report_csv');
+                Route::post('email', [ReportController::class, 'emailReport'])->name('email')->middleware('pro:report_email');
                 Route::get('schedule', [ReportController::class, 'schedule'])->name('schedule');
-                Route::put('schedule', [ReportController::class, 'saveSchedule'])->name('schedule.save')->middleware('pro');
+                Route::put('schedule', [ReportController::class, 'saveSchedule'])->name('schedule.save')->middleware('pro:report_email');
                 Route::delete('schedule', [ReportController::class, 'deleteSchedule'])->name('schedule.delete');
             });
 
             // Histórico de preços — exclusivo do plano Pro
-            Route::prefix('price-history')->name('price-history.')->middleware('pro')->group(function () {
+            Route::prefix('price-history')->name('price-history.')->middleware('pro:price_history')->group(function () {
                 Route::get('/', [PriceHistoryController::class, 'search'])->name('search');
                 Route::get('timeline', [PriceHistoryController::class, 'timeline'])->name('timeline');
             });
 
             // Comparativo de preços por cidade/mercado — exclusivo do plano Pro
-            Route::prefix('price-comparison')->name('price-comparison.')->middleware('pro')->group(function () {
+            Route::prefix('price-comparison')->name('price-comparison.')->middleware('pro:price_comparison')->group(function () {
                 Route::get('search-products', [PriceComparisonController::class, 'searchProducts'])->name('search-products');
                 Route::get('units', [PriceComparisonController::class, 'units'])->name('units');
                 Route::get('by-city', [PriceComparisonController::class, 'byCity'])->name('by-city');
@@ -129,11 +130,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('dismiss', [ProductAliasController::class, 'dismiss'])->name('dismiss');
                 Route::post('ai-suggest-name', [ProductAliasController::class, 'aiSuggestName'])
                     ->name('ai-suggest-name')
-                    ->middleware(['throttle:ai-suggestions', 'pro']);
+                    ->middleware(['throttle:ai-suggestions', 'pro:ai_suggestions']);
             });
 
             // Compras recorrentes — exclusivo do plano Pro
-            Route::prefix('recurring-purchases')->name('recurring-purchases.')->middleware('pro')->group(function () {
+            Route::prefix('recurring-purchases')->name('recurring-purchases.')->middleware('pro:recurring_purchases')->group(function () {
                 Route::get('/', [RecurringPurchaseController::class, 'index'])->name('index');
                 Route::post('add-to-list', [RecurringPurchaseController::class, 'addToShoppingList'])->name('add-to-list');
                 Route::post('replenishment-list', [RecurringPurchaseController::class, 'createReplenishmentList'])->name('replenishment-list');
@@ -155,6 +156,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::delete('items/{item}', [ShoppingListController::class, 'removeItem'])->name('items.remove');
                 Route::post('items/{item}/toggle-purchased', [ShoppingListController::class, 'togglePurchased'])->name('items.toggle-purchased');
             });
+
+            // Planos: o que cada plano inclui e a assinatura atual
+            Route::get('subscription/plans', [SubscriptionController::class, 'plans'])->name('subscription.plans');
 
             // Conta do usuário
             Route::prefix('account')->name('account.')->group(function () {

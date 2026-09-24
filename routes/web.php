@@ -110,14 +110,14 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
         Route::post('{category}/merge', [CategoryController::class, 'merge'])->name('merge');
         Route::post('suggest-item-category', [CategoryController::class, 'suggestItemCategory'])
             ->name('suggest-item-category')
-            ->middleware(['throttle:ai-suggestions', 'pro']);
+            ->middleware(['throttle:ai-suggestions', 'pro:ai_suggestions']);
         Route::post('suggest-keywords', [CategoryController::class, 'suggestKeywords'])
             ->name('suggest-keywords')
-            ->middleware(['throttle:ai-suggestions', 'pro']);
+            ->middleware(['throttle:ai-suggestions', 'pro:ai_suggestions']);
     });
 
     // Comparação e histórico de preços entre lojas — exclusivo do plano Pro.
-    Route::group(['prefix' => 'prices', 'as' => 'prices.', 'middleware' => 'pro'], function () {
+    Route::group(['prefix' => 'prices', 'as' => 'prices.', 'middleware' => 'pro:price_comparison'], function () {
         Route::get('/', [PricesController::class, 'index'])->name('index');
         Route::get('search', [PricesController::class, 'search'])->name('search');
         Route::get('history', [PricesController::class, 'history'])->name('history');
@@ -140,7 +140,7 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
         Route::post('dismiss', [ProductAliasController::class, 'dismiss'])->name('dismiss');
         Route::post('ai-suggest-name', [ProductAliasController::class, 'aiSuggestName'])
             ->name('ai-suggest-name')
-            ->middleware(['throttle:ai-suggestions', 'pro']);
+            ->middleware(['throttle:ai-suggestions', 'pro:ai_suggestions']);
     });
 
     Route::get('search', [SearchController::class, 'search'])->name('search');
@@ -155,15 +155,15 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
         Route::get('/', [ReportController::class, 'index'])->name('index');
         Route::post('generate', [ReportController::class, 'generate'])->name('generate');
         // GET e POST: os botões de exportar são links (mantêm os filtros na URL); o POST antigo continua valendo.
-        Route::match(['get', 'post'], 'pdf', [ReportController::class, 'exportPdf'])->name('pdf')->middleware('pro');
-        Route::match(['get', 'post'], 'csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro');
-        Route::post('email', [ReportController::class, 'email'])->name('email')->middleware('pro');
-        Route::put('schedule', [ReportController::class, 'saveSchedule'])->name('schedule.save')->middleware('pro');
+        Route::match(['get', 'post'], 'pdf', [ReportController::class, 'exportPdf'])->name('pdf')->middleware('pro:report_pdf');
+        Route::match(['get', 'post'], 'csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro:report_csv');
+        Route::post('email', [ReportController::class, 'email'])->name('email')->middleware('pro:report_email');
+        Route::put('schedule', [ReportController::class, 'saveSchedule'])->name('schedule.save')->middleware('pro:report_email');
         Route::delete('schedule', [ReportController::class, 'deleteSchedule'])->name('schedule.delete');
     });
 
     // Detecção de compras recorrentes — exclusivo do plano Pro.
-    Route::group(['prefix' => 'recurring-purchases', 'as' => 'recurring-purchases.', 'middleware' => 'pro'], function () {
+    Route::group(['prefix' => 'recurring-purchases', 'as' => 'recurring-purchases.', 'middleware' => 'pro:recurring_purchases'], function () {
         Route::get('/', [RecurringPurchaseController::class, 'index'])->name('index');
         Route::post('add-to-list', [RecurringPurchaseController::class, 'addToShoppingList'])->name('add-to-list');
         Route::post('replenishment-list', [RecurringPurchaseController::class, 'createReplenishmentList'])->name('replenishment-list');
