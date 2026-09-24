@@ -73,7 +73,7 @@
                                     </div>
                                 @endif
                                 <div class="hidden items-center gap-2 text-sm" id="locationOverride">
-                                    <i class="ki-filled ki-geolocation text-warning"></i>
+                                    <i class="ki-filled ki-geolocation text-yellow-500"></i>
                                     <span class="text-secondary-foreground">
                                         Comparando preços em <span class="font-semibold text-foreground" id="locationOverrideLabel"></span>
                                     </span>
@@ -132,7 +132,7 @@
                             <div id="pendingList" class="grid gap-5"></div>
                             <div id="emptyPending" class="hidden kt-card mt-2">
                                 <div class="kt-card-content py-10 text-center">
-                                    <i class="ki-filled ki-check-circle text-4xl text-success/40 mb-3 block"></i>
+                                    <i class="ki-filled ki-check-circle text-4xl text-green-600/40 mb-3 block"></i>
                                     <p class="text-sm text-secondary-foreground">Todos os itens foram comprados!</p>
                                 </div>
                             </div>

@@ -15,9 +15,11 @@ class ReportController extends Controller
 {
     public function __construct(private readonly ReportService $service) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('report.index', $this->service->buildReportData(Auth::id(), []));
+        return view('report.index', $this->service->buildReportData(Auth::id(), $request->only([
+            'start_date', 'end_date', 'issuer_id', 'category_id',
+        ])));
     }
 
     public function generate(Request $request): View

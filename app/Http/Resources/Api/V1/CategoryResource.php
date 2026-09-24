@@ -17,6 +17,9 @@ class CategoryResource extends JsonResource
             'keywords' => $this->keywords ?? [],
             'total_spent' => $this->when(isset($this->total_spent), $this->total_spent),
             'items_count' => $this->when(isset($this->items_count), $this->items_count),
+            'total_items_count' => $this->when(isset($this->total_items_count), $this->total_items_count),
+            // Chave presente mesmo quando null (sem período anterior para comparar).
+            'delta_pct' => $this->when(array_key_exists('delta_pct', $this->resource->getAttributes()), $this->delta_pct),
             'is_system' => $this->user_id === null,
         ];
     }

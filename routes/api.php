@@ -80,6 +80,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Categorias — rotas fixas ANTES do apiResource
             Route::post('categories/assign-item', [CategoryController::class, 'assignItem'])->name('categories.assign-item');
             Route::post('categories/auto-categorize', [CategoryController::class, 'autoCategorize'])->name('categories.auto-categorize');
+            Route::post('categories/revert-auto-categorization', [CategoryController::class, 'revertAutoCategorization'])->name('categories.revert-auto-categorization');
+            Route::post('categories/preview-keywords', [CategoryController::class, 'previewKeywords'])->name('categories.preview-keywords');
+            Route::get('categories/uncategorized', [CategoryController::class, 'uncategorized'])->name('categories.uncategorized');
+            Route::post('categories/{category}/merge', [CategoryController::class, 'merge'])->name('categories.merge');
             Route::post('categories/suggest-item-category', [CategoryController::class, 'suggestItemCategory'])
                 ->name('categories.suggest-item-category')
                 ->middleware(['throttle:ai-suggestions', 'pro']);

@@ -66,8 +66,8 @@
                 </div>
 
                 <div class="kt-card flex-row items-center gap-4 p-5">
-                    <div class="flex items-center justify-center size-10 rounded-xl bg-info/10 shrink-0">
-                        <i class="ki-filled ki-calendar text-info text-xl"></i>
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-blue-500/10 shrink-0">
+                        <i class="ki-filled ki-calendar text-blue-500 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
                         <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
@@ -78,8 +78,8 @@
                 </div>
 
                 <div class="kt-card flex-row items-center gap-4 p-5">
-                    <div class="flex items-center justify-center size-10 rounded-xl bg-success/10 shrink-0">
-                        <i class="ki-filled ki-basket text-success text-xl"></i>
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-green-500/10 shrink-0">
+                        <i class="ki-filled ki-basket text-green-600 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
                         <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
@@ -90,8 +90,8 @@
                 </div>
 
                 <div class="kt-card flex-row items-center gap-4 p-5">
-                    <div class="flex items-center justify-center size-10 rounded-xl bg-warning/10 shrink-0">
-                        <i class="ki-filled ki-document text-warning text-xl"></i>
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-yellow-500/10 shrink-0">
+                        <i class="ki-filled ki-document text-yellow-500 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
                         <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">

@@ -103,6 +103,11 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
         Route::delete('{category}', [CategoryController::class, 'destroy'])->name('destroy');
         Route::post('assign-item', [CategoryController::class, 'assignItem'])->name('assign-item');
         Route::post('auto-categorize', [CategoryController::class, 'autoCategorize'])->name('auto-categorize');
+        Route::post('revert-auto-categorization', [CategoryController::class, 'revertAutoCategorization'])->name('revert-auto-categorization');
+        Route::post('preview-keywords', [CategoryController::class, 'previewKeywords'])->name('preview-keywords');
+        Route::get('uncategorized', [CategoryController::class, 'uncategorized'])->name('uncategorized');
+        Route::get('{category}', [CategoryController::class, 'show'])->name('show');
+        Route::post('{category}/merge', [CategoryController::class, 'merge'])->name('merge');
         Route::post('suggest-item-category', [CategoryController::class, 'suggestItemCategory'])
             ->name('suggest-item-category')
             ->middleware(['throttle:ai-suggestions', 'pro']);

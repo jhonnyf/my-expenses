@@ -3,6 +3,8 @@ import './bootstrap';
 import Account from './pages/account';
 import Budget from './pages/budget';
 import Category from './pages/category';
+import CategoryDetail from './pages/category-detail';
+import CategoryUncategorized from './pages/category-uncategorized';
 import Dashboard from './pages/dashboard';
 import InvoiceDetail from './pages/invoice-detail';
 import IssuerDetail from './pages/issuer-detail';
@@ -24,6 +26,8 @@ const pages = {
     'account': Account,
     'budget': Budget,
     'category': Category,
+    'category-detail': CategoryDetail,
+    'category-uncategorized': CategoryUncategorized,
     'dashboard': Dashboard,
     'invoice-detail': InvoiceDetail,
     'issuer-detail': IssuerDetail,

@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Support\FullTextQuery;
+use App\Support\Period;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,8 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class InvoiceService
 {
-    /** Sentinela do período "Tudo" (ver partials/_period-filter). */
-    public const ALL_TIME_START = '2000-01-01';
+    public const ALL_TIME_START = Period::ALL_TIME_START;
 
     private const PER_PAGE = 15;
 
@@ -85,17 +85,15 @@ class InvoiceService
             return null;
         }
 
-        $start = Carbon::parse($period[0])->startOfDay();
-        $days = $start->diffInDays(Carbon::parse($period[1])->startOfDay()) + 1;
-        $previousEnd = $start->copy()->subDay();
+        [$previousStart, $previousEnd] = Period::previous($period[0], $period[1]);
 
         $previous = (float) $this->authorizedTotals($user, [
             ...$filters,
-            'start_date' => $previousEnd->copy()->subDays($days - 1)->toDateString(),
-            'end_date' => $previousEnd->toDateString(),
+            'start_date' => $previousStart,
+            'end_date' => $previousEnd,
         ])->total_amount;
 
-        return $previous > 0 ? round((($current - $previous) / $previous) * 100, 1) : null;
+        return Period::deltaPct($current, $previous);
     }
 
     /** Um só limite informado completa o outro (início = "Tudo", fim = hoje); nenhum = sem período. */

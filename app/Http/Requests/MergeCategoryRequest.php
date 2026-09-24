@@ -6,7 +6,7 @@ use App\Http\Requests\Concerns\FailsAsJson;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class AssignCategoryItemRequest extends FormRequest
+class MergeCategoryRequest extends FormRequest
 {
     use FailsAsJson;
 
@@ -18,15 +18,22 @@ class AssignCategoryItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'item_id' => ['required', 'integer', 'exists:invoices_items,id'],
-            // Só categorias do próprio usuário ou do sistema: id de categoria alheia vazaria nome/cor dela.
-            'category_id' => [
-                'nullable',
+            'target_id' => [
+                'required',
                 'integer',
+                Rule::notIn([$this->route('category')?->id]),
                 Rule::exists('categories', 'id')->where(
                     fn ($query) => $query->whereNull('user_id')->orWhere('user_id', $this->user()->id)
                 ),
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'target_id.not_in' => 'Escolha outra categoria para receber os itens.',
+            'target_id.exists' => 'Categoria de destino inválida.',
         ];
     }
 }

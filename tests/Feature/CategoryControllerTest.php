@@ -153,7 +153,7 @@ class CategoryControllerTest extends TestCase
             ->assertJson(['category_id' => $category->id]);
     }
 
-    public function test_suggest_item_category_returns_403_for_item_of_another_user(): void
+    public function test_suggest_item_category_returns_404_for_item_of_another_user(): void
     {
         $owner = User::factory()->create();
         $other = User::factory()->pro()->create();
@@ -161,6 +161,6 @@ class CategoryControllerTest extends TestCase
 
         $this->actingAs($other)
             ->postJson('/categories/suggest-item-category', ['item_id' => $item->id])
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 }

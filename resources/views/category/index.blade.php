@@ -10,6 +10,12 @@
                 <p class="text-sm font-normal text-secondary-foreground">Organize e gerencie as categorias dos seus produtos</p>
             </div>
             <div class="flex items-center gap-2.5">
+                @if($autoCategorizedCount > 0)
+                    <button type="button" class="kt-btn kt-btn-ghost" data-kt-modal-toggle="#revertAutoModal"
+                            data-action="prepare-revert" data-count="{{ $autoCategorizedCount }}">
+                        <i class="ki-filled ki-arrow-circle-left"></i> Desfazer automáticas
+                    </button>
+                @endif
                 <button data-action="auto-categorize" id="btnAuto" class="kt-btn kt-btn-outline">
                     <i class="ki-filled ki-setting-2"></i> Auto-categorizar
                 </button>
@@ -22,6 +28,11 @@
 
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
+
+            <div id="categoryFlash" role="status" class="hidden items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+                <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+                <span class="text-sm text-green-600 font-medium" data-flash-text></span>
+            </div>
 
             @include('partials._period-filter', ['periodFilterAction' => route('categories.index'), 'filters' => $filters])
 
@@ -39,38 +50,46 @@
                 </div>
 
                 <div class="kt-card flex-row items-center gap-4 p-5">
-                    <div class="flex items-center justify-center size-10 rounded-xl bg-success/10 shrink-0">
-                        <i class="ki-filled ki-dollar text-success text-xl"></i>
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-green-500/10 shrink-0">
+                        <i class="ki-filled ki-dollar text-green-600 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
                         <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
                             R$ {{ number_format($totalSpent, 2, ',', '.') }}
                         </span>
-                        <span class="text-xs font-normal text-secondary-foreground">Total Categorizado</span>
+                        <span class="text-xs font-normal text-secondary-foreground">Total categorizado</span>
                     </div>
                 </div>
 
                 <div class="kt-card flex-row items-center gap-4 p-5">
-                    <div class="flex items-center justify-center size-10 rounded-xl bg-info/10 shrink-0">
-                        <i class="ki-filled ki-medal-star text-info text-xl"></i>
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-blue-500/10 shrink-0">
+                        <i class="ki-filled ki-medal-star text-blue-500 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
                         <span class="text-lg lg:text-xl font-semibold text-mono truncate">
                             {{ $topCategory->name ?? '—' }}
                         </span>
-                        <span class="text-xs font-normal text-secondary-foreground">Maior Gasto</span>
+                        <span class="text-xs font-normal text-secondary-foreground">Maior gasto</span>
                     </div>
                 </div>
 
-                <div class="kt-card flex-row items-center gap-4 p-5">
-                    <div class="flex items-center justify-center size-10 rounded-xl bg-warning/10 shrink-0">
-                        <i class="ki-filled ki-question text-warning text-xl"></i>
+                <a href="{{ route('categories.uncategorized', $filters) }}"
+                   class="kt-card flex-row items-center gap-4 p-5 transition-shadow hover:shadow-md" title="Revisar itens sem categoria">
+                    <div class="flex items-center justify-center size-10 rounded-xl bg-yellow-500/10 shrink-0">
+                        <i class="ki-filled ki-question text-yellow-500 text-xl"></i>
                     </div>
                     <div class="flex flex-col gap-0.5 min-w-0">
-                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums">{{ number_format($uncategorizedCount) }}</span>
-                        <span class="text-xs font-normal text-secondary-foreground">Itens Sem Categoria</span>
+                        <span class="text-lg lg:text-xl font-semibold text-mono tabular-nums truncate">
+                            R$ {{ number_format($uncategorized['total'], 2, ',', '.') }}
+                        </span>
+                        <span class="text-xs font-normal text-secondary-foreground truncate">
+                            Sem categoria · {{ number_format($uncategorized['count']) }} {{ $uncategorized['count'] == 1 ? 'item' : 'itens' }}
+                            @if($uncategorized['count'] > 0)
+                                · <span class="font-medium text-primary">Revisar</span>
+                            @endif
+                        </span>
                     </div>
-                </div>
+                </a>
 
             </div>
 
@@ -81,22 +100,27 @@
                 <div class="kt-card-content pb-5">
                     <div class="grid lg:grid-cols-3 gap-4">
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 block">Nome</label>
+                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between h-7">Nome</label>
                             <input type="text" id="newName" class="kt-input w-full" placeholder="Nome da categoria" />
+                            <p class="text-xs text-destructive mt-1 hidden" data-form-error="new-name"></p>
                         </div>
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 block">Cor</label>
-                            <input type="color" id="newColor" class="w-full h-9 rounded border border-border cursor-pointer" value="#3B82F6" />
+                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between h-7">Cor</label>
+                            <input type="color" id="newColor" class="w-full h-8.5 rounded border border-border cursor-pointer" value="#3B82F6" />
                         </div>
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between">
+                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between h-7">
                                 <span>Palavras-chave</span>
-                                <button type="button" data-action="suggest-keywords-new" id="btnSuggestNew"
-                                        class="kt-btn kt-btn-ghost kt-btn-xs">
-                                    <i class="ki-filled ki-setting-2"></i> Sugerir com IA
-                                </button>
+                                @if(auth()->user()->isPro())
+                                    <button type="button" data-action="suggest-keywords-new" id="btnSuggestNew"
+                                            class="kt-btn kt-btn-ghost kt-btn-xs">
+                                        <i class="ki-filled ki-setting-2"></i> Sugerir com IA
+                                    </button>
+                                @endif
                             </label>
                             <input type="text" id="newKeywords" class="kt-input w-full" placeholder="PALAVRA1, PALAVRA2" />
+                            <p class="text-xs text-secondary-foreground mt-1 min-h-4" data-keywords-preview="new"></p>
+                            <p class="text-xs text-destructive mt-1 hidden" data-form-error="new-keywords"></p>
                         </div>
                     </div>
                     <div class="flex gap-2 mt-4">
@@ -114,22 +138,27 @@
                     <input type="hidden" id="editId" />
                     <div class="grid lg:grid-cols-3 gap-4">
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 block">Nome</label>
+                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between h-7">Nome</label>
                             <input type="text" id="editName" class="kt-input w-full" />
+                            <p class="text-xs text-destructive mt-1 hidden" data-form-error="edit-name"></p>
                         </div>
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 block">Cor</label>
-                            <input type="color" id="editColor" class="w-full h-9 rounded border border-border cursor-pointer" />
+                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between h-7">Cor</label>
+                            <input type="color" id="editColor" class="w-full h-8.5 rounded border border-border cursor-pointer" />
                         </div>
                         <div>
-                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between">
+                            <label class="text-xs text-secondary-foreground mb-1 flex items-center justify-between h-7">
                                 <span>Palavras-chave</span>
-                                <button type="button" data-action="suggest-keywords-edit" id="btnSuggestEdit"
-                                        class="kt-btn kt-btn-ghost kt-btn-xs">
-                                    <i class="ki-filled ki-setting-2"></i> Sugerir com IA
-                                </button>
+                                @if(auth()->user()->isPro())
+                                    <button type="button" data-action="suggest-keywords-edit" id="btnSuggestEdit"
+                                            class="kt-btn kt-btn-ghost kt-btn-xs">
+                                        <i class="ki-filled ki-setting-2"></i> Sugerir com IA
+                                    </button>
+                                @endif
                             </label>
                             <input type="text" id="editKeywords" class="kt-input w-full" />
+                            <p class="text-xs text-secondary-foreground mt-1 min-h-4" data-keywords-preview="edit"></p>
+                            <p class="text-xs text-destructive mt-1 hidden" data-form-error="edit-keywords"></p>
                         </div>
                     </div>
                     <div class="flex gap-2 mt-4">
@@ -150,10 +179,15 @@
                             <div class="kt-card-header">
                                 <h3 class="kt-card-title gap-2">
                                     <span class="size-3 rounded-full shrink-0" data-color-dot style="background-color: {{ $category->color ?? '#94A3B8' }}"></span>
-                                    <span data-category-name>{{ $category->name }}</span>
+                                    <a href="{{ route('categories.show', ['category' => $category] + $filters) }}"
+                                       class="hover:underline" data-category-name>{{ $category->name }}</a>
                                 </h3>
+                                <div class="kt-card-toolbar gap-1">
+                                    <a href="{{ route('categories.show', ['category' => $category] + $filters) }}"
+                                       class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform hover:scale-110" title="Ver detalhes">
+                                        <i class="ki-filled ki-eye text-muted-foreground"></i>
+                                    </a>
                                 @if($category->user_id)
-                                    <div class="kt-card-toolbar gap-1">
                                         <button data-action="edit-category"
                                                 data-category-id="{{ $category->id }}"
                                                 data-category-name="{{ $category->name }}"
@@ -162,12 +196,20 @@
                                                 class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform hover:scale-110" title="Editar">
                                             <i class="ki-filled ki-pencil text-muted-foreground"></i>
                                         </button>
-                                        <button data-action="delete-category" data-category-id="{{ $category->id }}"
+                                        <button data-action="prepare-merge" data-kt-modal-toggle="#mergeCategoryModal"
+                                                data-category-id="{{ $category->id }}" data-category-name="{{ $category->name }}"
+                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform hover:scale-110" title="Mesclar em outra categoria">
+                                            <i class="ki-filled ki-arrow-right-left text-muted-foreground"></i>
+                                        </button>
+                                        <button data-action="prepare-delete" data-kt-modal-toggle="#deleteCategoryModal"
+                                                data-category-id="{{ $category->id }}" data-category-name="{{ $category->name }}"
+                                                data-items-count="{{ $category->total_items_count }}"
+                                                data-has-budget="{{ $budgetsByCategory->has($category->id) ? '1' : '0' }}"
                                                 class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm transition-transform hover:scale-110" title="Excluir">
                                             <i class="ki-filled ki-trash text-muted-foreground"></i>
                                         </button>
-                                    </div>
                                 @endif
+                                </div>
                             </div>
                             <div class="kt-card-content pb-5">
                                 <div class="space-y-3">
@@ -179,12 +221,31 @@
                                         <span class="text-sm text-secondary-foreground">Total gasto</span>
                                         <span class="text-sm font-semibold font-mono text-primary tabular-nums">R$ {{ number_format($category->total_spent, 2, ',', '.') }}</span>
                                     </div>
+                                    @if($category->delta_pct !== null && $category->delta_pct != 0)
+                                        <p class="text-xs tabular-nums {{ $category->delta_pct > 0 ? 'text-destructive' : 'text-green-600' }}"
+                                           title="Comparado ao período anterior, de mesma duração">
+                                            {{ $category->delta_pct > 0 ? '▲' : '▼' }} {{ number_format(abs($category->delta_pct), 1, ',', '.') }}% vs. período anterior
+                                        </p>
+                                    @endif
                                     @if($category->total_spent > 0)
                                         <div>
                                             <div class="kt-progress h-1">
                                                 <div class="kt-progress-indicator" style="width: {{ min($share, 100) }}%; background-color: {{ $category->color ?? '#94A3B8' }}"></div>
                                             </div>
                                             <p class="text-xs text-secondary-foreground mt-1">{{ number_format($share, 1) }}% do total categorizado</p>
+                                        </div>
+                                    @endif
+                                    @if($budget = $budgetsByCategory->get($category->id))
+                                        <div>
+                                            <div class="flex justify-between items-baseline text-xs">
+                                                <a href="{{ route('budgets.index') }}" class="text-secondary-foreground hover:text-primary">Orçamento do mês</a>
+                                                <span class="tabular-nums {{ $budget->percentage >= 100 ? 'text-destructive font-medium' : 'text-secondary-foreground' }}">
+                                                    R$ {{ number_format($budget->spent, 2, ',', '.') }} / R$ {{ number_format($budget->amount, 2, ',', '.') }}
+                                                </span>
+                                            </div>
+                                            <div class="kt-progress h-1 mt-1">
+                                                <div class="kt-progress-indicator {{ $budget->percentage >= 100 ? 'bg-destructive' : '' }}" style="width: {{ min($budget->percentage, 100) }}%"></div>
+                                            </div>
                                         </div>
                                     @endif
                                     <div data-keywords-section>
@@ -226,6 +287,8 @@
 
         </div>
     </div>
+
+    @include('category._modals')
 
 @endsection
 

@@ -59,6 +59,9 @@ const Utils = (() => {
         return http(assignCategoryUrl, {
             method: 'POST',
             body: { item_id: itemId, category_id: categoryId || null },
+        }).then((response) => {
+            document.dispatchEvent(new CustomEvent('item-category:assigned', { detail: { itemId, categoryId: categoryId || null } }));
+            return response;
         });
     };
 
@@ -217,6 +220,38 @@ const Utils = (() => {
     // start_date/end_date — usado em qualquer página com filtro de período
     // (dashboard, categorias). Os ids/data-action são fixos de propósito para
     // não precisar duplicar esta função por página.
+    const formatBRL = (value) => parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // Barras dos últimos meses ({ month: 'YYYY-MM', total }) num elemento; sem dados ou sem ApexCharts, não faz nada.
+    const renderMonthlyBars = (elementId, data, seriesName = 'Gasto') => {
+        const el = document.getElementById(elementId);
+        if (!el || !data?.length || typeof ApexCharts === 'undefined') return;
+
+        const style = getComputedStyle(document.documentElement);
+        const secondary = style.getPropertyValue('--color-secondary-foreground').trim();
+        const months = data.map(({ month }) => {
+            const [y, m] = month.split('-');
+            return new Date(y, m - 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        });
+
+        new ApexCharts(el, {
+            series: [{ name: seriesName, data: data.map(d => d.total) }],
+            chart: { type: 'bar', height: '100%', fontFamily: 'Inter, sans-serif', toolbar: { show: false }, zoom: { enabled: false } },
+            colors: [style.getPropertyValue('--color-primary').trim()],
+            plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
+            dataLabels: { enabled: false },
+            xaxis: {
+                categories: months,
+                labels: { style: { colors: secondary, fontSize: '11px' } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+            },
+            yaxis: { labels: { style: { colors: secondary, fontSize: '11px' }, formatter: formatBRL } },
+            grid: { borderColor: style.getPropertyValue('--color-border').trim(), strokeDashArray: 4 },
+            tooltip: { y: { formatter: formatBRL } },
+        }).render();
+    };
+
     const initPeriodFilter = () => {
         const form = document.getElementById('periodFilterForm');
         if (!form) return;
@@ -244,7 +279,7 @@ const Utils = (() => {
 
     return {
         http, formatCurrency, escapeHtml, initCategoryAssignment, initCategoryAiSuggestion, initFavoriteProduct,
-        initLocationCapture, initPeriodFilter, syncSelectValue, setSelectDisabled,
+        initLocationCapture, initPeriodFilter, renderMonthlyBars, syncSelectValue, setSelectDisabled,
     };
 })();
 

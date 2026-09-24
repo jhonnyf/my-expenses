@@ -428,7 +428,7 @@
                     <i class="ki-filled ki-geolocation"></i>
                     Usar minha localização
                   </button>
-                  <span id="locationCaptureStatus" class="text-xs text-success hidden">
+                  <span id="locationCaptureStatus" class="text-xs text-green-600 hidden">
                     <i class="ki-filled ki-check-circle me-0.5"></i>
                     Localização salva
                   </span>

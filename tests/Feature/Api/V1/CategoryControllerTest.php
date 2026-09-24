@@ -162,14 +162,14 @@ class CategoryControllerTest extends TestCase
             ->assertJsonPath('data.id', $category->id);
     }
 
-    public function test_show_returns_403_for_other_users_category(): void
+    public function test_show_returns_404_for_other_users_category(): void
     {
         $category = Category::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->getJson("/api/v1/categories/{$category->id}")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_assign_item_to_category(): void
@@ -190,7 +190,7 @@ class CategoryControllerTest extends TestCase
         $this->assertDatabaseHas('invoices_items', ['id' => $item->id, 'category_id' => $category->id]);
     }
 
-    public function test_assign_item_returns_403_when_item_belongs_to_another_user(): void
+    public function test_assign_item_returns_404_when_item_belongs_to_another_user(): void
     {
         $owner = User::factory()->create();
         $other = User::factory()->create();
@@ -204,7 +204,7 @@ class CategoryControllerTest extends TestCase
                 'item_id' => $item->id,
                 'category_id' => $cat->id,
             ])
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_auto_categorize_dispatches_ai_job(): void
@@ -330,7 +330,7 @@ class CategoryControllerTest extends TestCase
             ->assertJsonPath('data.category_id', null);
     }
 
-    public function test_suggest_item_category_returns_403_for_item_of_another_user(): void
+    public function test_suggest_item_category_returns_404_for_item_of_another_user(): void
     {
         $owner = User::factory()->create();
         $other = User::factory()->pro()->create();
@@ -338,7 +338,7 @@ class CategoryControllerTest extends TestCase
 
         $this->actingAs($other, 'sanctum')
             ->postJson('/api/v1/categories/suggest-item-category', ['item_id' => $item->id])
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_suggest_item_category_returns_503_when_ai_is_unavailable(): void

@@ -108,8 +108,8 @@
                             <p class="text-xs text-secondary-foreground mb-2">Valor Produtos</p>
                             <p class="text-xl sm:text-2xl font-bold text-foreground truncate">R$ {{ number_format($invoice->total_products, 2, ',', '.') }}</p>
                         </div>
-                        <div class="flex items-center justify-center size-10 rounded-lg bg-info/10 shrink-0">
-                            <i class="ki-filled ki-purchase text-info text-lg"></i>
+                        <div class="flex items-center justify-center size-10 rounded-lg bg-blue-500/10 shrink-0">
+                            <i class="ki-filled ki-purchase text-blue-500 text-lg"></i>
                         </div>
                     </div>
                 </div>
@@ -121,8 +121,8 @@
                             <p class="text-xs text-secondary-foreground mb-2">Tributos Aprox.</p>
                             <p class="text-xl sm:text-2xl font-bold text-foreground truncate">R$ {{ number_format($invoice->total_taxes, 2, ',', '.') }}</p>
                         </div>
-                        <div class="flex items-center justify-center size-10 rounded-lg bg-warning/10 shrink-0">
-                            <i class="ki-filled ki-chart text-warning text-lg"></i>
+                        <div class="flex items-center justify-center size-10 rounded-lg bg-yellow-500/10 shrink-0">
+                            <i class="ki-filled ki-chart text-yellow-500 text-lg"></i>
                         </div>
                     </div>
                 </div>
@@ -134,8 +134,8 @@
                             <p class="text-xs text-secondary-foreground mb-2">Itens</p>
                             <p class="text-xl sm:text-2xl font-bold text-foreground">{{ $invoice->items->count() }}</p>
                         </div>
-                        <div class="flex items-center justify-center size-10 rounded-lg bg-success/10 shrink-0">
-                            <i class="ki-filled ki-basket text-success text-lg"></i>
+                        <div class="flex items-center justify-center size-10 rounded-lg bg-green-500/10 shrink-0">
+                            <i class="ki-filled ki-basket text-green-600 text-lg"></i>
                         </div>
                     </div>
                 </div>
