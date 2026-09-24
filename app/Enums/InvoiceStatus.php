@@ -19,6 +19,16 @@ enum InvoiceStatus: string
         };
     }
 
+    /** Plural curto, para opções de filtro. */
+    public function shortLabel(): string
+    {
+        return match ($this) {
+            self::Authorized => 'Autorizadas',
+            self::Pending => 'Pendentes',
+            self::Expired => 'Não confirmadas',
+        };
+    }
+
     /** Frase curta, para tooltip de badge. */
     public function hint(): ?string
     {

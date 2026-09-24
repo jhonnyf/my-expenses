@@ -31,11 +31,11 @@ Nota: `composer.json` exige PHP `^8.2`, mas o `Dockerfile` usa `php:8.4-fpm-alpi
 
 Aplicação Laravel 12 para controle de gastos pessoais via importação de NFC-e (Nota Fiscal de Consumidor Eletrônica). Stack: Sanctum (API v1), Socialite (login social Google/Facebook/Apple), Scramble (docs de API automáticas, só em `local`/`staging`), dompdf (export de relatórios em PDF).
 
-Padrão geral: Controllers finos delegam para **Services** (regra de negócio: `BudgetService`, `CategoryService`, `DashboardService`, `IssuerService`, `PriceHistoryService`, `RecurringPurchaseService`, `ReportService`, `SearchService`) e **Actions** (operação pontual e transacional: `ImportInvoiceAction`, `FindOrCreateSocialUser`, `UpdateUserAvatarAction`). `IssuerService` concentra todo acesso a emissor (web e API): o emissor só é listado/aberto/favoritado/apelidado se o usuário tiver ao menos uma nota dele (senão 404), e a lista só mostra emissores com nota autorizada. Duas famílias de Strategy pattern via interface + DI:
+Padrão geral: Controllers finos delegam para **Services** (regra de negócio: `BudgetService`, `CategoryService`, `DashboardService`, `InvoiceService`, `IssuerService`, `PriceHistoryService`, `RecurringPurchaseService`, `ReportService`, `SearchService`) e **Actions** (operação pontual e transacional: `ImportInvoiceAction`, `FindOrCreateSocialUser`, `UpdateUserAvatarAction`, `DeleteInvoiceAction`). `IssuerService` concentra todo acesso a emissor (web e API): o emissor só é listado/aberto/favoritado/apelidado se o usuário tiver ao menos uma nota dele (senão 404), e a lista só mostra emissores com nota autorizada. `InvoiceService` concentra a lista de notas (web e API): busca, filtros, ordenação e totais — a lista mostra também notas pendentes/não confirmadas, os totais só contam as autorizadas. Duas famílias de Strategy pattern via interface + DI:
 - `Import/Strategies/` (`ImportStrategyInterface`) — `XmlFileImportStrategy`, `QrCodeImportStrategy`, `AccessKeyImportStrategy`, usadas por `Api\V1\InvoiceController`.
 - `Search/Strategies/` (`SearchStrategyInterface`) — `InvoiceSearchStrategy`, `IssuerSearchStrategy`, `ProductSearchStrategy`, usadas por `SearchService`/`SearchController` (busca global).
 
-Validação via Form Requests, serialização de API via API Resources (`Http/Resources/Api/V1/`), autorização via Policies (`BudgetPolicy`, `CategoryPolicy`, `ShoppingListPolicy`). Após importar uma nota, o evento `InvoiceImported` é disparado e o `AutoCategorizeListener` tenta categorizar os itens automaticamente (registrado em `AppServiceProvider`).
+Validação via Form Requests, serialização de API via API Resources (`Http/Resources/Api/V1/`), autorização via Policies (`BudgetPolicy`, `CategoryPolicy`, `InvoicePolicy`, `ShoppingListPolicy`; `InvoicePolicy` responde 404, não 403, para nota de outro usuário). Após importar uma nota, o evento `InvoiceImported` é disparado e o `AutoCategorizeListener` tenta categorizar os itens automaticamente (registrado em `AppServiceProvider`).
 
 ### Fluxo principal de importação (caminho atual, API v1)
 
@@ -70,13 +70,13 @@ Validação via Form Requests, serialização de API via API Resources (`Http/Re
 
 Públicas: `register`, `login` (+ `login/social/{provider}` e callback), `forgot-password`, `reset-password` (todas com `throttle:5,1` ou `throttle:10,1` nos POSTs de auth social).
 
-Autenticadas: `dashboard`, `issuers` (+ `favorite`, `nickname`), `my-purchases` (upload/import), `categories` (+ `assign-item`, `auto-categorize`), `price-history`, `search` (busca global), `budgets`, `reports` (+ export `pdf`/`csv`), `recurring-purchases` (+ `add-to-list`), `shopping-list` (+ itens: add/update/remove/toggle-purchased), `account` (+ `password`, `avatar`).
+Autenticadas: `dashboard`, `issuers` (+ `favorite`, `nickname`), `my-purchases` (upload/import, exclusão de nota), `categories` (+ `assign-item`, `auto-categorize`), `price-history`, `search` (busca global), `budgets`, `reports` (+ export `pdf`/`csv`), `recurring-purchases` (+ `add-to-list`), `shopping-list` (+ itens: add/update/remove/toggle-purchased), `account` (+ `password`, `avatar`).
 
 ### Rotas de API (`routes/api.php`)
 
 - `POST /api/nfce/upload` (`web` + `auth`): mapeia para `MyPurchaseController::upload`, mesmo fluxo moderno (`ImportInvoiceAction`) das rotas `my-purchases.*`.
 - **v1 pública** (prefixo `api/v1/auth`, `throttle:api-auth` 10/min por IP): `login`, `register`, `forgot-password`, `reset-password`, `social/{provider}`.
-- **v1 protegida** (`auth:sanctum`, `throttle:api` 60/min por usuário): espelha os módulos web — `dashboard`, `search`, `invoices` (+ import xml/qrcode/key), `issuers` (+ favorite/nickname), `categories`, `budgets`, `reports`, `price-history` (+ `timeline`), `recurring-purchases`, `shopping-lists` (+ itens), `account` (+ `avatar`).
+- **v1 protegida** (`auth:sanctum`, `throttle:api` 60/min por usuário): espelha os módulos web — `dashboard`, `search`, `invoices` (+ import xml/qrcode/key, exclusão), `issuers` (+ favorite/nickname), `categories`, `budgets`, `reports`, `price-history` (+ `timeline`), `recurring-purchases`, `shopping-lists` (+ itens), `account` (+ `avatar`).
 
 Docs de API auto-geradas via Scramble, disponíveis só em `local`/`staging`.
 

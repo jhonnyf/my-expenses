@@ -63,6 +63,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::prefix('invoices')->name('invoices.')->group(function () {
                 Route::get('/', [InvoiceController::class, 'index'])->name('index');
                 Route::get('{invoice}', [InvoiceController::class, 'show'])->name('show');
+                Route::delete('{invoice}', [InvoiceController::class, 'destroy'])->name('destroy');
                 Route::post('import/xml', [InvoiceController::class, 'importXml'])->name('import.xml');
                 Route::post('import/qrcode', [InvoiceController::class, 'importByQrCode'])->name('import.qrcode');
                 Route::post('import/key', [InvoiceController::class, 'importByKey'])->name('import.key');

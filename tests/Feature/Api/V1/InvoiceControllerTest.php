@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\V1;
 
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Models\IssuerNickname;
 use App\Models\User;
@@ -78,14 +79,14 @@ class InvoiceControllerTest extends TestCase
         $this->getJson("/api/v1/invoices/{$invoice->id}")->assertStatus(401);
     }
 
-    public function test_show_returns_403_when_invoice_belongs_to_another_user(): void
+    public function test_show_returns_404_when_invoice_belongs_to_another_user(): void
     {
         $invoice = Invoice::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->getJson("/api/v1/invoices/{$invoice->id}")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_show_returns_invoice_for_owner(): void
@@ -232,5 +233,101 @@ class InvoiceControllerTest extends TestCase
             'error_message' => 'Esta nota fiscal já foi importada anteriormente.',
             'invoice_id' => null,
         ]);
+    }
+
+    // ─── Lista: busca, filtros, ordenação e período ───────────────────────────────────────────
+
+    public function test_index_searches_by_nickname_number_and_issuer_filter(): void
+    {
+        $user = User::factory()->create();
+        $issuerA = Issuer::factory()->create(['name' => 'Atacadao Central']);
+        $issuerB = Issuer::factory()->create(['name' => 'Padaria Doce']);
+        IssuerNickname::create(['user_id' => $user->id, 'issuer_id' => $issuerB->id, 'nickname' => 'Pao Quente']);
+        $a = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuerA->id, 'number' => '111111']);
+        $b = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuerB->id, 'number' => '222222']);
+
+        $ids = fn (string $query) => collect($this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices?'.$query)->assertStatus(200)->json('data'))->pluck('id')->all();
+
+        $this->assertSame([$b->id], $ids('search=pao'));
+        $this->assertSame([$a->id], $ids('search=111111'));
+        $this->assertSame([$b->id], $ids('issuer_id='.$issuerB->id));
+    }
+
+    public function test_index_filters_by_status_and_sorts_by_value(): void
+    {
+        $user = User::factory()->create();
+        $cheap = Invoice::factory()->create(['user_id' => $user->id, 'total_amount' => 10]);
+        $pricey = Invoice::factory()->create(['user_id' => $user->id, 'total_amount' => 500]);
+        $pending = Invoice::factory()->pending()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices?status=pending')
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $pending->id);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices?status=authorized&sort=highest')
+            ->assertJsonPath('data.0.id', $pricey->id)->assertJsonPath('data.1.id', $cheap->id);
+    }
+
+    public function test_index_with_only_start_date_covers_until_today(): void
+    {
+        $user = User::factory()->create();
+        $old = Invoice::factory()->create(['user_id' => $user->id, 'issued_at' => now()->subDays(40)]);
+        $recent = Invoice::factory()->create(['user_id' => $user->id, 'issued_at' => now()->subDays(2)]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/invoices?start_date='.now()->subDays(10)->toDateString())
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $recent->id);
+    }
+
+    public function test_index_exposes_items_count_and_rejects_invalid_params(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id]);
+        InvoiceItem::factory()->count(3)->create(['invoice_id' => $invoice->id]);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices')->assertJsonPath('data.0.items_count', 3);
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices?sort=nope')->assertStatus(422)->assertJsonValidationErrors('sort');
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices?start_date=2026-06-10&end_date=2026-06-01')->assertStatus(422)->assertJsonValidationErrors('end_date');
+    }
+
+    public function test_index_search_never_reveals_other_users_notes(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create(['name' => 'Segredo Ltda']);
+        Invoice::factory()->create(['user_id' => User::factory()->create()->id, 'issuer_id' => $issuer->id]);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices?search=Segredo')->assertJsonCount(0, 'data');
+    }
+
+    // ─── Exclusão ───────────────────────────────────────────────────────────────────────────
+
+    public function test_destroy_returns_401_when_unauthenticated(): void
+    {
+        $invoice = Invoice::factory()->create();
+
+        $this->deleteJson("/api/v1/invoices/{$invoice->id}")->assertStatus(401);
+        $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
+    }
+
+    public function test_destroy_deletes_own_invoice_with_its_items(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id]);
+        InvoiceItem::factory()->count(2)->create(['invoice_id' => $invoice->id]);
+
+        $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/invoices/{$invoice->id}")->assertStatus(200);
+
+        $this->assertDatabaseMissing('invoices', ['id' => $invoice->id]);
+        $this->assertDatabaseMissing('invoices_items', ['invoice_id' => $invoice->id]);
+    }
+
+    public function test_destroy_returns_404_for_invoice_of_another_user(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => User::factory()->create()->id]);
+
+        $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/invoices/{$invoice->id}")->assertStatus(404);
+
+        $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
     }
 }

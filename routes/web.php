@@ -89,6 +89,7 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
     Route::group(['prefix' => 'my-purchases', 'as' => 'my-purchases.'], function () {
         Route::get('/', [MyPurchaseController::class, 'index'])->name('index');
         Route::get('detail/{invoice}', [MyPurchaseController::class, 'detail'])->name('detail');
+        Route::delete('{invoice}', [MyPurchaseController::class, 'destroy'])->name('destroy');
         Route::get('upload', [MyPurchaseController::class, 'uploadForm'])->name('upload.form');
         Route::post('upload', [MyPurchaseController::class, 'upload'])->name('upload');
         Route::post('import-qrcode', [MyPurchaseController::class, 'importByQrCode'])->name('import-qrcode');

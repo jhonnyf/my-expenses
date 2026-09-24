@@ -209,7 +209,7 @@ class PendingInvoiceTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get(route('my-purchases.detail', $invoice->id))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     // ─── invoices:reconcile-pending ─────────────────────────────────────────

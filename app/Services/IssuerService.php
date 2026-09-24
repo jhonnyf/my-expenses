@@ -94,6 +94,28 @@ class IssuerService
     }
 
     /**
+     * Emissores para um <select> (id + nome de exibição: apelido ou nome oficial), incluindo os que só
+     * têm notas pendentes — o filtro da lista de compras enxerga também essas notas.
+     *
+     * @return list<array{id: int, name: string}>
+     */
+    public function optionsForUser(User $user): array
+    {
+        return Issuer::query()
+            ->select('issuers.id', 'issuers.name')
+            ->leftJoin('issuer_nicknames', function ($join) use ($user) {
+                $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
+                    ->where('issuer_nicknames.user_id', '=', $user->id);
+            })
+            ->addSelect('issuer_nicknames.nickname as nickname')
+            ->whereHas('invoices', fn ($q) => $q->includingUnauthorized()->where('user_id', $user->id))
+            ->orderByRaw('COALESCE(issuer_nicknames.nickname, issuers.name)')
+            ->get()
+            ->map(fn (Issuer $issuer) => ['id' => $issuer->id, 'name' => $issuer->nickname ?: $issuer->name])
+            ->all();
+    }
+
+    /**
      * @return list<string>
      */
     public function citiesForUser(User $user): array

@@ -5,12 +5,16 @@ namespace Tests\Feature;
 use App\Models\FavoriteProduct;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\InvoicePayment;
 use App\Models\Issuer;
+use App\Models\IssuerNickname;
 use App\Models\ProductAlias;
+use App\Models\QrCodeRead;
 use App\Models\User;
 use App\Services\NFCeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 class MyPurchaseControllerTest extends TestCase
@@ -171,7 +175,7 @@ class MyPurchaseControllerTest extends TestCase
         $this->get("/my-purchases/detail/{$invoice->id}")->assertRedirect('/login');
     }
 
-    public function test_detail_returns_403_for_invoice_belonging_to_another_user(): void
+    public function test_detail_returns_404_for_invoice_belonging_to_another_user(): void
     {
         $user = User::factory()->create();
         $other = User::factory()->create();
@@ -180,7 +184,7 @@ class MyPurchaseControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get("/my-purchases/detail/{$invoice->id}")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_detail_returns_200_for_own_invoice(): void
@@ -475,5 +479,241 @@ class MyPurchaseControllerTest extends TestCase
             'errors' => ['xml' => ['Esta nota fiscal já foi importada anteriormente.']],
         ]);
         $this->assertDatabaseCount('invoices', 1);
+    }
+
+    private function period(string $start, string $end): string
+    {
+        return "start_date={$start}&end_date={$end}";
+    }
+
+    private function recordsOf(User $user, string $query): Collection
+    {
+        return $this->actingAs($user)->get('/my-purchases?'.$query)->viewData('records')->getCollection();
+    }
+
+    private function invoiceAt(User $user, string $date, float $total, array $attributes = []): Invoice
+    {
+        return Invoice::factory()->create([
+            'user_id' => $user->id,
+            'issued_at' => $date.' 10:00:00',
+            'total_amount' => $total,
+            ...$attributes,
+        ]);
+    }
+
+    // ─── Contagem: pendentes ficam de fora dos totais, mas aparecem à parte ─────────────
+
+    public function test_index_reports_unconfirmed_notes_separately_from_totals(): void
+    {
+        $user = User::factory()->create();
+        $today = now()->toDateString();
+        $this->invoiceAt($user, $today, 100);
+        Invoice::factory()->pending()->create(['user_id' => $user->id, 'issued_at' => $today.' 09:00:00']);
+
+        $this->actingAs($user)->get('/my-purchases')
+            ->assertViewHas('records', fn ($records) => $records->total() === 2)
+            ->assertViewHas('totalCount', 1)
+            ->assertViewHas('unconfirmedCount', 1)
+            ->assertSee('aguardando confirmação');
+    }
+
+    // ─── Busca ───────────────────────────────────────────────────────────────────────────────
+
+    public function test_index_search_matches_official_name_nickname_cnpj_and_number(): void
+    {
+        $user = User::factory()->create();
+        $today = now()->toDateString();
+        $byName = Issuer::factory()->create(['name' => 'Atacadao Central', 'cnpj' => '11111111000111']);
+        $byNickname = Issuer::factory()->create(['name' => 'Razao Social X', 'cnpj' => '22222222000122']);
+        $byCnpj = Issuer::factory()->create(['name' => 'Loja Y', 'cnpj' => '12345678000190']);
+        $byNumber = Issuer::factory()->create(['name' => 'Loja Z', 'cnpj' => '33333333000133']);
+        IssuerNickname::create(['user_id' => $user->id, 'issuer_id' => $byNickname->id, 'nickname' => 'Feira do Bairro']);
+        $a = $this->invoiceAt($user, $today, 10, ['issuer_id' => $byName->id, 'number' => '100001']);
+        $b = $this->invoiceAt($user, $today, 10, ['issuer_id' => $byNickname->id, 'number' => '100002']);
+        $c = $this->invoiceAt($user, $today, 10, ['issuer_id' => $byCnpj->id, 'number' => '100003']);
+        $d = $this->invoiceAt($user, $today, 10, ['issuer_id' => $byNumber->id, 'number' => '987654']);
+
+        $ids = fn (string $term) => $this->recordsOf($user, 'search='.urlencode($term))->pluck('id')->all();
+
+        $this->assertSame([$a->id], $ids('atacadao'));
+        $this->assertSame([$b->id], $ids('feira'));
+        $this->assertSame([$c->id], $ids('12.345.678/0001-90'));
+        $this->assertSame([$d->id], $ids('987654'));
+        $this->assertSame([], $ids('inexistente'));
+    }
+
+    public function test_index_search_never_reveals_other_users_notes(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $issuer = Issuer::factory()->create(['name' => 'Segredo Ltda']);
+        $this->invoiceAt($other, now()->toDateString(), 10, ['issuer_id' => $issuer->id]);
+
+        $this->assertCount(0, $this->recordsOf($user, 'search=Segredo'));
+    }
+
+    // ─── Filtros ───────────────────────────────────────────────────────────────────────────
+
+    public function test_index_filters_by_issuer_and_status_and_totals_follow_the_filter(): void
+    {
+        $user = User::factory()->create();
+        $today = now()->toDateString();
+        $issuerA = Issuer::factory()->create();
+        $issuerB = Issuer::factory()->create();
+        $a = $this->invoiceAt($user, $today, 30, ['issuer_id' => $issuerA->id]);
+        $this->invoiceAt($user, $today, 70, ['issuer_id' => $issuerB->id]);
+        $pending = Invoice::factory()->pending()->create(['user_id' => $user->id, 'issued_at' => $today.' 08:00:00']);
+
+        $this->assertSame([$a->id], $this->recordsOf($user, 'issuer_id='.$issuerA->id)->pluck('id')->all());
+        $this->assertSame([$pending->id], $this->recordsOf($user, 'status=pending')->pluck('id')->all());
+
+        $this->actingAs($user)->get('/my-purchases?issuer_id='.$issuerA->id)
+            ->assertViewHas('totalAmount', 30.0)
+            ->assertViewHas('totalCount', 1);
+    }
+
+    public function test_index_offers_issuers_of_the_user_including_nickname_as_filter_options(): void
+    {
+        $user = User::factory()->create();
+        $issuerA = Issuer::factory()->create(['name' => 'Zeta Ltda']);
+        $issuerB = Issuer::factory()->create(['name' => 'Alfa Ltda']);
+        $this->invoiceAt($user, now()->toDateString(), 10, ['issuer_id' => $issuerA->id]);
+        $this->invoiceAt($user, now()->toDateString(), 10, ['issuer_id' => $issuerB->id]);
+        $this->invoiceAt(User::factory()->create(), now()->toDateString(), 10);
+        IssuerNickname::create(['user_id' => $user->id, 'issuer_id' => $issuerA->id, 'nickname' => 'Mercadinho']);
+
+        $this->actingAs($user)->get('/my-purchases')->assertViewHas('issuerOptions', [
+            ['id' => $issuerB->id, 'name' => 'Alfa Ltda'],
+            ['id' => $issuerA->id, 'name' => 'Mercadinho'],
+        ]);
+    }
+
+    public function test_index_rejects_invalid_sort_and_status(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/my-purchases?sort=drop_table')->assertSessionHasErrors('sort');
+        $this->actingAs($user)->get('/my-purchases?status=xyz')->assertSessionHasErrors('status');
+    }
+
+    // ─── Ordenação ───────────────────────────────────────────────────────────────────────────
+
+    public function test_index_sorts_by_date_and_value(): void
+    {
+        $user = User::factory()->create();
+        $old = $this->invoiceAt($user, now()->subDays(5)->toDateString(), 900);
+        $mid = $this->invoiceAt($user, now()->subDays(3)->toDateString(), 10);
+        $new = $this->invoiceAt($user, now()->subDay()->toDateString(), 200);
+        $range = $this->period(now()->subDays(10)->toDateString(), now()->toDateString());
+
+        $order = fn (string $sort) => $this->recordsOf($user, "{$range}&sort={$sort}")->pluck('id')->all();
+
+        $this->assertSame([$new->id, $mid->id, $old->id], $order('recent'));
+        $this->assertSame([$old->id, $mid->id, $new->id], $order('oldest'));
+        $this->assertSame([$old->id, $new->id, $mid->id], $order('highest'));
+        $this->assertSame([$mid->id, $new->id, $old->id], $order('lowest'));
+    }
+
+    // ─── Delta contra o período anterior ────────────────────────────────────────────────
+
+    public function test_index_compares_total_with_the_previous_period_of_same_length(): void
+    {
+        $user = User::factory()->create();
+        // período atual: 11–20/06 (10 dias); anterior: 01–10/06
+        $this->invoiceAt($user, '2026-06-15', 150);
+        $this->invoiceAt($user, '2026-06-05', 100);
+        $this->invoiceAt($user, '2026-05-25', 9999); // fora dos dois períodos
+
+        $this->actingAs($user)->get('/my-purchases?'.$this->period('2026-06-11', '2026-06-20'))
+            ->assertViewHas('deltaPct', 50.0)
+            ->assertSee('50,0%');
+    }
+
+    public function test_index_delta_is_null_without_spending_in_previous_period_and_for_all_time(): void
+    {
+        $user = User::factory()->create();
+        $this->invoiceAt($user, '2026-06-15', 150);
+
+        $this->actingAs($user)->get('/my-purchases?'.$this->period('2026-06-11', '2026-06-20'))
+            ->assertViewHas('deltaPct', null);
+        $this->actingAs($user)->get('/my-purchases?'.$this->period('2000-01-01', now()->toDateString()))
+            ->assertViewHas('deltaPct', null);
+    }
+
+    public function test_index_daily_average_for_all_time_starts_at_the_first_note(): void
+    {
+        $user = User::factory()->create();
+        $this->invoiceAt($user, now()->subDays(9)->toDateString(), 100);
+
+        $this->actingAs($user)->get('/my-purchases?'.$this->period('2000-01-01', now()->toDateString()))
+            ->assertViewHas('dailyAverage', 10.0); // 100 / 10 dias, não / ~9 mil
+    }
+
+    // ─── Exclusão ───────────────────────────────────────────────────────────────────────────
+
+    public function test_destroy_redirects_unauthenticated_user(): void
+    {
+        $invoice = Invoice::factory()->create();
+
+        $this->delete("/my-purchases/{$invoice->id}")->assertRedirect('/login');
+        $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
+    }
+
+    public function test_destroy_removes_note_with_items_payments_and_qr_reads_but_keeps_the_issuer(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
+        InvoiceItem::factory()->count(2)->create(['invoice_id' => $invoice->id]);
+        InvoicePayment::create(['invoice_id' => $invoice->id, 'method' => '01', 'amount' => 10]);
+        QrCodeRead::factory()->create(['user_id' => $user->id, 'invoice_id' => $invoice->id]);
+        $failedRead = QrCodeRead::factory()->create(['user_id' => $user->id, 'invoice_id' => null]);
+
+        $this->actingAs($user)
+            ->delete("/my-purchases/{$invoice->id}")
+            ->assertRedirect(route('my-purchases.index'))
+            ->assertSessionHas('success', 'Nota fiscal excluída.');
+
+        $this->assertDatabaseMissing('invoices', ['id' => $invoice->id]);
+        $this->assertDatabaseMissing('invoices_items', ['invoice_id' => $invoice->id]);
+        $this->assertDatabaseMissing('invoices_payments', ['invoice_id' => $invoice->id]);
+        $this->assertDatabaseMissing('qrcode_reads', ['invoice_id' => $invoice->id]);
+        $this->assertDatabaseHas('qrcode_reads', ['id' => $failedRead->id]);
+        $this->assertDatabaseHas('issuers', ['id' => $issuer->id]);
+    }
+
+    public function test_destroy_returns_404_and_keeps_note_of_another_user(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => User::factory()->create()->id]);
+
+        $this->actingAs($user)->delete("/my-purchases/{$invoice->id}")->assertNotFound();
+
+        $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
+    }
+
+    public function test_destroy_also_removes_pending_notes(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->pending()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)->delete("/my-purchases/{$invoice->id}")->assertRedirect(route('my-purchases.index'));
+
+        $this->assertDatabaseMissing('invoices', ['id' => $invoice->id]);
+    }
+
+    // ─── Detalhe ───────────────────────────────────────────────────────────────────────────
+
+    public function test_detail_links_to_the_issuer_and_offers_deletion(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
+
+        $this->actingAs($user)->get("/my-purchases/detail/{$invoice->id}")
+            ->assertStatus(200)
+            ->assertSee(route('issuers.detail', ['id' => $issuer->id]), false)
+            ->assertSee('Ver emissor')
+            ->assertSee(route('my-purchases.destroy', $invoice), false);
     }
 }

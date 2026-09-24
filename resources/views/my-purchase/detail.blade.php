@@ -61,8 +61,11 @@
             </div>
             <div class="flex items-center gap-2.5">
                 <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary">
-                    <i class="ki-filled ki-cloud-add"></i> Importar Nova NF
+                    <i class="ki-filled ki-cloud-add"></i> Importar nova NFC-e
                 </a>
+                <button type="button" class="kt-btn kt-btn-outline kt-btn-destructive" data-kt-modal-toggle="#deleteInvoiceModal">
+                    <i class="ki-filled ki-trash"></i> Excluir
+                </button>
                 <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-outline">
                     <i class="ki-filled ki-arrow-left"></i> Voltar
                 </a>
@@ -149,7 +152,9 @@
                         <i class="ki-filled ki-shop text-primary me-1"></i> Emitente
                     </h3>
                     @if($invoice->issuer)
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('issuers.detail', ['id' => $invoice->issuer_id]) }}"
+                               class="text-sm font-medium text-primary hover:underline whitespace-nowrap">Ver emissor</a>
                             <button
                                 data-action="edit-nickname"
                                 data-kt-modal-toggle="#nicknameModal"
@@ -503,6 +508,7 @@
 
     @include('product-alias._alias-modal')
     @include('issuer._nickname-modal')
+    @include('my-purchase._delete-modal')
 
     @section('page-module', 'issuer-favorite,invoice-detail,product-alias,issuer-nickname')
 @endsection

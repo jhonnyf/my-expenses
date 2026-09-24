@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\DeleteInvoiceAction;
 use App\Actions\ImportInvoiceAction;
 use App\Actions\LogQrCodeReadAction;
 use App\Contracts\ImportStrategyInterface;
@@ -9,6 +10,7 @@ use App\Enums\InvoiceStatus;
 use App\Events\InvoiceImported;
 use App\Http\Requests\ImportByAccessKeyRequest;
 use App\Http\Requests\ImportByQrCodeRequest;
+use App\Http\Requests\ListInvoicesRequest;
 use App\Http\Requests\UploadXmlRequest;
 use App\Import\Strategies\AccessKeyImportStrategy;
 use App\Import\Strategies\QrCodeImportStrategy;
@@ -16,12 +18,15 @@ use App\Import\Strategies\XmlFileImportStrategy;
 use App\Models\Category;
 use App\Models\FavoriteProduct;
 use App\Models\Invoice;
+use App\Services\InvoiceService;
+use App\Services\IssuerService;
 use App\Services\ProductAliasService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -34,42 +39,35 @@ class MyPurchaseController extends Controller
         private readonly QrCodeImportStrategy $qrCodeStrategy,
         private readonly AccessKeyImportStrategy $accessKeyStrategy,
         private readonly ProductAliasService $productAliasService,
+        private readonly InvoiceService $invoices,
+        private readonly IssuerService $issuers,
+        private readonly DeleteInvoiceAction $deleteInvoiceAction,
     ) {}
 
-    public function index(Request $request): View
+    public function index(ListInvoicesRequest $request): View
     {
-        $userId = Auth::id();
-        $search = trim((string) $request->input('search', ''));
-        $start = $request->query('start_date') ?: Carbon::now()->startOfMonth()->format('Y-m-d');
-        $end = $request->query('end_date') ?: Carbon::now()->format('Y-m-d');
+        $user = Auth::user();
+        $filters = $request->filters();
 
-        $records = Invoice::includingUnauthorized()
-            ->where('user_id', $userId)
-            ->with('issuer.nicknameForUser')
-            ->whereDateBetween('issued_at', $start, $end)
-            ->when($search !== '', fn ($query) => $query->whereHas(
-                'issuer',
-                fn ($query) => $query->where('name', 'like', "%{$search}%")
-            ))
-            ->orderByDesc('issued_at')
-            ->paginate()
-            ->withQueryString();
+        // A tela abre no mês corrente; a API, sem período, devolve tudo.
+        $filters['start_date'] ??= Carbon::now()->startOfMonth()->format('Y-m-d');
+        $filters['end_date'] ??= Carbon::now()->format('Y-m-d');
 
-        $stats = Invoice::where('user_id', $userId)
-            ->whereDateBetween('issued_at', $start, $end)
-            ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(total_amount), 0) as total_amount')
-            ->first();
-
-        $days = Carbon::parse($start)->diffInDays(Carbon::parse($end)) + 1;
+        $summary = $this->invoices->summaryForUser($user, $filters);
 
         return view('my-purchase.index', [
-            'records' => $records,
-            'search' => $search,
-            'filters' => ['start_date' => $start, 'end_date' => $end],
-            'totalAmount' => (float) $stats->total_amount,
-            'totalCount' => (int) $stats->total_count,
-            'dailyAverage' => $days > 0 ? $stats->total_amount / $days : 0.0,
-            'averageTicket' => $stats->total_count > 0 ? $stats->total_amount / $stats->total_count : 0,
+            'records' => $this->invoices->paginateForUser($user, $filters),
+            'search' => $filters['search'],
+            'filters' => ['start_date' => $filters['start_date'], 'end_date' => $filters['end_date']],
+            'listFilters' => Arr::only($filters, ['search', 'issuer_id', 'status', 'sort']),
+            'hasListFilters' => $filters['search'] !== '' || $filters['issuer_id'] !== null || $filters['status'] !== null,
+            'issuerOptions' => $this->issuers->optionsForUser($user),
+            'totalAmount' => $summary['total_amount'],
+            'totalCount' => $summary['total_count'],
+            'unconfirmedCount' => $summary['unconfirmed_count'],
+            'dailyAverage' => $summary['daily_average'],
+            'averageTicket' => $summary['average_ticket'],
+            'deltaPct' => $summary['delta_pct'],
         ]);
     }
 
@@ -81,7 +79,7 @@ class MyPurchaseController extends Controller
     public function detail(Invoice $invoice): View
     {
         $user = Auth::user();
-        abort_if($invoice->user_id !== $user->id, 403);
+        $this->authorize('view', $invoice);
 
         $invoice->load('issuer.nicknameForUser', 'items.category', 'payments');
         $this->productAliasService->attachCanonicalNames($invoice->items, $user->id);
@@ -100,6 +98,15 @@ class MyPurchaseController extends Controller
             'favoriteProductNames' => $favoriteProductNames,
             'categories' => $categories,
         ]);
+    }
+
+    public function destroy(Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('delete', $invoice);
+
+        $this->deleteInvoiceAction->execute($invoice);
+
+        return redirect()->route('my-purchases.index')->with('success', 'Nota fiscal excluída.');
     }
 
     public function upload(UploadXmlRequest $request): RedirectResponse|JsonResponse

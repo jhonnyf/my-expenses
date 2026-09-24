@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\DeleteInvoiceAction;
 use App\Actions\ImportInvoiceAction;
 use App\Actions\LogQrCodeReadAction;
 use App\Contracts\ImportStrategyInterface;
@@ -9,16 +10,19 @@ use App\Enums\InvoiceStatus;
 use App\Events\InvoiceImported;
 use App\Http\Requests\ImportByAccessKeyRequest;
 use App\Http\Requests\ImportByQrCodeRequest;
+use App\Http\Requests\ListInvoicesRequest;
 use App\Http\Requests\UploadXmlRequest;
 use App\Http\Resources\Api\V1\InvoiceResource;
 use App\Import\Strategies\AccessKeyImportStrategy;
 use App\Import\Strategies\QrCodeImportStrategy;
 use App\Import\Strategies\XmlFileImportStrategy;
 use App\Models\Invoice;
+use App\Services\InvoiceService;
 use App\Services\ProductAliasService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class InvoiceController extends Controller
 {
@@ -29,31 +33,34 @@ class InvoiceController extends Controller
         private readonly QrCodeImportStrategy $qrCodeStrategy,
         private readonly AccessKeyImportStrategy $accessKeyStrategy,
         private readonly ProductAliasService $productAliasService,
+        private readonly InvoiceService $invoices,
+        private readonly DeleteInvoiceAction $deleteInvoiceAction,
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(ListInvoicesRequest $request): JsonResponse
     {
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
-
-        $invoices = Invoice::includingUnauthorized()
-            ->where('user_id', $request->user()->id)
-            ->with('issuer.nicknameForUser')
-            ->when($startDate && $endDate, fn ($query) => $query->whereDateBetween('issued_at', $startDate, $endDate))
-            ->orderByDesc('issued_at')
-            ->paginate();
+        $invoices = $this->invoices->paginateForUser($request->user(), $request->filters());
 
         return InvoiceResource::collection($invoices)->response();
     }
 
     public function show(Request $request, Invoice $invoice): JsonResponse
     {
-        abort_if($invoice->user_id !== $request->user()->id, 403);
+        Gate::authorize('view', $invoice);
 
         $invoice->load('issuer.nicknameForUser', 'items.category', 'payments');
         $this->productAliasService->attachCanonicalNames($invoice->items, $request->user()->id);
 
         return $this->success(new InvoiceResource($invoice));
+    }
+
+    public function destroy(Invoice $invoice): JsonResponse
+    {
+        Gate::authorize('delete', $invoice);
+
+        $this->deleteInvoiceAction->execute($invoice);
+
+        return $this->success(null);
     }
 
     public function importXml(UploadXmlRequest $request): JsonResponse
