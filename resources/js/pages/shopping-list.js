@@ -2,12 +2,15 @@ import Utils from '../utils';
 
 const ShoppingList = (() => {
     let initialized = false;
-    let baseUrl, searchUrl;
+    let baseUrl, searchUrl, freshDays;
 
     let currentListId = null;
     let shoppingItems = [];
     let debounceTimer = null;
     let locationOverride = null;
+    let savingsById = {};
+
+    const { showFlash, errorMessage } = Utils;
 
     let searchInput, searchResults, resultsList, shoppingListContainer, btnNew, listNameCard;
     let locationDefault, locationOverrideEl, locationOverrideLabel, locationModalCitySelect;
@@ -77,6 +80,7 @@ const ShoppingList = (() => {
                                         ${date ? `<span class="mx-1">&middot;</span> ${date}` : ''}
                                         ${item.unit ? `<span class="mx-1">&middot;</span> ${item.unit}` : ''}
                                         ${!isOwn ? '<span class="kt-badge kt-badge-outline kt-badge-sm shrink-0">Comunidade</span>' : ''}
+                                        ${item.is_stale ? `<span class="kt-badge kt-badge-light kt-badge-warning kt-badge-sm shrink-0" title="A compra mais recente tem mais de ${freshDays} dias">Preço antigo</span>` : ''}
                                     </p>
                                 </div>
                                 <div class="flex items-center gap-3 shrink-0">
@@ -158,6 +162,19 @@ const ShoppingList = (() => {
         zip_code: issuer.zip_code,
     });
 
+    // O servidor soma a quantidade quando o produto já estava pendente no mesmo mercado (`merged`): atualiza a linha.
+    const upsertSavedItem = (saved, newItem) => {
+        const existing = shoppingItems.find(i => i.id === saved.id);
+
+        if (!existing) {
+            shoppingItems.push(newItem);
+            return;
+        }
+
+        existing.quantity = saved.quantity;
+        if (saved.unit_price != null) existing.unit_price = parseFloat(saved.unit_price);
+    };
+
     const addToList = async (item) => {
         await ensureListExists();
 
@@ -172,7 +189,7 @@ const ShoppingList = (() => {
             },
         });
 
-        shoppingItems.push({
+        upsertSavedItem(saved, {
             id: saved.id,
             description: saved.description,
             unit_price: parseFloat(saved.unit_price),
@@ -197,7 +214,7 @@ const ShoppingList = (() => {
             body: { description, quantity: 1 },
         });
 
-        shoppingItems.push({
+        upsertSavedItem(saved, {
             id: saved.id,
             description: saved.description,
             unit_price: null,
@@ -287,6 +304,8 @@ const ShoppingList = (() => {
     const newList = () => {
         currentListId = null;
         shoppingItems = [];
+        savingsById = {};
+        document.getElementById('savingsBox')?.classList.add('hidden');
         document.getElementById('listName').value = '';
         renderList();
         listNameCard.style.display = 'block';
@@ -299,8 +318,10 @@ const ShoppingList = (() => {
         if (!name) return;
 
         await Utils.http(`${baseUrl}/${currentListId}`, { method: 'PATCH', body: { name } });
-        const el = document.querySelector(`#saved-list-${currentListId} p:first-child`);
+        const el = document.querySelector(`#saved-list-${currentListId} p[data-list-name]`);
         if (el) el.textContent = name;
+        const deleteBtn = document.querySelector(`#saved-list-${currentListId} [data-delete-list]`);
+        if (deleteBtn) deleteBtn.dataset.listName = name;
     };
 
     const buildItemRow = (item, isPurchased) => {
@@ -319,6 +340,11 @@ const ShoppingList = (() => {
                     <div class="min-w-0">
                         <p class="text-sm font-medium ${textClass} truncate">${Utils.escapeHtml(item.description)}</p>
                         <p class="text-xs text-secondary-foreground">${hasPrice ? `R$ ${Utils.formatCurrency(item.unit_price)} / ${item.unit || 'un'}` : 'Sem preço definido'}</p>
+                        ${!isPurchased && savingsById[item.id] ? `
+                            <p class="text-xs text-green-600 mt-0.5">
+                                R$ ${Utils.formatCurrency(savingsById[item.id].unit_price)} em ${Utils.escapeHtml(savingsById[item.id].issuer_name)}
+                                &middot; economiza R$ ${Utils.formatCurrency(savingsById[item.id].saving)}
+                            </p>` : ''}
                     </div>
                 </div>
                 <div class="flex items-center justify-between sm:justify-end gap-3 ps-8 sm:ps-0 sm:ms-4 shrink-0">
@@ -418,13 +444,18 @@ const ShoppingList = (() => {
 
     const updateSidebarCount = () => {
         if (!currentListId) return;
-        const el = document.querySelector(`#saved-list-${currentListId} .text-xs`);
-        if (el) {
-            const count = shoppingItems.length;
-            const total = shoppingItems.reduce((sum, i) => sum + itemTotal(i), 0);
-            const today = new Date().toLocaleDateString('pt-BR');
-            el.textContent = `${count} ${count === 1 ? 'item' : 'itens'} · R$ ${Utils.formatCurrency(total)} · ${today}`;
-        }
+
+        const row = document.getElementById(`saved-list-${currentListId}`);
+        if (!row) return;
+
+        const count = shoppingItems.length;
+        const purchased = shoppingItems.filter(i => i.purchased_at).length;
+        const total = shoppingItems.reduce((sum, i) => sum + itemTotal(i), 0);
+        const today = new Date().toLocaleDateString('pt-BR');
+
+        row.querySelector('[data-list-meta]').textContent = `${count} ${count === 1 ? 'item' : 'itens'} · R$ ${Utils.formatCurrency(total)} · ${today}`;
+        row.querySelector('[data-list-progress-track]').classList.toggle('hidden', count === 0);
+        row.querySelector('[data-list-progress]').style.width = `${count > 0 ? Math.round((purchased / count) * 100) : 0}%`;
     };
 
     const updateSummaryProgress = (pendingCount, purchasedCount) => {
@@ -507,16 +538,22 @@ const ShoppingList = (() => {
 
         const container = document.getElementById('savedLists');
         const today = new Date().toLocaleDateString('pt-BR');
+        const safeName = Utils.escapeHtml(name);
+
         container.insertAdjacentHTML('afterbegin', `
             <div class="flex items-center gap-3 py-3 px-1 group rounded-lg transition-colors hover:bg-accent/60" id="saved-list-${id}">
                 <div class="flex items-center justify-center size-9 rounded-lg bg-primary/10 text-primary shrink-0">
                     <i class="ki-filled ki-basket text-sm"></i>
                 </div>
                 <button data-load-list="${id}" class="flex-1 text-left min-w-0">
-                    <p class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">${Utils.escapeHtml(name)}</p>
-                    <p class="text-xs text-secondary-foreground">${count} ${count === 1 ? 'item' : 'itens'} &middot; R$ 0,00 &middot; ${today}</p>
+                    <p class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors" data-list-name>${safeName}</p>
+                    <p class="text-xs text-secondary-foreground" data-list-meta>${count} ${count === 1 ? 'item' : 'itens'} &middot; R$ 0,00 &middot; ${today}</p>
+                    <div class="kt-progress h-1 mt-1.5 ${count > 0 ? '' : 'hidden'}" data-list-progress-track>
+                        <div class="kt-progress-indicator" data-list-progress style="width: 0%"></div>
+                    </div>
                 </button>
-                <button data-delete-list="${id}" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive shrink-0">
+                <button data-delete-list="${id}" data-list-name="${safeName}" data-kt-modal-toggle="#deleteListModal"
+                        class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-destructive transition-all" title="Excluir lista">
                     <i class="ki-filled ki-trash text-sm"></i>
                 </button>
             </div>`);
@@ -525,6 +562,8 @@ const ShoppingList = (() => {
     const loadList = async (id) => {
         const data = await Utils.http(`${baseUrl}/${id}`);
         currentListId = data.id;
+        savingsById = {};
+        document.getElementById('savingsBox').classList.add('hidden');
         document.getElementById('listName').value = data.name;
         shoppingItems = data.items.map(item => ({
             id: item.id,
@@ -540,12 +579,32 @@ const ShoppingList = (() => {
         renderList();
     };
 
-    const deleteList = async (id) => {
-        if (!confirm('Deseja excluir esta lista?')) return;
+    // O modal abre pelo data-kt-modal-toggle do botão; aqui só se preenche o texto e guarda o id.
+    const prepareDeleteList = (btn) => {
+        const modal = document.getElementById('deleteListModal');
+        modal.dataset.listId = btn.dataset.deleteList;
+        document.getElementById('deleteListName').textContent = btn.dataset.listName || '';
+        setDeleteError('');
+    };
 
-        await Utils.http(`${baseUrl}/${id}`, { method: 'DELETE' });
-        const el = document.getElementById(`saved-list-${id}`);
-        if (el) el.remove();
+    const setDeleteError = (message) => {
+        const el = document.getElementById('deleteListError');
+        el.textContent = message || '';
+        el.classList.toggle('hidden', !message);
+    };
+
+    const confirmDeleteList = async () => {
+        const id = parseInt(document.getElementById('deleteListModal').dataset.listId, 10);
+
+        try {
+            await Utils.http(`${baseUrl}/${id}`, { method: 'DELETE' });
+        } catch (error) {
+            setDeleteError(errorMessage(error, 'Não foi possível excluir a lista.'));
+            return;
+        }
+
+        window.KTModal?.getInstance(document.getElementById('deleteListModal'))?.hide();
+        document.getElementById(`saved-list-${id}`)?.remove();
 
         if (currentListId === id) {
             currentListId = null;
@@ -553,6 +612,7 @@ const ShoppingList = (() => {
             document.getElementById('listName').value = '';
             renderList();
         }
+        showFlash('Lista excluída.');
     };
 
     const handleSavedListsClick = (e) => {
@@ -564,19 +624,144 @@ const ShoppingList = (() => {
 
         const deleteBtn = e.target.closest('[data-delete-list]');
         if (deleteBtn) {
-            deleteList(parseInt(deleteBtn.dataset.deleteList));
+            prepareDeleteList(deleteBtn);
         }
     };
 
-    const handleDocumentClick = (e) => {
-        if (e.target.closest('[data-action="new-list"]')) {
-            newList();
-            return;
+    // ---------- Ações da lista ----------
+
+    const formatBRL = (value) => `R$ ${Utils.formatCurrency(value)}`;
+
+    const refreshPrices = async () => {
+        if (!currentListId) return;
+
+        try {
+            const { updated, changes, total } = await Utils.http(`${baseUrl}/${currentListId}/refresh-prices`, { method: 'POST' });
+
+            changes.forEach(({ item_id: id, new: price }) => {
+                const item = shoppingItems.find(i => i.id === id);
+                if (item) item.unit_price = price;
+            });
+            savingsById = {};
+            renderList();
+
+            showFlash(updated === 0
+                ? 'Todos os preços já estão atualizados.'
+                : `${updated} ${updated === 1 ? 'preço atualizado' : 'preços atualizados'}. Novo total: ${formatBRL(total)}.`);
+        } catch (error) {
+            showFlash(errorMessage(error, 'Não foi possível atualizar os preços.'), 'error');
+        }
+    };
+
+    const showSavings = async () => {
+        if (!currentListId) return;
+
+        const box = document.getElementById('savingsBox');
+
+        try {
+            const { suggestions, total_saving: totalSaving } = await Utils.http(`${baseUrl}/${currentListId}/savings`);
+
+            savingsById = Object.fromEntries(suggestions.map(suggestion => [suggestion.item_id, suggestion]));
+            renderList();
+
+            box.textContent = suggestions.length === 0
+                ? 'Nenhum mercado mais barato encontrado perto de você para os itens desta lista.'
+                : `Você pode economizar ${formatBRL(totalSaving)} comprando ${suggestions.length === 1 ? 'um item' : `${suggestions.length} itens`} em outro mercado.`;
+            box.classList.remove('hidden');
+        } catch (error) {
+            showFlash(errorMessage(error, 'Não foi possível calcular a economia.'), 'error');
+        }
+    };
+
+    // Texto para colar em qualquer app: itens a comprar agrupados por mercado, com quantidade e preço.
+    const buildShareText = () => {
+        const name = document.getElementById('listName').value.trim() || 'Lista de compras';
+        const pending = shoppingItems.filter(i => !i.purchased_at);
+        const groups = {};
+
+        pending.forEach(item => {
+            (groups[item.issuer_name] ||= []).push(item);
+        });
+
+        const lines = [name, ''];
+        Object.entries(groups).forEach(([issuer, items]) => {
+            lines.push(issuer);
+            items.forEach(item => {
+                const price = item.unit_price != null ? ` — ${formatBRL(itemTotal(item))}` : '';
+                lines.push(`• ${item.quantity}x ${item.description}${price}`);
+            });
+            lines.push('');
+        });
+        lines.push(`Total estimado: ${formatBRL(pending.reduce((sum, item) => sum + itemTotal(item), 0))}`);
+
+        return lines.join('\n');
+    };
+
+    const shareList = async () => {
+        if (!currentListId || shoppingItems.length === 0) return;
+
+        const text = buildShareText();
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Lista de compras', text });
+                return;
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+            }
         }
 
-        if (e.target.closest('[data-action="save-name"]')) {
-            saveName();
+        try {
+            await navigator.clipboard.writeText(text);
+            showFlash('Lista copiada. É só colar onde quiser compartilhar.');
+        } catch {
+            showFlash('Não foi possível compartilhar a lista neste navegador.', 'error');
         }
+    };
+
+    const duplicateList = async () => {
+        if (!currentListId) return;
+
+        try {
+            const copy = await Utils.http(`${baseUrl}/${currentListId}/duplicate`, { method: 'POST' });
+            addSavedListToSidebar(copy.id, copy.name, shoppingItems.length);
+            await loadList(copy.id);
+            showFlash('Lista duplicada: todos os itens voltaram para "A comprar".');
+        } catch (error) {
+            showFlash(errorMessage(error, 'Não foi possível duplicar a lista.'), 'error');
+        }
+    };
+
+    const purchaseAll = async () => {
+        if (!currentListId) return;
+
+        try {
+            await Utils.http(`${baseUrl}/${currentListId}/purchase-all`, { method: 'POST' });
+
+            const now = new Date().toISOString();
+            shoppingItems.forEach(item => {
+                item.purchased_at ||= now;
+            });
+            renderList();
+        } catch (error) {
+            showFlash(errorMessage(error, 'Não foi possível marcar os itens.'), 'error');
+        }
+    };
+
+    const ACTIONS = {
+        'new-list': () => newList(),
+        'save-name': () => saveName(),
+        'refresh-prices': () => refreshPrices(),
+        'show-savings': () => showSavings(),
+        'share-list': () => shareList(),
+        'duplicate-list': () => duplicateList(),
+        'purchase-all': () => purchaseAll(),
+        'confirm-delete-list': () => confirmDeleteList(),
+    };
+
+    const handleDocumentClick = (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (btn) ACTIONS[btn.dataset.action]?.();
     };
 
     return {
@@ -584,7 +769,7 @@ const ShoppingList = (() => {
             if (initialized) return;
             initialized = true;
 
-            ({ baseUrl, searchUrl } = window.pageConfig);
+            ({ baseUrl, searchUrl, freshDays } = window.pageConfig);
 
             searchInput = document.getElementById('searchInput');
             searchResults = document.getElementById('searchResults');

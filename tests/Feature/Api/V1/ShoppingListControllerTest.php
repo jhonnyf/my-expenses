@@ -59,14 +59,14 @@ class ShoppingListControllerTest extends TestCase
         $this->getJson("/api/v1/shopping-lists/{$list->id}")->assertStatus(401);
     }
 
-    public function test_show_returns_403_when_list_belongs_to_another_user(): void
+    public function test_show_returns_404_when_list_belongs_to_another_user(): void
     {
         $list = ShoppingList::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->getJson("/api/v1/shopping-lists/{$list->id}")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_show_returns_list_for_owner(): void
@@ -80,14 +80,14 @@ class ShoppingListControllerTest extends TestCase
             ->assertJsonPath('data.id', $list->id);
     }
 
-    public function test_destroy_returns_403_when_list_belongs_to_another_user(): void
+    public function test_destroy_returns_404_when_list_belongs_to_another_user(): void
     {
         $list = ShoppingList::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->deleteJson("/api/v1/shopping-lists/{$list->id}")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_destroy_deletes_own_list(): void
@@ -102,14 +102,14 @@ class ShoppingListControllerTest extends TestCase
         $this->assertDatabaseMissing('shopping_lists', ['id' => $list->id]);
     }
 
-    public function test_update_returns_403_for_other_users_list(): void
+    public function test_update_returns_404_for_other_users_list(): void
     {
         $list = ShoppingList::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->patchJson("/api/v1/shopping-lists/{$list->id}", ['name' => 'Nova'])
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_update_renames_list(): void
@@ -215,7 +215,7 @@ class ShoppingListControllerTest extends TestCase
         $this->assertCount(2, $response->json('data'));
     }
 
-    public function test_add_item_returns_403_for_other_users_list(): void
+    public function test_add_item_returns_404_for_other_users_list(): void
     {
         $list = ShoppingList::factory()->create();
         $other = User::factory()->create();
@@ -228,7 +228,7 @@ class ShoppingListControllerTest extends TestCase
                 'unit_price' => 5.00,
                 'quantity' => 1,
                 'issuer_id' => $issuer->id,
-            ])->assertStatus(403);
+            ])->assertStatus(404);
     }
 
     public function test_add_item_to_list(): void

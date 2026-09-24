@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\Concerns\FailsAsJson;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateShoppingListRequest extends FormRequest
+class DismissRecurringRequest extends FormRequest
 {
     use FailsAsJson;
 
@@ -16,8 +16,6 @@ class UpdateShoppingListRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'name' => ['required', 'string', 'max:255'],
-        ];
+        return ['description' => ['required', 'string', 'max:255']];
     }
 }

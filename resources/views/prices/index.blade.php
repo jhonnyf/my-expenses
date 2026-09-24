@@ -18,6 +18,11 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            <div id="pageFlash" role="status" class="hidden items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+                <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+                <span class="text-sm text-green-600 font-medium" data-flash-text></span>
+            </div>
+
             {{-- BUSCA / SELEÇÃO DE PRODUTO --}}
             <div class="kt-card">
                 <div class="kt-card-header">
@@ -41,15 +46,22 @@
                         </div>
                     </div>
 
-                    <div id="selectedProductBar" class="hidden flex items-center justify-between gap-3">
+                    <div id="selectedProductBar" class="hidden items-center justify-between gap-3 flex-wrap">
                         <div class="flex items-center gap-2 min-w-0">
                             <i class="ki-filled ki-chart-line-star text-primary shrink-0"></i>
                             <span class="text-sm text-foreground font-medium truncate" id="selectedProductName"></span>
                         </div>
-                        <button type="button" id="btnChangeProduct" class="kt-btn kt-btn-sm kt-btn-outline shrink-0">
-                            <i class="ki-filled ki-arrows-loop"></i>
-                            Trocar produto
-                        </button>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <select id="unitSelect" class="kt-select w-44 hidden" aria-label="Unidade"></select>
+                            <button type="button" id="btnFavoriteProduct" data-action="favorite-product" data-description="" data-unit=""
+                                    class="kt-btn kt-btn-sm kt-btn-outline" title="Avisar quando o preço cair">
+                                <i class="ki-filled ki-heart"></i> Avisar quando cair
+                            </button>
+                            <button type="button" id="btnChangeProduct" class="kt-btn kt-btn-sm kt-btn-outline shrink-0">
+                                <i class="ki-filled ki-arrows-loop"></i>
+                                Trocar produto
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -94,6 +106,10 @@
                     <div class="kt-card">
                         <div class="kt-card-header">
                             <h3 class="kt-card-title">Evolução de Preço</h3>
+                            <div class="kt-card-toolbar gap-1" id="chartModeToggle" role="group" aria-label="Agrupar gráfico">
+                                <button type="button" data-chart-mode="purchase" class="kt-btn kt-btn-sm kt-btn-primary">Por compra</button>
+                                <button type="button" data-chart-mode="month" class="kt-btn kt-btn-sm kt-btn-outline">Por mês</button>
+                            </div>
                         </div>
                         <div class="kt-card-content pb-4">
                             <div id="priceChart" style="height: 260px;"></div>
@@ -185,6 +201,7 @@
     </div>
 
     @include('product-alias._alias-modal')
+    @include('prices._add-to-list-modal')
 
 @endsection
 
@@ -195,6 +212,11 @@
         historyUrl: '{{ route("prices.history") }}',
         byCityUrl: '{{ route("prices.by-city") }}',
         byIssuerUrl: '{{ route("prices.by-issuer") }}',
+        unitsUrl: '{{ route("prices.units") }}',
+        shoppingListUrl: '{{ url("shopping-list") }}',
+        shoppingLists: @json($shoppingLists),
+        favoriteProducts: @json($favoriteProducts),
+        freshDays: {{ \App\Services\PriceComparisonService::FRESH_DAYS }},
         productAliasStoreUrl: '{{ route("product-aliases.store") }}',
         productAliasMergeUrl: '{{ route("product-aliases.merge") }}',
         productAliasDismissUrl: '{{ route("product-aliases.dismiss") }}',

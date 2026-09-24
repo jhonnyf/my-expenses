@@ -12,6 +12,26 @@ const Account = (() => {
         document.querySelector(TAB_TOGGLE_SELECTORS[tab])?.click();
     };
 
+    // Trocar o e-mail exige a senha atual: o campo só aparece quando o e-mail difere do cadastrado.
+    const togglePasswordForEmailChange = (input) => {
+        const field = document.getElementById('email_password_field');
+        if (!field) return;
+
+        const changed = input.value.trim().toLowerCase() !== input.dataset.original.toLowerCase();
+        field.classList.toggle('hidden', !changed);
+    };
+
+    // Mantém a aba na URL (?tab=), para link direto e para o F5 voltar na mesma aba.
+    const syncTabInUrl = (e) => {
+        const toggle = e.target.closest('[data-kt-tab-toggle]');
+        if (!toggle) return;
+
+        const tab = toggle.dataset.ktTabToggle.replace('#tab_', '');
+        const url = new URL(location.href);
+        if (tab === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', tab);
+        history.replaceState(null, '', url);
+    };
+
     const handleLocationUpdated = (e) => {
         const { cidade, estado } = e.detail;
 
@@ -55,9 +75,17 @@ const Account = (() => {
             });
 
             document.addEventListener('location:updated', handleLocationUpdated);
+            document.addEventListener('click', syncTabInUrl);
+            document.addEventListener('click', (e) => {
+                const target = e.target.closest('[data-open-tab]');
+                if (target) openTab(target.dataset.openTab);
+            });
+
+            const emailInput = document.getElementById('email');
+            emailInput?.addEventListener('input', () => togglePasswordForEmailChange(emailInput));
 
             const { openTab: tab, openDeleteAccountModal } = window.pageConfig ?? {};
-            if (tab) openTab(tab);
+            if (tab && TAB_TOGGLE_SELECTORS[tab]) openTab(tab);
             if (openDeleteAccountModal) {
                 document.querySelector('[data-kt-modal-toggle="#deleteAccountModal"]')?.click();
             }

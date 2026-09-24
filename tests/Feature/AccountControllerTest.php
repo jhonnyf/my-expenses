@@ -6,15 +6,19 @@ use App\Jobs\ExportPersonalDataJob;
 use App\Jobs\GeocodeUserProfileJob;
 use App\Models\Invoice;
 use App\Models\Issuer;
+use App\Models\ProductAlias;
+use App\Models\RecurringDismissal;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AccountControllerTest extends TestCase
@@ -165,7 +169,8 @@ class AccountControllerTest extends TestCase
         $this->actingAs($user)->patch('/account', [
             'name' => 'Novo Nome',
             'email' => 'novo@example.com',
-        ])->assertRedirect(route('account.index'));
+            'current_password' => 'password',
+        ])->assertRedirect(route('account.index', ['tab' => 'settings']));
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
@@ -288,7 +293,7 @@ class AccountControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post('/account/export')
-            ->assertRedirect(route('account.index'));
+            ->assertRedirect(route('account.index', ['tab' => 'security']));
 
         Queue::assertPushed(ExportPersonalDataJob::class);
     }
@@ -379,5 +384,93 @@ class AccountControllerTest extends TestCase
         $response->assertRedirect(route('login.index'));
         $this->assertModelMissing($user);
         $this->assertGuest();
+    }
+
+    public function test_page_masks_the_cpf_and_shows_registration_date(): void
+    {
+        $user = User::factory()->create(['created_at' => '2025-03-10 10:00:00']);
+        UserProfile::factory()->for($user)->create(['cpf' => '12345678901']);
+
+        $this->actingAs($user)->get('/account')
+            ->assertOk()
+            ->assertSee('123.***.***-01')
+            ->assertDontSee('12345678901')
+            ->assertSee('10/03/2025');
+    }
+
+    public function test_password_form_is_hidden_for_accounts_without_password(): void
+    {
+        $user = User::factory()->create(['password' => null]);
+
+        $this->actingAs($user)->get('/account')
+            ->assertOk()
+            ->assertSee('Definir senha')
+            ->assertDontSee('id="delete_current_password"', false);
+    }
+
+    public function test_social_account_can_delete_without_password(): void
+    {
+        $user = User::factory()->create(['password' => null]);
+
+        $this->actingAs($user)->delete('/account')->assertRedirect(route('login.index'));
+
+        $this->assertModelMissing($user);
+    }
+
+    public function test_destroy_removes_notifications(): void
+    {
+        $user = User::factory()->create();
+        $user->notifications()->create([
+            'id' => (string) Str::uuid(),
+            'type' => 'x',
+            'data' => ['a' => 1],
+        ]);
+
+        $this->actingAs($user)->delete('/account', ['current_password' => 'password']);
+
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
+    public function test_password_change_redirects_to_security_tab_and_revokes_tokens(): void
+    {
+        $user = User::factory()->create();
+        $user->createToken('app');
+
+        $this->actingAs($user)->patch('/account/password', [
+            'current_password' => 'password',
+            'password' => 'nova-senha-123',
+            'password_confirmation' => 'nova-senha-123',
+        ])->assertRedirect(route('account.index', ['tab' => 'security']));
+
+        $this->assertSame(0, $user->tokens()->count());
+    }
+
+    public function test_revoke_other_sessions_removes_tokens(): void
+    {
+        $user = User::factory()->create();
+        $user->createToken('app');
+
+        $this->actingAs($user)->post('/account/sessions/revoke-others')
+            ->assertRedirect(route('account.index', ['tab' => 'security']));
+
+        $this->assertSame(0, $user->tokens()->count());
+    }
+
+    public function test_export_contains_the_new_sections(): void
+    {
+        Storage::fake('local');
+        Notification::fake();
+        $user = User::factory()->create();
+        ProductAlias::create(['user_id' => $user->id, 'description' => 'LEITE INT', 'canonical_name' => 'LEITE']);
+        RecurringDismissal::create(['user_id' => $user->id, 'description' => 'SAL']);
+
+        (new ExportPersonalDataJob($user->id))->handle();
+
+        $file = $user->files()->where('collection', 'personal-data-export')->firstOrFail();
+        $data = json_decode(Storage::disk('local')->get($file->path), true);
+
+        $this->assertSame('LEITE', $data['nomes_de_produtos'][0]['nome_padronizado']);
+        $this->assertSame(['SAL'], $data['produtos_ocultados_das_compras_recorrentes']);
+        $this->assertArrayHasKey('versao_dos_termos', $data['cadastro']);
     }
 }

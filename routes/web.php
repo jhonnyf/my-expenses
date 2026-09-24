@@ -121,6 +121,7 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
         Route::get('/', [PricesController::class, 'index'])->name('index');
         Route::get('search', [PricesController::class, 'search'])->name('search');
         Route::get('history', [PricesController::class, 'history'])->name('history');
+        Route::get('units', [PricesController::class, 'units'])->name('units');
         Route::get('by-city', [PricesController::class, 'byCity'])->name('by-city');
         Route::get('by-issuer', [PricesController::class, 'byIssuer'])->name('by-issuer');
     });
@@ -165,6 +166,9 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
     Route::group(['prefix' => 'recurring-purchases', 'as' => 'recurring-purchases.', 'middleware' => 'pro'], function () {
         Route::get('/', [RecurringPurchaseController::class, 'index'])->name('index');
         Route::post('add-to-list', [RecurringPurchaseController::class, 'addToShoppingList'])->name('add-to-list');
+        Route::post('replenishment-list', [RecurringPurchaseController::class, 'createReplenishmentList'])->name('replenishment-list');
+        Route::post('dismiss', [RecurringPurchaseController::class, 'dismiss'])->name('dismiss');
+        Route::post('restore', [RecurringPurchaseController::class, 'restore'])->name('restore');
     });
 
     Route::group(['prefix' => 'shopping-list', 'as' => 'shopping-list.'], function () {
@@ -175,6 +179,10 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
         Route::get('{shoppingList}', [ShoppingListController::class, 'show'])->name('show');
         Route::patch('{shoppingList}', [ShoppingListController::class, 'update'])->name('update');
         Route::delete('{shoppingList}', [ShoppingListController::class, 'destroy'])->name('destroy');
+        Route::post('{shoppingList}/duplicate', [ShoppingListController::class, 'duplicate'])->name('duplicate');
+        Route::post('{shoppingList}/purchase-all', [ShoppingListController::class, 'purchaseAll'])->name('purchase-all');
+        Route::post('{shoppingList}/refresh-prices', [ShoppingListController::class, 'refreshPrices'])->name('refresh-prices')->middleware('throttle:30,1');
+        Route::get('{shoppingList}/savings', [ShoppingListController::class, 'savings'])->name('savings')->middleware('throttle:20,1');
         Route::post('{shoppingList}/items', [ShoppingListController::class, 'addItem'])->name('items.add');
         Route::patch('{shoppingList}/items/{item}', [ShoppingListController::class, 'updateItem'])->name('items.update');
         Route::delete('{shoppingList}/items/{item}', [ShoppingListController::class, 'removeItem'])->name('items.remove');
@@ -184,13 +192,14 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
     Route::group(['prefix' => 'account', 'as' => 'account.'], function () {
         Route::get('/', [AccountController::class, 'index'])->name('index');
         Route::patch('/', [AccountController::class, 'update'])->name('update');
-        Route::patch('password', [AccountController::class, 'updatePassword'])->name('password');
+        Route::patch('password', [AccountController::class, 'updatePassword'])->middleware('throttle:5,1')->name('password');
+        Route::post('sessions/revoke-others', [AccountController::class, 'revokeOtherSessions'])->middleware('throttle:5,1')->name('sessions.revoke-others');
         Route::post('avatar', [AccountController::class, 'updateAvatar'])->name('avatar');
         Route::post('location-suggestion/dismiss', [AccountController::class, 'dismissLocationSuggestion'])->name('location-suggestion.dismiss');
         Route::post('location/capture', [AccountController::class, 'captureLocation'])->middleware('throttle:10,1')->name('location.capture');
         Route::post('export', [AccountController::class, 'requestExport'])->middleware('throttle:5,60')->name('export');
         Route::get('export/download/{file}', [AccountController::class, 'downloadExport'])->middleware('signed')->name('export.download');
-        Route::delete('/', [AccountController::class, 'destroy'])->name('destroy');
+        Route::delete('/', [AccountController::class, 'destroy'])->middleware('throttle:5,1')->name('destroy');
     });
 
     Route::group(['prefix' => 'favorite-products', 'as' => 'favorite-products.'], function () {

@@ -22,7 +22,7 @@ class CheckFavoriteProductPriceDropsTest extends TestCase
 
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 18.00]);
 
         FavoriteProduct::factory()->for($user)->create([
@@ -45,7 +45,7 @@ class CheckFavoriteProductPriceDropsTest extends TestCase
 
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 19.50]);
 
         FavoriteProduct::factory()->for($user)->create([
@@ -64,7 +64,7 @@ class CheckFavoriteProductPriceDropsTest extends TestCase
 
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 18.00]);
 
         FavoriteProduct::factory()->for($user)->create([

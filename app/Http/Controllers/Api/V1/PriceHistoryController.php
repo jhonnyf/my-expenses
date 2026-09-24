@@ -2,33 +2,35 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\PriceQueryRequest;
 use App\Services\PriceHistoryService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class PriceHistoryController extends Controller
 {
+    private const MIN_SEARCH_LENGTH = 2;
+
     public function __construct(private readonly PriceHistoryService $service) {}
 
-    public function search(Request $request): JsonResponse
+    public function search(PriceQueryRequest $request): JsonResponse
     {
-        $query = $request->input('q', '');
+        $query = $request->searchTerm();
 
-        if (strlen($query) < 2) {
+        if (mb_strlen($query) < self::MIN_SEARCH_LENGTH) {
             return $this->success([]);
         }
 
         return $this->success($this->service->search($query, $request->user()->id));
     }
 
-    public function timeline(Request $request): JsonResponse
+    public function timeline(PriceQueryRequest $request): JsonResponse
     {
-        $description = $request->input('description', '');
+        $description = $request->text('description');
 
-        if (empty($description)) {
+        if ($description === '') {
             return $this->success([]);
         }
 
-        return $this->success($this->service->getTimeline($description, $request->user()->id));
+        return $this->success($this->service->getTimeline($description, $request->user()->id, $request->unit()));
     }
 }

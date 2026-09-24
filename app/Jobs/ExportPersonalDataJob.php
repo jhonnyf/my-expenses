@@ -5,6 +5,9 @@ namespace App\Jobs;
 use App\Models\Budget;
 use App\Models\Category;
 use App\Models\FavoriteProduct;
+use App\Models\IssuerNickname;
+use App\Models\ProductAlias;
+use App\Models\RecurringDismissal;
 use App\Models\ReportSchedule;
 use App\Models\ShoppingList;
 use App\Models\User;
@@ -67,6 +70,7 @@ class ExportPersonalDataJob implements ShouldQueue
                 'cidade' => $user->profile?->cidade,
                 'estado' => $user->profile?->estado,
                 'termos_aceitos_em' => $user->terms_accepted_at?->toIso8601String(),
+                'versao_dos_termos' => $user->terms_version,
                 'membro_desde' => $user->created_at->toIso8601String(),
             ],
             'assinatura' => $user->subscription ? [
@@ -76,6 +80,7 @@ class ExportPersonalDataJob implements ShouldQueue
                 'expira_em' => $user->subscription->expires_at?->toIso8601String(),
             ] : null,
             'notas_fiscais' => $user->invoices->map(fn ($invoice) => [
+                'chave_acesso' => $invoice->access_key,
                 'numero' => $invoice->number,
                 'serie' => $invoice->series,
                 'status' => $invoice->status->value,
@@ -85,6 +90,7 @@ class ExportPersonalDataJob implements ShouldQueue
                 'itens' => $invoice->items->map(fn ($item) => [
                     'descricao' => $item->description,
                     'quantidade' => $item->quantity,
+                    'unidade' => $item->unit,
                     'valor_unitario' => $item->unit_price,
                     'valor_total' => $item->total_price,
                 ])->all(),
@@ -111,6 +117,11 @@ class ExportPersonalDataJob implements ShouldQueue
                     'itens' => $list->items->pluck('description')->all(),
                 ])->all(),
             'produtos_favoritos' => FavoriteProduct::where('user_id', $user->id)->pluck('canonical_name')->all(),
+            'apelidos_de_emitentes' => IssuerNickname::where('user_id', $user->id)->with('issuer:id,name')->get()
+                ->map(fn ($nickname) => ['emitente' => $nickname->issuer?->name, 'apelido' => $nickname->nickname])->all(),
+            'nomes_de_produtos' => ProductAlias::where('user_id', $user->id)->get(['description', 'canonical_name'])
+                ->map(fn ($alias) => ['descricao' => $alias->description, 'nome_padronizado' => $alias->canonical_name])->all(),
+            'produtos_ocultados_das_compras_recorrentes' => RecurringDismissal::where('user_id', $user->id)->pluck('description')->all(),
             'emitentes_favoritos' => $user->favoriteIssuers->pluck('name')->all(),
         ];
     }

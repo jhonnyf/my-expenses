@@ -24,10 +24,6 @@
       </div>
       <div class="flex items-center gap-1.5">
         <div class="text-lg leading-5 font-semibold text-mono">{{ $user->name }}</div>
-        <span class="kt-badge kt-badge-success kt-badge-sm">
-          <span class="size-1.5 rounded-full bg-current inline-block me-1"></span>
-          Ativo
-        </span>
         <span class="kt-badge kt-badge-sm {{ $user->isPro() ? 'kt-badge-success' : 'kt-badge-secondary' }}">
           {{ $user->isPro() ? 'Pro' : 'Grátis' }}
         </span>
@@ -40,7 +36,7 @@
         <div class="flex gap-1.25 items-center">
           <i class="ki-filled ki-calendar text-muted-foreground text-sm"></i>
           <span class="text-secondary-foreground font-medium">
-            Membro desde {{ ($memberSince ? \Carbon\Carbon::parse($memberSince) : $user->created_at)->translatedFormat('M/Y') }}
+            Membro desde {{ $user->created_at->translatedFormat('M/Y') }}
           </span>
         </div>
       </div>
@@ -108,10 +104,10 @@
                   <td class="text-sm text-secondary-foreground pb-3.5 pe-3 whitespace-nowrap">Email:</td>
                   <td class="text-sm text-mono pb-3.5 break-all">{{ $user->email }}</td>
                 </tr>
-                @if($user->profile?->cpf)
+                @if($user->profile?->maskedCpf())
                 <tr>
                   <td class="text-sm text-secondary-foreground pb-3.5 pe-3 whitespace-nowrap">CPF:</td>
-                  <td class="text-sm text-mono pb-3.5">{{ $user->profile->cpf }}</td>
+                  <td class="text-sm text-mono pb-3.5">{{ $user->profile->maskedCpf() }}</td>
                 </tr>
                 @endif
                 @if($user->profile?->cidade)
@@ -121,7 +117,7 @@
                 </tr>
                 @endif
                 <tr>
-                  @php $since = $memberSince ? \Carbon\Carbon::parse($memberSince) : $user->created_at; @endphp
+                  @php $since = $user->created_at; @endphp
                   <td class="text-sm text-secondary-foreground pb-3.5 pe-3 whitespace-nowrap">Membro desde:</td>
                   <td class="text-sm text-mono pb-3.5">{{ $since->format('d/m/Y') }}</td>
                 </tr>
@@ -144,7 +140,7 @@
                   </div>
                   <span class="text-sm text-secondary-foreground">Notas Fiscais</span>
                 </div>
-                <span class="text-sm font-bold text-mono tabular-nums">{{ number_format($totalInvoices) }}</span>
+                <span class="text-sm font-bold text-mono tabular-nums">{{ number_format($stats['total_invoices']) }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
@@ -153,7 +149,7 @@
                   </div>
                   <span class="text-sm text-secondary-foreground">Itens Comprados</span>
                 </div>
-                <span class="text-sm font-bold text-mono tabular-nums">{{ number_format($totalItems) }}</span>
+                <span class="text-sm font-bold text-mono tabular-nums">{{ number_format($stats['total_items']) }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
@@ -162,7 +158,7 @@
                   </div>
                   <span class="text-sm text-secondary-foreground">Total Gasto</span>
                 </div>
-                <span class="text-sm font-bold text-mono tabular-nums">R$ {{ number_format($totalSpent, 2, ',', '.') }}</span>
+                <span class="text-sm font-bold text-mono tabular-nums">R$ {{ number_format($stats['total_spent'], 2, ',', '.') }}</span>
               </div>
             </div>
           </div>
@@ -173,6 +169,12 @@
 
     {{-- === COLUNA DIREITA (2 colunas) === --}}
     <div class="col-span-2">
+      @if(session('success'))
+        <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5 lg:mb-7.5" role="status">
+          <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+          <span class="text-sm text-green-600 font-medium">{{ session('success') }}</span>
+        </div>
+      @endif
 
       {{-- TAB: Visão Geral --}}
       <div id="tab_overview">
@@ -207,104 +209,61 @@
         </div>
         @endif
 
-        {{-- Card boas-vindas --}}
+        {{-- Card: Plano --}}
+        @php $subscription = $user->subscription; @endphp
         <div class="kt-card mb-5 lg:mb-7.5">
-          <div class="kt-card-content px-8 py-7.5">
-            <div class="flex flex-wrap md:flex-nowrap items-center gap-6">
-              <div class="flex flex-col gap-3">
-                <h2 class="text-xl font-semibold text-mono">Bem-vindo, {{ $user->name }}!</h2>
-                <p class="text-sm text-secondary-foreground leading-5.5">
-                  Gerencie suas informações pessoais, segurança e visualize o resumo das suas compras.
-                </p>
+          <div class="kt-card-header">
+            <h3 class="kt-card-title">Meu plano</h3>
+          </div>
+          <div class="kt-card-content p-6">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+              <div class="flex flex-col gap-1">
+                <span class="text-sm font-medium text-foreground">
+                  {{ $user->isPro() ? 'Plano Pro' : 'Plano Grátis' }}
+                </span>
+                <span class="text-xs text-secondary-foreground">
+                  @if($user->isPro() && $subscription?->expires_at)
+                    Ativo até {{ $subscription->expires_at->format('d/m/Y') }}.
+                  @elseif($user->isPro())
+                    Ativo, sem data de expiração.
+                  @else
+                    Recursos Pro: comparativo de preços, compras recorrentes, relatórios agendados e categorização com IA.
+                  @endif
+                </span>
               </div>
+              @unless($user->isPro())
+                <a href="{{ route('subscription.upgrade') }}" class="kt-btn kt-btn-primary kt-btn-sm">
+                  <i class="ki-filled ki-crown"></i> Conhecer o Pro
+                </a>
+              @endunless
             </div>
           </div>
         </div>
 
-        {{-- Últimas compras --}}
+        {{-- Card: Privacidade --}}
         <div class="kt-card">
           <div class="kt-card-header">
-            <h3 class="kt-card-title">Últimas Compras</h3>
-            <div class="kt-card-toolbar">
-              <a href="{{ route('my-purchases.index') }}" class="kt-btn kt-btn-secondary kt-btn-sm">Ver todas</a>
+            <h3 class="kt-card-title">Privacidade</h3>
+          </div>
+          <div class="kt-card-content p-6 flex flex-col gap-3">
+            <p class="text-sm text-secondary-foreground">
+              @if($user->terms_accepted_at)
+                Você aceitou os Termos de Uso e a Política de Privacidade (versão {{ $user->terms_version }}) em {{ $user->terms_accepted_at->format('d/m/Y') }}.
+              @else
+                Você ainda não aceitou a versão atual dos Termos de Uso.
+              @endif
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <a href="{{ route('legal.terms') }}" class="kt-btn kt-btn-outline kt-btn-sm" target="_blank" rel="noopener">Termos de Uso</a>
+              <a href="{{ route('legal.privacy') }}" class="kt-btn kt-btn-outline kt-btn-sm" target="_blank" rel="noopener">Política de Privacidade</a>
+              <button type="button" class="kt-btn kt-btn-ghost kt-btn-sm" data-open-tab="security">Exportar ou excluir meus dados</button>
             </div>
           </div>
-          <div class="kt-card-content">
-            @if($recentInvoices->isNotEmpty())
-              <div class="kt-scrollable-x-auto">
-                <table class="kt-table table-auto kt-table-border w-full">
-                  <thead>
-                    <tr>
-                      <th class="text-start text-xs font-semibold text-secondary-foreground uppercase tracking-wide">Data</th>
-                      <th class="text-start text-xs font-semibold text-secondary-foreground uppercase tracking-wide">Emissor</th>
-                      <th class="text-end text-xs font-semibold text-secondary-foreground uppercase tracking-wide">Valor</th>
-                      <th class="text-end text-xs font-semibold text-secondary-foreground uppercase tracking-wide"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @foreach($recentInvoices as $invoice)
-                    <tr class="transition-colors duration-150 hover:bg-accent/60">
-                      <td>
-                        <div class="flex flex-col gap-0.5">
-                          <span class="text-sm font-medium text-foreground tabular-nums">{{ $invoice->issued_at->format('d/m/Y') }}</span>
-                          <span class="text-xs text-secondary-foreground tabular-nums">{{ $invoice->issued_at->format('H:i') }}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="flex items-center gap-2.5 min-w-0">
-                          <div class="flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
-                            <i class="ki-filled ki-shop text-primary text-sm"></i>
-                          </div>
-                          <span class="text-sm text-foreground truncate max-w-[180px]">{{ $invoice->issuer?->display_name ?? '—' }}</span>
-                        </div>
-                      </td>
-                      <td class="text-end">
-                        <span class="text-sm font-semibold text-foreground tabular-nums">R$ {{ number_format($invoice->total_amount, 2, ',', '.') }}</span>
-                      </td>
-                      <td class="text-end">
-                        <a href="{{ route('my-purchases.detail', ['invoice' => $invoice->id]) }}" class="kt-btn kt-btn-icon kt-btn-ghost kt-btn-sm" title="Ver detalhes">
-                          <i class="ki-filled ki-eye text-sm"></i>
-                        </a>
-                      </td>
-                    </tr>
-                    @endforeach
-                  </tbody>
-                </table>
-              </div>
-            @else
-              <div class="flex flex-col items-center justify-center py-12 text-center">
-                <div class="flex items-center justify-center size-14 rounded-xl bg-secondary/50 mb-4">
-                  <i class="ki-filled ki-document text-secondary-foreground text-2xl"></i>
-                </div>
-                <p class="text-sm font-medium text-foreground mb-1">Nenhuma compra encontrada</p>
-                <p class="text-xs text-secondary-foreground mb-4">Importe sua primeira NF-e para começar.</p>
-                <a href="{{ route('my-purchases.upload.form') }}" class="kt-btn kt-btn-primary kt-btn-sm">
-                  <i class="ki-filled ki-file-up text-sm"></i>
-                  Importar NF-e
-                </a>
-              </div>
-            @endif
-          </div>
         </div>
-
       </div>
 
       {{-- TAB: Configurações --}}
       <div id="tab_settings" class="hidden">
-
-        @if(session('success'))
-          <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5">
-            <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
-            <span class="text-sm text-green-600 font-medium">{{ session('success') }}</span>
-          </div>
-        @endif
-
-        @if(session('success_avatar'))
-          <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5">
-            <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
-            <span class="text-sm text-green-600 font-medium">{{ session('success_avatar') }}</span>
-          </div>
-        @endif
 
         {{-- Card: Foto de Perfil --}}
         <div class="kt-card mb-5 lg:mb-7.5">
@@ -354,6 +313,7 @@
             <form method="POST" action="{{ route('account.update') }}" class="kt-form max-w-lg">
               @csrf
               @method('PATCH')
+              <input type="hidden" name="_form" value="account">
               <div class="space-y-4">
                 <div class="kt-form-item">
                   <label class="kt-form-label" for="name">Nome completo</label>
@@ -381,6 +341,7 @@
                       name="email"
                       class="kt-input @error('email') border-destructive @enderror"
                       value="{{ old('email', $user->email) }}"
+                      data-original="{{ $user->email }}"
                       placeholder="seu@email.com"
                       autocomplete="email"
                     />
@@ -389,6 +350,22 @@
                     <div class="kt-form-message text-destructive">{{ $message }}</div>
                   @enderror
                 </div>
+                @if($user->password !== null)
+                  <div class="kt-form-item {{ old('_form') === 'account' && $errors->has('current_password') ? '' : 'hidden' }}" id="email_password_field">
+                    <label class="kt-form-label" for="email_current_password">Senha atual</label>
+                    <div class="kt-form-control">
+                      <input type="password" id="email_current_password" name="current_password"
+                             class="kt-input @if(old('_form') === 'account' && $errors->has('current_password')) border-destructive @endif"
+                             placeholder="Necessária para trocar o e-mail" autocomplete="current-password" />
+                    </div>
+                    @if(old('_form') === 'account')
+                      @error('current_password')
+                        <div class="kt-form-message text-destructive">{{ $message }}</div>
+                      @enderror
+                    @endif
+                    <p class="text-xs text-secondary-foreground mt-1">Ao trocar o e-mail, você vai precisar confirmá-lo de novo.</p>
+                  </div>
+                @endif
                 <div class="flex gap-3">
                   <div class="kt-form-item grow">
                     <label class="kt-form-label" for="cidade">Cidade <span class="text-muted-foreground font-normal">(opcional)</span></label>
@@ -449,20 +426,6 @@
       {{-- TAB: Segurança --}}
       <div id="tab_security" class="hidden">
 
-        @if(session('success_password'))
-          <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5">
-            <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
-            <span class="text-sm text-green-600 font-medium">{{ session('success_password') }}</span>
-          </div>
-        @endif
-
-        @if(session('success_export'))
-          <div class="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 mb-5">
-            <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
-            <span class="text-sm text-green-600 font-medium">{{ session('success_export') }}</span>
-          </div>
-        @endif
-
         <div class="kt-card mb-5 lg:mb-7.5">
           <div class="kt-card-header">
             <h3 class="kt-card-title">Meus Dados</h3>
@@ -488,14 +451,22 @@
 
         <div class="kt-card">
           <div class="kt-card-header">
-            <h3 class="kt-card-title">Alterar Senha</h3>
+            <h3 class="kt-card-title">{{ $user->password === null ? 'Definir senha' : 'Alterar senha' }}</h3>
           </div>
           <div class="kt-card-content p-6">
-            <p class="text-xs text-secondary-foreground mb-5">Use uma senha forte com no mínimo 8 caracteres.</p>
+            <p class="text-xs text-secondary-foreground mb-5">
+              @if($user->password === null)
+                Você entrou com uma conta social e ainda não tem senha. Defina uma para também entrar com e-mail e senha.
+              @else
+                Use uma senha forte com no mínimo 8 caracteres. Ao trocar, os outros dispositivos serão desconectados.
+              @endif
+            </p>
             <form method="POST" action="{{ route('account.password') }}" class="kt-form max-w-lg">
               @csrf
               @method('PATCH')
+              <input type="hidden" name="_form" value="password">
               <div class="space-y-4">
+                @if($user->password !== null)
                 <div class="kt-form-item">
                   <label class="kt-form-label" for="current_password">Senha atual</label>
                   <div class="kt-form-control">
@@ -503,15 +474,18 @@
                       type="password"
                       id="current_password"
                       name="current_password"
-                      class="kt-input @error('current_password') border-destructive @enderror"
+                      class="kt-input @if(old('_form') === 'password') @error('current_password') border-destructive @enderror @endif"
                       placeholder="Digite sua senha atual"
                       autocomplete="current-password"
                     />
                   </div>
+                  @if(old('_form') === 'password')
                   @error('current_password')
                     <div class="kt-form-message text-destructive">{{ $message }}</div>
                   @enderror
+                  @endif
                 </div>
+                @endif
                 <div class="kt-form-item">
                   <label class="kt-form-label" for="password">Nova senha</label>
                   <div class="kt-form-control">
@@ -549,6 +523,26 @@
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+
+        {{-- Card: Sessões --}}
+        <div class="kt-card mt-5 lg:mt-7.5">
+          <div class="kt-card-header">
+            <h3 class="kt-card-title">Dispositivos conectados</h3>
+          </div>
+          <div class="kt-card-content p-6">
+            <div class="flex items-center justify-between gap-4 flex-wrap">
+              <p class="text-sm text-secondary-foreground max-w-md">
+                Desconecte todos os outros navegadores e o aplicativo do celular. Esta sessão continua ativa.
+              </p>
+              <form method="POST" action="{{ route('account.sessions.revoke-others') }}" class="shrink-0">
+                @csrf
+                <button type="submit" class="kt-btn kt-btn-outline kt-btn-sm">
+                  <i class="ki-filled ki-exit-right"></i> Sair dos outros dispositivos
+                </button>
+              </form>
+            </div>
           </div>
         </div>
 
@@ -590,10 +584,13 @@
     <form method="POST" action="{{ route('account.destroy') }}">
       @csrf
       @method('DELETE')
+      <input type="hidden" name="_form" value="delete">
       <div class="kt-modal-body flex flex-col gap-3">
         <p class="text-sm text-secondary-foreground">
-          Esta ação é permanente. Seu perfil, foto, categorias, listas e assinatura serão apagados. Confirme sua senha atual para continuar.
+          Esta ação é permanente. Seu perfil, foto, categorias, listas e assinatura serão apagados.
+          @if($user->password !== null) Confirme sua senha atual para continuar. @endif
         </p>
+        @if($user->password !== null)
         <div class="kt-form-item">
           <label class="kt-form-label" for="delete_current_password">Senha atual</label>
           <div class="kt-form-control">
@@ -601,15 +598,18 @@
               type="password"
               id="delete_current_password"
               name="current_password"
-              class="kt-input @error('current_password') border-destructive @enderror"
+              class="kt-input @if(old('_form') === 'delete') @error('current_password') border-destructive @enderror @endif"
               placeholder="Digite sua senha atual"
               autocomplete="current-password"
             />
           </div>
+          @if(old('_form') === 'delete')
           @error('current_password')
             <div class="kt-form-message text-destructive">{{ $message }}</div>
           @enderror
+          @endif
         </div>
+        @endif
       </div>
       <div class="kt-modal-footer">
         <button type="button" class="kt-btn kt-btn-secondary" data-kt-modal-dismiss="#deleteAccountModal">Cancelar</button>
@@ -622,13 +622,14 @@
 @endsection
 
 @push('scripts')
+@php
+    $initialTab = request('tab')
+        ?? (in_array(old('_form'), ['password', 'delete'], true) ? 'security' : (old('_form') === 'account' || $errors->has('avatar') ? 'settings' : null));
+@endphp
 <script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
-        openTab: @if($errors->has('current_password') || $errors->has('password') || session('success_password') || session('success_export')) 'security'
-                 @elseif($errors->has('name') || $errors->has('email') || $errors->has('avatar') || session('success') || session('success_avatar')) 'settings'
-                 @else null
-                 @endif,
-        openDeleteAccountModal: @json(old('_method') === 'DELETE' && $errors->has('current_password')),
+        openTab: @json($initialTab),
+        openDeleteAccountModal: @json(old('_form') === 'delete' && $errors->has('current_password')),
     });
 </script>
 @endpush

@@ -47,7 +47,7 @@ class FavoriteProductControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 20.00]);
 
         FavoriteProduct::factory()->for($user)->create(['canonical_name' => 'ARROZ BRANCO 5KG']);

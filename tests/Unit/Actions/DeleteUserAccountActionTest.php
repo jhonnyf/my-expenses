@@ -44,7 +44,7 @@ class DeleteUserAccountActionTest extends TestCase
 
         $subscriptionId = $user->subscription->id;
 
-        (new DeleteUserAccountAction)->execute($user);
+        app(DeleteUserAccountAction::class)->execute($user);
 
         $this->assertModelMissing($user);
         $this->assertModelMissing($profile);

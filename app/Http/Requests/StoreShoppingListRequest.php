@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\Concerns\FailsAsJson;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateShoppingListRequest extends FormRequest
+class StoreShoppingListRequest extends FormRequest
 {
     use FailsAsJson;
 
@@ -17,7 +17,12 @@ class UpdateShoppingListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return ['name.max' => 'O nome da lista pode ter no máximo :max caracteres.'];
     }
 }

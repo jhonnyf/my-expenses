@@ -14,21 +14,23 @@ class UpdateUserLocationAction
 {
     public function execute(User $user, ?string $cidade, ?string $estado): void
     {
-        if ($cidade === null && $estado === null) {
-            return;
-        }
-
         $profile = $user->profile;
-        $changed = ! $profile || $profile->cidade !== $cidade || $profile->estado !== $estado;
+        $changed = $profile
+            ? $profile->cidade !== $cidade || $profile->estado !== $estado
+            : $cidade !== null || $estado !== null;
 
         if (! $changed) {
             return;
         }
 
-        $profile = $user->profile()->updateOrCreate([], [
-            'cidade' => $cidade,
-            'estado' => $estado,
-        ]);
+        $attributes = ['cidade' => $cidade, 'estado' => $estado];
+
+        // Sem cidade/estado completos as coordenadas antigas deixam de valer (e limpar o campo apaga o dado).
+        if (! $cidade || ! $estado) {
+            $attributes += ['latitude' => null, 'longitude' => null];
+        }
+
+        $profile = $user->profile()->updateOrCreate([], $attributes);
 
         // updateOrCreate() não atualiza a relação já carregada em cache no model —
         // sem isso, quem já leu $user->profile antes (ex: UserResource) veria o valor antigo.

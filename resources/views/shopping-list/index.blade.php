@@ -24,6 +24,11 @@
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            <div id="pageFlash" role="status" class="hidden items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+                <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+                <span class="text-sm text-green-600 font-medium" data-flash-text></span>
+            </div>
+
             <div class="grid lg:grid-cols-3 gap-5 lg:gap-7.5">
 
                 {{-- Coluna principal --}}
@@ -111,7 +116,7 @@
                             <div id="searchResults" class="hidden mt-3">
                                 <div class="border border-border rounded-lg overflow-hidden">
                                     <div class="bg-accent/40 px-4 py-2 text-xs font-semibold text-secondary-foreground uppercase tracking-wide">
-                                        Resultados — menor preço
+                                        Preços mais recentes · do menor para o maior
                                     </div>
                                     <div id="resultsList" class="divide-y divide-border max-h-80 overflow-y-auto"></div>
                                 </div>
@@ -162,6 +167,28 @@
                                     <span id="summaryProgressLabel" class="text-xs text-secondary-foreground">0 de 0 itens comprados</span>
                                     <span id="summaryProgressPct" class="text-xs font-semibold text-secondary-foreground tabular-nums">0%</span>
                                 </div>
+
+                                <div id="savingsBox" class="hidden mt-3 rounded-xl bg-green-500/10 px-3 py-2 text-xs text-green-700"></div>
+
+                                <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-action="refresh-prices"
+                                            title="Repõe o preço dos itens com o da compra mais recente no mesmo mercado">
+                                        <i class="ki-filled ki-arrows-circle"></i> Atualizar preços
+                                    </button>
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-action="show-savings"
+                                            title="Mostra onde os itens saem mais baratos perto de você">
+                                        <i class="ki-filled ki-discount"></i> Ver economia
+                                    </button>
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-action="share-list">
+                                        <i class="ki-filled ki-share"></i> Compartilhar
+                                    </button>
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-action="duplicate-list">
+                                        <i class="ki-filled ki-copy"></i> Duplicar
+                                    </button>
+                                    <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-action="purchase-all">
+                                        <i class="ki-filled ki-check-circle"></i> Marcar tudo como comprado
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -188,17 +215,20 @@
                                             <i class="ki-filled ki-basket text-sm"></i>
                                         </div>
                                         <button data-load-list="{{ $list->id }}" class="flex-1 text-left min-w-0">
-                                            <p class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                                                {{ $list->name }}
-                                            </p>
-                                            <p class="text-xs text-secondary-foreground">
+                                            <p class="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors" data-list-name>{{ $list->name }}</p>
+                                            <p class="text-xs text-secondary-foreground" data-list-meta>
                                                 {{ $list->items_count }} {{ $list->items_count === 1 ? 'item' : 'itens' }}
                                                 &middot; R$ {{ number_format($list->items_total ?? 0, 2, ',', '.') }}
                                                 &middot; {{ $list->updated_at->format('d/m/Y') }}
                                             </p>
+                                            <div class="kt-progress h-1 mt-1.5 {{ $list->items_count > 0 ? '' : 'hidden' }}" data-list-progress-track>
+                                                <div class="kt-progress-indicator" data-list-progress
+                                                     style="width: {{ $list->items_count > 0 ? round($list->purchased_count / $list->items_count * 100) : 0 }}%"></div>
+                                            </div>
                                         </button>
-                                        <button data-delete-list="{{ $list->id }}"
-                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive shrink-0">
+                                        <button data-delete-list="{{ $list->id }}" data-list-name="{{ $list->name }}"
+                                                data-kt-modal-toggle="#deleteListModal"
+                                                class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-destructive transition-all" title="Excluir lista">
                                             <i class="ki-filled ki-trash text-sm"></i>
                                         </button>
                                     </div>
@@ -221,6 +251,7 @@
 
     @include('shopping-list._directions-modal')
     @include('shopping-list._location-modal')
+    @include('shopping-list._delete-modal')
 
 @endsection
 
@@ -229,6 +260,7 @@
     window.pageConfig = Object.assign(window.pageConfig || {}, {
         baseUrl: '{{ url("shopping-list") }}',
         searchUrl: '{{ route("shopping-list.search") }}',
+        freshDays: {{ \App\Services\ShoppingListService::FRESH_DAYS }},
     });
 </script>
 @endpush

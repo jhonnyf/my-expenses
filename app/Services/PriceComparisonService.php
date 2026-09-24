@@ -3,33 +3,43 @@
 namespace App\Services;
 
 use App\Models\InvoiceItem;
+use App\Support\DistanceCalculator;
 use App\Support\FullTextQuery;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Ranking de "onde está mais barato" — reaproveita a mesma agregação cross-user
- * já usada na Lista de Compras (App\Services\ShoppingListService), mas agrupada
- * por cidade ou por emitente em vez de por item individual. Sempre retorna
- * MIN/AVG agregados, nunca expõe qual usuário originou qual preço.
+ * Ranking de "onde está mais barato" — reaproveita a agregação cross-user da Lista de Compras
+ * (App\Services\ShoppingListService), agrupada por cidade ou por emitente. Nunca expõe qual usuário
+ * originou qual preço.
  *
- * O fluxo é sempre em duas etapas: primeiro searchProducts() (busca difusa, só
- * pra listar candidatos), depois o cliente escolhe UM produto específico e os
- * demais métodos (byCity/byIssuer/cheapestOffer) usam esse nome por igualdade
- * exata — evita misturar produtos parecidos (ex: "arroz branco" e "arroz
- * integral") na mesma agregação.
+ * O preço que vale é o ATUAL: a compra mais recente do produto em cada mercado. Compra mais recente com
+ * mais de FRESH_DAYS é "antiga" (`is_stale`) e o mercado/cidade vem depois dos atuais. `min_price`, `avg_price`
+ * e `sample_count` continuam como referência histórica. Preço zero (brinde, linha de desconto) não conta.
+ *
+ * O fluxo é em duas etapas: searchProducts() (busca difusa, só para listar candidatos) e, escolhido UM produto,
+ * os demais métodos usam o nome por igualdade — evita misturar "arroz branco" e "arroz integral". Produtos
+ * vendidos em unidades diferentes (KG, UN) não se comparam: `units()` lista as unidades e `$unit` filtra.
  */
 class PriceComparisonService
 {
+    public const FRESH_DAYS = ShoppingListService::FRESH_DAYS;
+
+    private const LIMIT = 20;
+
     public function __construct(private readonly ProductAliasService $aliasService) {}
 
     /**
-     * Lista de produtos candidatos (nome canônico + quantas amostras existem),
-     * cross-user, pra alimentar o seletor de produto na tela.
+     * Produtos candidatos (nome canônico, amostras, menor preço atual) para o seletor da tela.
      */
     public function searchProducts(string $query, int $userId): Collection
     {
-        $itemsQuery = $this->joinedQuery($userId);
+        $itemsQuery = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
+            ->where('invoices_items.unit_price', '>', 0);
+        $this->aliasService->joinCanonicalNames($itemsQuery, $userId);
         $nameSql = $this->aliasService->canonicalNameSql();
 
         FullTextQuery::applyOr($itemsQuery, $query, ['invoices_items.description', 'product_aliases.canonical_name']);
@@ -38,99 +48,188 @@ class PriceComparisonService
             ->selectRaw("{$nameSql} as name")
             ->selectRaw('COUNT(*) as sample_count')
             ->selectRaw('MIN(invoices_items.unit_price) as min_price')
+            ->selectRaw('MIN(CASE WHEN invoices.issued_at >= ? THEN invoices_items.unit_price END) as current_min_price', [$this->cutoff()->toDateTimeString()])
+            ->selectRaw('MAX(invoices.issued_at) as last_purchased_at')
             ->groupBy(DB::raw($nameSql))
             ->orderByDesc('sample_count')
-            ->limit(20)
+            ->limit(self::LIMIT)
             ->get();
     }
 
     /**
-     * Ranking de cidades mais baratas para o produto (nome exato) escolhido.
+     * Unidades em que o produto foi vendido, da mais comum para a menos comum.
+     *
+     * @return Collection<int, object{unit: string, sample_count: int}>
      */
-    public function byCity(string $productName, int $userId): Collection
+    public function units(string $productName, int $userId): Collection
     {
-        $itemsQuery = $this->exactMatchQuery($productName, $userId)
-            ->whereNotNull('issuers.city')
-            ->where('issuers.city', '!=', '')
-            ->whereNotNull('issuers.state')
-            ->where('issuers.state', '!=', '');
+        return $this->productBase($productName, $userId, null)
+            ->selectRaw("COALESCE(invoices_items.unit, '') as unit")
+            ->selectRaw('COUNT(*) as sample_count')
+            ->groupBy(DB::raw("COALESCE(invoices_items.unit, '')"))
+            ->orderByDesc('sample_count')
+            ->get()
+            ->map(fn ($row) => (object) ['unit' => (string) $row->unit, 'sample_count' => (int) $row->sample_count]);
+    }
 
-        return $itemsQuery
+    /**
+     * Ranking de cidades para o produto: menor preço ATUAL entre os mercados da cidade (atuais primeiro).
+     *
+     * @return Collection<int, object>
+     */
+    public function byCity(string $productName, int $userId, ?string $unit = null, ?string $userCity = null, ?string $userState = null): Collection
+    {
+        $latest = $this->latestPerIssuer($productName, $userId, $unit)
+            ->filter(fn ($row) => filled($row->city) && filled($row->state));
+
+        $history = $this->productBase($productName, $userId, $unit)
+            ->whereNotNull('issuers.city')->where('issuers.city', '!=', '')
+            ->whereNotNull('issuers.state')->where('issuers.state', '!=', '')
             ->select('issuers.city', 'issuers.state')
             ->selectRaw('MIN(invoices_items.unit_price) as min_price')
             ->selectRaw('AVG(invoices_items.unit_price) as avg_price')
             ->selectRaw('COUNT(*) as sample_count')
             ->groupBy('issuers.city', 'issuers.state')
-            ->orderBy('min_price')
-            ->limit(20)
-            ->get();
+            ->get()
+            ->keyBy(fn ($row) => $row->city.'|'.$row->state);
+
+        return $latest
+            ->groupBy(fn ($row) => $row->city.'|'.$row->state)
+            ->map(function (Collection $issuers, string $key) use ($history, $userCity, $userState) {
+                // Preço atual mais baixo da cidade; sem nenhum atual, o mais baixo dos antigos.
+                $best = $issuers->sortBy([['is_stale', 'asc'], ['price', 'asc']])->first();
+                $stats = $history[$key];
+
+                return (object) [
+                    'city' => $best->city,
+                    'state' => $best->state,
+                    'price' => $best->price,
+                    'issued_at' => $best->issued_at,
+                    'is_stale' => $best->is_stale,
+                    'cheapest_issuer_name' => $best->issuer_name,
+                    'issuer_count' => $issuers->count(),
+                    'min_price' => (float) $stats->min_price,
+                    'avg_price' => (float) $stats->avg_price,
+                    'sample_count' => (int) $stats->sample_count,
+                    'is_user_city' => $userCity !== null && mb_strtolower($best->city) === mb_strtolower($userCity)
+                        && mb_strtolower((string) $best->state) === mb_strtolower((string) $userState),
+                ];
+            })
+            ->sortBy([['is_stale', 'asc'], ['price', 'asc']])
+            ->take(self::LIMIT)
+            ->values();
     }
 
     /**
-     * Ranking de emitentes (mercados) mais baratos dentro de uma cidade/estado,
-     * para o produto (nome exato) escolhido.
+     * Ranking de mercados dentro de uma cidade: preço ATUAL (compra mais recente) de cada um, atuais primeiro do
+     * menor ao maior. Com as coordenadas do usuário (MySQL), traz também `distance_km`.
+     *
+     * @return Collection<int, object>
      */
-    public function byIssuer(string $productName, string $city, string $state, int $userId): Collection
+    public function byIssuer(string $productName, string $city, string $state, int $userId, ?string $unit = null, ?float $latitude = null, ?float $longitude = null): Collection
     {
-        $itemsQuery = $this->exactMatchQuery($productName, $userId)
-            ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
-                $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
-                    ->where('issuer_nicknames.user_id', '=', $userId);
-            })
-            ->where('issuers.city', $city)
-            ->where('issuers.state', $state);
+        $latest = $this->latestPerIssuer($productName, $userId, $unit, $city, $state, $latitude, $longitude);
 
-        return $itemsQuery
+        $history = $this->productBase($productName, $userId, $unit)
+            ->where('issuers.city', $city)->where('issuers.state', $state)
             ->select('issuers.id as issuer_id')
-            ->selectRaw('COALESCE(issuer_nicknames.nickname, issuers.name) as issuer_name')
             ->selectRaw('MIN(invoices_items.unit_price) as min_price')
             ->selectRaw('AVG(invoices_items.unit_price) as avg_price')
             ->selectRaw('COUNT(*) as sample_count')
-            ->groupBy('issuers.id', 'issuer_nicknames.nickname', 'issuers.name')
-            ->orderBy('min_price')
-            ->limit(20)
-            ->get();
+            ->groupBy('issuers.id')
+            ->get()
+            ->keyBy('issuer_id');
+
+        return $latest
+            ->map(fn ($row) => (object) [
+                'issuer_id' => (int) $row->issuer_id,
+                'issuer_name' => $row->issuer_name,
+                'price' => $row->price,
+                'unit' => $row->unit,
+                'issued_at' => $row->issued_at,
+                'is_stale' => $row->is_stale,
+                'distance_km' => isset($row->distance_km) ? round((float) $row->distance_km, 1) : null,
+                'min_price' => (float) $history[$row->issuer_id]->min_price,
+                'avg_price' => (float) $history[$row->issuer_id]->avg_price,
+                'sample_count' => (int) $history[$row->issuer_id]->sample_count,
+            ])
+            ->sortBy([['is_stale', 'asc'], ['price', 'asc']])
+            ->take(self::LIMIT)
+            ->values();
     }
 
     /**
-     * Menor oferta vigente pra um produto (nome exato) — preço + emitente/cidade,
-     * considerando qualquer emitente (não restrito a issuers com city/state
-     * preenchido) — usado pelo alerta de queda de preço de produtos favoritos.
+     * Menor oferta ATUAL (compra mais recente de cada mercado, dentro de FRESH_DAYS) do produto — usada pelo alerta
+     * de queda de preço dos favoritos. Sem nenhuma compra recente, não há oferta (null): o alerta não dispara com
+     * preço velho.
      *
      * @return array{price: float, issuer_name: string, city: string, state: string}|null
      */
     public function cheapestOffer(string $productName, int $userId): ?array
     {
-        $row = $this->exactMatchQuery($productName, $userId)
-            ->select('invoices_items.unit_price', 'issuers.name as issuer_name', 'issuers.city', 'issuers.state')
-            ->orderBy('invoices_items.unit_price')
+        $best = $this->latestPerIssuer($productName, $userId, null)
+            ->reject(fn ($row) => $row->is_stale)
+            ->sortBy('price')
             ->first();
 
-        if ($row === null) {
+        if ($best === null) {
             return null;
         }
 
         return [
-            'price' => (float) $row->unit_price,
-            'issuer_name' => $row->issuer_name,
-            'city' => (string) $row->city,
-            'state' => (string) $row->state,
+            'price' => $best->price,
+            'issuer_name' => $best->issuer_name,
+            'city' => (string) $best->city,
+            'state' => (string) $best->state,
         ];
     }
 
-    private function joinedQuery(int $userId)
+    private function cutoff(): Carbon
     {
-        $itemsQuery = InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
-            ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id');
-        $this->aliasService->joinCanonicalNames($itemsQuery, $userId);
-
-        return $itemsQuery;
+        return Carbon::now()->subDays(self::FRESH_DAYS);
     }
 
-    private function exactMatchQuery(string $productName, int $userId)
+    /**
+     * Itens do produto (nome exato para este usuário) de qualquer usuário, com preço válido. Igualdade sobre a
+     * descrição original (indexada); ver ProductAliasService::descriptionsFor().
+     */
+    private function productBase(string $productName, int $userId, ?string $unit): Builder
     {
-        $nameSql = $this->aliasService->canonicalNameSql();
+        return InvoiceItem::join('invoices', 'invoices.id', '=', 'invoices_items.invoice_id')
+            ->join('issuers', 'issuers.id', '=', 'invoices.issuer_id')
+            ->whereIn('invoices_items.description', $this->aliasService->descriptionsFor($productName, $userId))
+            ->where('invoices_items.unit_price', '>', 0)
+            ->when(filled($unit), fn ($query) => $query->where('invoices_items.unit', $unit));
+    }
 
-        return $this->joinedQuery($userId)->whereRaw("{$nameSql} = ?", [$productName]);
+    /**
+     * A compra mais recente do produto em cada mercado (opcionalmente numa cidade), com `is_stale`.
+     *
+     * @return Collection<int, InvoiceItem>
+     */
+    private function latestPerIssuer(string $productName, int $userId, ?string $unit, ?string $city = null, ?string $state = null, ?float $latitude = null, ?float $longitude = null): Collection
+    {
+        $inner = $this->productBase($productName, $userId, $unit)
+            ->leftJoin('issuer_nicknames', function ($join) use ($userId) {
+                $join->on('issuer_nicknames.issuer_id', '=', 'issuers.id')
+                    ->where('issuer_nicknames.user_id', '=', $userId);
+            })
+            ->when($city !== null && $state !== null, fn ($query) => $query->where('issuers.city', $city)->where('issuers.state', $state))
+            ->select('issuers.id as issuer_id', 'issuers.city', 'issuers.state', 'invoices_items.unit', 'invoices.issued_at')
+            ->selectRaw('invoices_items.unit_price as price')
+            ->selectRaw('COALESCE(issuer_nicknames.nickname, issuers.name) as issuer_name')
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY issuers.id ORDER BY invoices.issued_at DESC, invoices_items.id DESC) as rn');
+
+        if ($latitude !== null && $longitude !== null && DistanceCalculator::isMySql()) {
+            $inner->selectRaw(DistanceCalculator::mysqlHaversineExpression('issuers.latitude', 'issuers.longitude', $latitude, $longitude).' as distance_km');
+        }
+
+        $cutoff = $this->cutoff();
+
+        return InvoiceItem::query()->fromSub($inner, 'latest')->where('rn', 1)->get()
+            ->each(function ($row) use ($cutoff) {
+                $row->price = (float) $row->price;
+                $row->is_stale = Carbon::parse($row->issued_at)->lt($cutoff);
+            });
     }
 }

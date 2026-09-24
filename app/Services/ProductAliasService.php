@@ -84,6 +84,25 @@ class ProductAliasService
         });
     }
 
+    /**
+     * Descrições originais (das notas, de qualquer usuário) que valem como o produto `$productName` para este usuário:
+     * as que ele unificou sob esse nome e o próprio nome, salvo se ele o unificou sob outro. Igualdade direta sobre
+     * a descrição (usa índice) no lugar de COALESCE(apelido, descrição) = nome, que varre a tabela toda.
+     *
+     * @return list<string>
+     */
+    public function descriptionsFor(string $productName, int $userId): array
+    {
+        $aliased = ProductAlias::where('user_id', $userId)->where('canonical_name', $productName)->pluck('description')->all();
+
+        $movedAway = ProductAlias::where('user_id', $userId)
+            ->where('description', $productName)
+            ->where('canonical_name', '!=', $productName)
+            ->exists();
+
+        return array_values(array_unique([...$aliased, ...($movedAway ? [] : [$productName])]));
+    }
+
     public function setAlias(int $userId, string $description, ?string $canonicalName): ?ProductAlias
     {
         $canonicalName = trim((string) $canonicalName);

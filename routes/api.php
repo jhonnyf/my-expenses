@@ -114,6 +114,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Comparativo de preços por cidade/mercado — exclusivo do plano Pro
             Route::prefix('price-comparison')->name('price-comparison.')->middleware('pro')->group(function () {
                 Route::get('search-products', [PriceComparisonController::class, 'searchProducts'])->name('search-products');
+                Route::get('units', [PriceComparisonController::class, 'units'])->name('units');
                 Route::get('by-city', [PriceComparisonController::class, 'byCity'])->name('by-city');
                 Route::get('by-issuer', [PriceComparisonController::class, 'byIssuer'])->name('by-issuer');
             });
@@ -135,6 +136,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::prefix('recurring-purchases')->name('recurring-purchases.')->middleware('pro')->group(function () {
                 Route::get('/', [RecurringPurchaseController::class, 'index'])->name('index');
                 Route::post('add-to-list', [RecurringPurchaseController::class, 'addToShoppingList'])->name('add-to-list');
+                Route::post('replenishment-list', [RecurringPurchaseController::class, 'createReplenishmentList'])->name('replenishment-list');
+                Route::post('dismiss', [RecurringPurchaseController::class, 'dismiss'])->name('dismiss');
+                Route::post('restore', [RecurringPurchaseController::class, 'restore'])->name('restore');
             });
 
             // Listas de compras — rotas específicas ANTES do apiResource
@@ -142,6 +146,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('shopping-lists/cities', [ShoppingListController::class, 'cities'])->name('shopping-lists.cities');
             Route::apiResource('shopping-lists', ShoppingListController::class);
             Route::prefix('shopping-lists/{shoppingList}')->name('shopping-lists.')->group(function () {
+                Route::post('duplicate', [ShoppingListController::class, 'duplicate'])->name('duplicate');
+                Route::post('purchase-all', [ShoppingListController::class, 'purchaseAll'])->name('purchase-all');
+                Route::post('refresh-prices', [ShoppingListController::class, 'refreshPrices'])->name('refresh-prices');
+                Route::get('savings', [ShoppingListController::class, 'savings'])->name('savings')->middleware('throttle:20,1');
                 Route::post('items', [ShoppingListController::class, 'addItem'])->name('items.add');
                 Route::patch('items/{item}', [ShoppingListController::class, 'updateItem'])->name('items.update');
                 Route::delete('items/{item}', [ShoppingListController::class, 'removeItem'])->name('items.remove');
@@ -152,12 +160,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::prefix('account')->name('account.')->group(function () {
                 Route::get('/', [AccountController::class, 'show'])->name('show');
                 Route::patch('/', [AccountController::class, 'update'])->name('update');
-                Route::patch('password', [AccountController::class, 'updatePassword'])->name('password');
+                Route::patch('password', [AccountController::class, 'updatePassword'])->middleware('throttle:5,1')->name('password');
+                Route::post('sessions/revoke-others', [AccountController::class, 'revokeOtherSessions'])->middleware('throttle:5,1')->name('sessions.revoke-others');
                 Route::post('avatar', [AccountController::class, 'updateAvatar'])->name('avatar');
                 Route::post('location-suggestion/dismiss', [AccountController::class, 'dismissLocationSuggestion'])->name('location-suggestion.dismiss');
                 Route::post('location/capture', [AccountController::class, 'captureLocation'])->middleware('throttle:10,1')->name('location.capture');
                 Route::post('export', [AccountController::class, 'requestExport'])->middleware('throttle:5,60')->name('export');
-                Route::delete('/', [AccountController::class, 'destroy'])->name('destroy');
+                Route::delete('/', [AccountController::class, 'destroy'])->middleware('throttle:5,1')->name('destroy');
             });
 
             // Produtos favoritos (alerta de queda de preço)

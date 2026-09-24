@@ -8,10 +8,12 @@ use App\Models\Invoice;
 use App\Models\Issuer;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -152,7 +154,7 @@ class AccountControllerTest extends TestCase
         $user = User::factory()->create(['name' => 'Nome Antigo', 'email' => 'old@example.com']);
 
         $this->actingAs($user, 'sanctum')
-            ->patchJson('/api/v1/account', ['name' => 'Nome Novo', 'email' => 'new@example.com'])
+            ->patchJson('/api/v1/account', ['name' => 'Nome Novo', 'email' => 'new@example.com', 'current_password' => 'password'])
             ->assertStatus(200)
             ->assertJsonPath('data.name', 'Nome Novo');
 
@@ -336,5 +338,127 @@ class AccountControllerTest extends TestCase
 
         $this->assertModelMissing($user);
         $this->assertDatabaseMissing('personal_access_tokens', ['id' => $token->accessToken->id]);
+    }
+
+    public function test_changing_email_requires_current_password_and_resets_verification(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create(['email' => 'old@example.com']);
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/v1/account', ['name' => 'X Y', 'email' => 'new@example.com'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('current_password');
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/v1/account', ['name' => 'X Y', 'email' => 'NEW@example.com', 'current_password' => 'password'])
+            ->assertOk();
+
+        $user->refresh();
+        $this->assertSame('new@example.com', $user->email);
+        $this->assertNull($user->email_verified_at);
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    public function test_keeping_the_email_does_not_require_password(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/v1/account', ['name' => 'Novo Nome', 'email' => $user->email])
+            ->assertOk();
+
+        $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_update_rejects_unknown_state_and_normalizes_case(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/v1/account', ['name' => 'Fulano', 'email' => $user->email, 'cidade' => 'Curitiba', 'estado' => 'XX'])
+            ->assertStatus(422)->assertJsonValidationErrors('estado');
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/v1/account', ['name' => 'Fulano', 'email' => $user->email, 'cidade' => 'Curitiba', 'estado' => 'pr'])
+            ->assertOk();
+
+        $this->assertSame('PR', $user->fresh()->profile->estado);
+    }
+
+    public function test_clearing_city_and_state_removes_the_location(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+        UserProfile::factory()->for($user)->create(['cidade' => 'Curitiba', 'estado' => 'PR', 'latitude' => -25.4, 'longitude' => -49.2]);
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/v1/account', ['name' => 'Fulano', 'email' => $user->email, 'cidade' => null, 'estado' => null])
+            ->assertOk();
+
+        $profile = $user->profile()->first();
+        $this->assertNull($profile->cidade);
+        $this->assertNull($profile->latitude);
+    }
+
+    public function test_omitting_location_keeps_it(): void
+    {
+        $user = User::factory()->create();
+        UserProfile::factory()->for($user)->create(['cidade' => 'Curitiba', 'estado' => 'PR']);
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/v1/account', ['name' => 'Fulano', 'email' => $user->email])
+            ->assertOk();
+
+        $this->assertSame('Curitiba', $user->profile()->first()->cidade);
+    }
+
+    public function test_social_account_can_set_a_password_without_current_one(): void
+    {
+        $user = User::factory()->create(['password' => null]);
+
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/v1/account/password', ['password' => 'nova-senha-123', 'password_confirmation' => 'nova-senha-123'])
+            ->assertOk();
+
+        $this->assertTrue(Hash::check('nova-senha-123', $user->fresh()->password));
+    }
+
+    public function test_password_change_revokes_other_tokens_but_keeps_current(): void
+    {
+        $user = User::factory()->create();
+        $user->createToken('outro-aparelho');
+        $current = $user->createToken('este-aparelho');
+
+        $this->withToken($current->plainTextToken)
+            ->patchJson('/api/v1/account/password', ['current_password' => 'password', 'password' => 'nova-senha-123', 'password_confirmation' => 'nova-senha-123'])
+            ->assertOk();
+
+        $this->assertSame(['este-aparelho'], $user->tokens()->pluck('name')->all());
+    }
+
+    public function test_revoke_other_sessions_keeps_current_token(): void
+    {
+        $user = User::factory()->create();
+        $user->createToken('outro-aparelho');
+        $current = $user->createToken('este-aparelho');
+
+        $this->withToken($current->plainTextToken)
+            ->postJson('/api/v1/account/sessions/revoke-others')
+            ->assertOk();
+
+        $this->assertSame(['este-aparelho'], $user->tokens()->pluck('name')->all());
+    }
+
+    public function test_show_stats_use_registration_date_as_member_since(): void
+    {
+        $user = User::factory()->create(['created_at' => '2025-03-10 10:00:00']);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/account')
+            ->assertOk()
+            ->assertJsonPath('data.stats.total_invoices', 0)
+            ->assertJson(fn ($json) => $json->has('data.stats.member_since')->etc());
     }
 }

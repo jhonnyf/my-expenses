@@ -142,6 +142,7 @@ const Utils = (() => {
             }).then(({ is_favorite: isFavorite }) => {
                 document.querySelectorAll(`[data-action="favorite-product"][data-description="${CSS.escape(description)}"]`)
                     .forEach((b) => applyFavoriteProductState(b, isFavorite));
+                document.dispatchEvent(new CustomEvent('favorite-product:toggled', { detail: { description, isFavorite } }));
             }).finally(() => {
                 btn.disabled = false;
             });

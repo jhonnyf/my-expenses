@@ -12,10 +12,13 @@ class UpdatePasswordRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /** Conta criada por login social ainda não tem senha: para ela não há "senha atual" a confirmar. */
     public function rules(): array
     {
         return [
-            'current_password' => ['required', 'string', 'current_password'],
+            'current_password' => $this->user()?->password === null
+                ? ['prohibited']
+                : ['required', 'string', 'current_password'],
             'password' => ['required', 'string', 'confirmed', Password::min(8)],
         ];
     }

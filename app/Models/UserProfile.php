@@ -35,4 +35,16 @@ class UserProfile extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /** CPF para exibição: só os 3 primeiros e os 2 últimos dígitos. */
+    public function maskedCpf(): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string) $this->cpf);
+
+        if (strlen($digits) !== 11) {
+            return null;
+        }
+
+        return substr($digits, 0, 3).'.***.***-'.substr($digits, 9);
+    }
 }

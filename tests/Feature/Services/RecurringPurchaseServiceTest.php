@@ -2,12 +2,16 @@
 
 namespace Tests\Feature\Services;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Models\ProductAlias;
+use App\Models\RecurringDismissal;
+use App\Models\ShoppingList;
 use App\Models\User;
 use App\Services\RecurringPurchaseService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,115 +27,202 @@ class RecurringPurchaseServiceTest extends TestCase
         $this->service = app(RecurringPurchaseService::class);
     }
 
-    public function test_get_recurring_items_returns_empty_when_no_purchases(): void
+    /** Compra o produto em cada "há N dias" informado. */
+    private function buy(User $user, array $daysAgo, string $description = 'LEITE', float $price = 5.0, ?Issuer $issuer = null, array $itemAttributes = [], InvoiceStatus $status = InvoiceStatus::Authorized): void
     {
-        $user = User::factory()->create();
+        $issuer ??= Issuer::factory()->create();
 
-        $result = $this->service->getRecurringItems($user->id);
-
-        $this->assertCount(0, $result);
+        foreach ($daysAgo as $days) {
+            $invoice = Invoice::factory()->for($user)->for($issuer)->create([
+                'issued_at' => Carbon::now()->subDays($days),
+                'status' => $status,
+            ]);
+            InvoiceItem::factory()->for($invoice)->create([
+                'description' => $description,
+                'unit_price' => $price,
+                'quantity' => 2,
+                'total_price' => $price * 2,
+                'unit' => 'UN',
+                ...$itemAttributes,
+            ]);
+        }
     }
 
-    public function test_get_recurring_items_returns_empty_when_fewer_than_3_purchases(): void
+    public function test_returns_empty_without_purchases(): void
+    {
+        $this->assertCount(0, $this->service->getRecurringItems(User::factory()->create()->id));
+    }
+
+    public function test_requires_three_distinct_purchase_days(): void
+    {
+        $user = User::factory()->create();
+        $this->buy($user, [0, 7]);
+        $this->buy($user, [3, 3, 3], 'OVO');
+
+        $this->assertCount(0, $this->service->getRecurringItems($user->id));
+    }
+
+    public function test_ignores_unauthorized_invoices_and_zero_prices(): void
+    {
+        $user = User::factory()->create();
+        $this->buy($user, [1, 8, 15], 'PENDENTE', 5.0, null, [], InvoiceStatus::Pending);
+        $this->buy($user, [1, 8, 15], 'GRATIS', 0.0);
+
+        $this->assertCount(0, $this->service->getRecurringItems($user->id));
+    }
+
+    public function test_only_counts_the_users_own_purchases(): void
+    {
+        $user = User::factory()->create();
+        $this->buy(User::factory()->create(), [1, 8, 15]);
+
+        $this->assertCount(0, $this->service->getRecurringItems($user->id));
+    }
+
+    public function test_interval_is_the_median_so_a_burst_does_not_skew_it(): void
+    {
+        $user = User::factory()->create();
+        // espaços de 10, 10 e 60 dias → mediana 10
+        $this->buy($user, [90, 80, 70, 10]);
+
+        $item = $this->service->getRecurringItems($user->id)->first();
+
+        $this->assertSame(10, $item->interval_days);
+    }
+
+    public function test_status_progression(): void
+    {
+        $user = User::factory()->create();
+        // intervalo 10 dias, última compra há N dias
+        $this->buy($user, [40, 30, 20, 4], 'OK');       // faltam 6 (> 2.5→ "soon" só ≤ 3)
+        $this->buy($user, [40, 30, 20, 8], 'SOON');     // faltam 2
+        $this->buy($user, [40, 30, 20, 10], 'DUE');     // hoje
+        $this->buy($user, [70, 60, 50, 15], 'LATE');    // 15 ≥ 1.5×10
+        $this->buy($user, [200, 190, 180], 'INACTIVE'); // parado há 180 > 30
+
+        $status = $this->service->getRecurringItems($user->id)->pluck('status', 'description');
+
+        $this->assertSame('ok', $status['OK']);
+        $this->assertSame('soon', $status['SOON']);
+        $this->assertSame('due', $status['DUE']);
+        $this->assertSame('late', $status['LATE']);
+        $this->assertSame('inactive', $status['INACTIVE']);
+    }
+
+    public function test_best_issuer_is_the_cheapest_current_price_and_estimates_saving(): void
+    {
+        $user = User::factory()->create();
+        $expensive = Issuer::factory()->create();
+        $cheap = Issuer::factory()->create();
+        $this->buy($user, [30, 20, 5], 'LEITE', 8.0, $expensive);
+        $this->buy($user, [15], 'LEITE', 6.0, $cheap);
+
+        $item = $this->service->getRecurringItems($user->id)->first();
+
+        $this->assertSame($cheap->id, $item->best_issuer->issuer_id);
+        $this->assertSame(6.0, $item->best_issuer->price);
+        $this->assertGreaterThan(0, $item->estimated_saving_per_month);
+        $this->assertSame(2, $item->suggested_quantity);
+    }
+
+    public function test_stale_prices_lose_to_fresh_ones_and_give_no_saving(): void
+    {
+        $user = User::factory()->create();
+        $old = Issuer::factory()->create();
+        $recent = Issuer::factory()->create();
+        $this->buy($user, [300, 280], 'LEITE', 1.0, $old);
+        $this->buy($user, [20, 10, 1], 'LEITE', 9.0, $recent);
+
+        $item = $this->service->getRecurringItems($user->id)->first();
+
+        $this->assertSame($recent->id, $item->best_issuer->issuer_id);
+    }
+
+    public function test_units_are_separate_recurrences(): void
+    {
+        $user = User::factory()->create();
+        $this->buy($user, [20, 10, 1], 'BANANA', 5.0, null, ['unit' => 'KG']);
+        $this->buy($user, [22, 12, 2], 'BANANA', 3.0, null, ['unit' => 'UN']);
+
+        $this->assertCount(2, $this->service->getRecurringItems($user->id));
+    }
+
+    public function test_aliases_merge_different_descriptions(): void
+    {
+        $user = User::factory()->create();
+        ProductAlias::create(['user_id' => $user->id, 'description' => 'LEITE INT 1L', 'canonical_name' => 'LEITE']);
+        $this->buy($user, [20], 'LEITE');
+        $this->buy($user, [10], 'LEITE INT 1L');
+        $this->buy($user, [1], 'LEITE');
+
+        $items = $this->service->getRecurringItems($user->id);
+
+        $this->assertCount(1, $items);
+        $this->assertSame('LEITE', $items->first()->description);
+    }
+
+    public function test_dismiss_and_restore(): void
+    {
+        $user = User::factory()->create();
+        $this->buy($user, [20, 10, 1]);
+
+        $this->service->dismiss($user->id, 'LEITE');
+        $this->service->dismiss($user->id, 'LEITE');
+        $items = $this->service->getRecurringItems($user->id);
+
+        $this->assertSame(1, RecurringDismissal::count());
+        $this->assertCount(0, $this->service->filter($items));
+        $this->assertCount(1, $this->service->filter($items, ['dismissed' => true, 'status' => 'all']));
+        $this->assertSame(0, $this->service->summary($items)['products']);
+        $this->assertSame(1, $this->service->summary($items)['dismissed_count']);
+
+        $this->service->restore($user->id, 'LEITE');
+        $this->assertCount(1, $this->service->filter($this->service->getRecurringItems($user->id)));
+    }
+
+    public function test_filter_by_status_search_and_sort(): void
+    {
+        $user = User::factory()->create();
+        $this->buy($user, [40, 30, 20, 4], 'ARROZ');
+        $this->buy($user, [70, 60, 50, 15], 'FEIJAO');
+        $items = $this->service->getRecurringItems($user->id);
+
+        $this->assertSame(['FEIJAO', 'ARROZ'], $this->service->filter($items)->pluck('description')->all());
+        $this->assertSame(['FEIJAO'], $this->service->filter($items, ['status' => 'late'])->pluck('description')->all());
+        $this->assertSame(['ARROZ'], $this->service->filter($items, ['q' => 'arr'])->pluck('description')->all());
+        $this->assertSame(['ARROZ', 'FEIJAO'], $this->service->filter($items, ['sort' => 'name'])->pluck('description')->all());
+    }
+
+    public function test_replenishment_list_contains_only_due_products(): void
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
+        $this->buy($user, [40, 30, 20, 10], 'DUE', 5.0, $issuer);
+        $this->buy($user, [40, 30, 20, 4], 'OK', 5.0, $issuer);
 
-        for ($i = 0; $i < 2; $i++) {
-            $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays($i * 7)]);
-            InvoiceItem::factory()->for($invoice)->create(['description' => 'PRODUTO REPETIDO']);
-        }
+        $created = $this->service->createReplenishmentList($user);
 
-        $result = $this->service->getRecurringItems($user->id);
-
-        $this->assertCount(0, $result);
+        $this->assertSame(1, $created['count']);
+        $this->assertSame(['DUE'], $created['list']->items()->pluck('description')->all());
+        $this->assertSame(2, $created['list']->items()->first()->quantity);
     }
 
-    public function test_get_recurring_items_returns_items_bought_at_least_3_times(): void
+    public function test_replenishment_list_is_null_when_nothing_is_due(): void
     {
         $user = User::factory()->create();
-        $issuer = Issuer::factory()->create();
+        $this->buy($user, [40, 30, 20, 4]);
 
-        for ($i = 0; $i < 3; $i++) {
-            $invoice = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays($i * 10)]);
-            InvoiceItem::factory()->for($invoice)->create(['description' => 'PRODUTO RECORRENTE']);
-        }
-
-        $result = $this->service->getRecurringItems($user->id);
-
-        $this->assertCount(1, $result);
-        $this->assertEquals('PRODUTO RECORRENTE', $result->first()->description);
+        $this->assertNull($this->service->createReplenishmentList($user));
+        $this->assertSame(0, ShoppingList::count());
     }
 
-    public function test_get_recurring_items_combines_aliased_descriptions_into_one_recurrence(): void
-    {
-        $user = User::factory()->create();
-        $issuerA = Issuer::factory()->create();
-        $issuerB = Issuer::factory()->create();
-
-        $invoiceA1 = Invoice::factory()->for($user)->for($issuerA)->create(['issued_at' => now()->subDays(30)]);
-        InvoiceItem::factory()->for($invoiceA1)->create(['description' => 'REFRIG COCA COLA 350ML LAT']);
-        $invoiceA2 = Invoice::factory()->for($user)->for($issuerA)->create(['issued_at' => now()->subDays(20)]);
-        InvoiceItem::factory()->for($invoiceA2)->create(['description' => 'REFRIG COCA COLA 350ML LAT']);
-        $invoiceB1 = Invoice::factory()->for($user)->for($issuerB)->create(['issued_at' => now()->subDays(10)]);
-        InvoiceItem::factory()->for($invoiceB1)->create(['description' => 'COCA-COLA LATA 350ML']);
-
-        ProductAlias::create(['user_id' => $user->id, 'description' => 'REFRIG COCA COLA 350ML LAT', 'canonical_name' => 'Coca-Cola 350ml']);
-        ProductAlias::create(['user_id' => $user->id, 'description' => 'COCA-COLA LATA 350ML', 'canonical_name' => 'Coca-Cola 350ml']);
-
-        $result = $this->service->getRecurringItems($user->id);
-
-        $this->assertCount(1, $result);
-        $this->assertEquals('Coca-Cola 350ml', $result->first()->description);
-        $this->assertEquals(3, $result->first()->purchase_count);
-    }
-
-    public function test_get_best_issuers_matches_by_canonical_name(): void
-    {
-        $user = User::factory()->create();
-        $issuer1 = Issuer::factory()->create(['name' => 'CARO MERCADO']);
-        $issuer2 = Issuer::factory()->create(['name' => 'BARATO MERCADO']);
-
-        $expensiveInvoice = Invoice::factory()->for($user)->for($issuer1)->create();
-        $cheapInvoice = Invoice::factory()->for($user)->for($issuer2)->create();
-
-        InvoiceItem::factory()->for($expensiveInvoice)->create(['description' => 'REFRIG COCA COLA 350ML LAT', 'unit_price' => 8.00]);
-        InvoiceItem::factory()->for($cheapInvoice)->create(['description' => 'COCA-COLA LATA 350ML', 'unit_price' => 4.50]);
-
-        ProductAlias::create(['user_id' => $user->id, 'description' => 'REFRIG COCA COLA 350ML LAT', 'canonical_name' => 'Coca-Cola 350ml']);
-        ProductAlias::create(['user_id' => $user->id, 'description' => 'COCA-COLA LATA 350ML', 'canonical_name' => 'Coca-Cola 350ml']);
-
-        $result = $this->service->getBestIssuers($user->id, collect(['Coca-Cola 350ml']));
-
-        $this->assertCount(1, $result);
-        $this->assertEquals('BARATO MERCADO', $result->first()->issuer_name);
-    }
-
-    public function test_get_best_issuers_returns_empty_for_empty_descriptions(): void
+    public function test_add_to_list_creates_a_new_list_when_none_given(): void
     {
         $user = User::factory()->create();
 
-        $result = $this->service->getBestIssuers($user->id, collect());
+        $result = $this->service->addToList($user, null, ['description' => 'LEITE']);
 
-        $this->assertCount(0, $result);
-    }
-
-    public function test_get_best_issuers_returns_cheapest_for_description(): void
-    {
-        $user = User::factory()->create();
-        $issuer1 = Issuer::factory()->create(['name' => 'CARO MERCADO']);
-        $issuer2 = Issuer::factory()->create(['name' => 'BARATO MERCADO']);
-
-        $expensiveInvoice = Invoice::factory()->for($user)->for($issuer1)->create();
-        $cheapInvoice = Invoice::factory()->for($user)->for($issuer2)->create();
-
-        InvoiceItem::factory()->for($expensiveInvoice)->create(['description' => 'LEITE INTEGRAL', 'unit_price' => 8.00]);
-        InvoiceItem::factory()->for($cheapInvoice)->create(['description' => 'LEITE INTEGRAL', 'unit_price' => 4.50]);
-
-        $result = $this->service->getBestIssuers($user->id, collect(['LEITE INTEGRAL']));
-
-        $this->assertCount(1, $result);
-        $best = $result->first();
-        $this->assertEquals('BARATO MERCADO', $best->issuer_name);
+        $this->assertSame($user->id, $result['list']->user_id);
+        $this->assertSame(1, $result['item']->quantity);
     }
 }

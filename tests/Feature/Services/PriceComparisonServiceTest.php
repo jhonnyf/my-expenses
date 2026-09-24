@@ -26,7 +26,7 @@ class PriceComparisonServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 20.00]);
 
         $result = $this->service->searchProducts('ARROZ', $user->id);
@@ -39,9 +39,9 @@ class PriceComparisonServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG']);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ INTEGRAL 1KG']);
 
         $result = $this->service->searchProducts('ARROZ', $user->id);
@@ -55,9 +55,9 @@ class PriceComparisonServiceTest extends TestCase
         $curitiba = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
         $saoPaulo = Issuer::factory()->create(['city' => 'São Paulo', 'state' => 'SP']);
 
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($curitiba)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($curitiba)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 25.00]);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($saoPaulo)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($saoPaulo)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 18.00]);
 
         $result = $this->service->byCity('ARROZ BRANCO 5KG', $user->id);
@@ -72,9 +72,9 @@ class PriceComparisonServiceTest extends TestCase
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
 
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 20.00]);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ INTEGRAL 1KG', 'unit_price' => 8.00]);
 
         $result = $this->service->byCity('ARROZ BRANCO 5KG', $user->id);
@@ -89,9 +89,9 @@ class PriceComparisonServiceTest extends TestCase
         $other = User::factory()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
 
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'FEIJAO PRETO 1KG', 'unit_price' => 8.00]);
-        InvoiceItem::factory()->for(Invoice::factory()->for($other)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($other)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'FEIJAO PRETO 1KG', 'unit_price' => 6.00]);
 
         $result = $this->service->byCity('FEIJAO PRETO 1KG', $user->id);
@@ -105,7 +105,7 @@ class PriceComparisonServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['city' => null, 'state' => null]);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'LEITE INTEGRAL 1L']);
 
         $result = $this->service->byCity('LEITE INTEGRAL 1L', $user->id);
@@ -120,11 +120,11 @@ class PriceComparisonServiceTest extends TestCase
         $expensive = Issuer::factory()->create(['name' => 'MERCADO CARO', 'city' => 'Curitiba', 'state' => 'PR']);
         $otherCity = Issuer::factory()->create(['name' => 'MERCADO DISTANTE', 'city' => 'São Paulo', 'state' => 'SP']);
 
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($cheap)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($cheap)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 15.00]);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($expensive)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($expensive)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 25.00]);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($otherCity)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($otherCity)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 5.00]);
 
         $result = $this->service->byIssuer('ARROZ BRANCO 5KG', 'Curitiba', 'PR', $user->id);
@@ -138,9 +138,9 @@ class PriceComparisonServiceTest extends TestCase
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create(['city' => 'Curitiba', 'state' => 'PR']);
 
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ BRANCO 5KG', 'unit_price' => 20.00]);
-        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create())
+        InvoiceItem::factory()->for(Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(3)]))
             ->create(['description' => 'ARROZ INTEGRAL 1KG', 'unit_price' => 8.00]);
 
         $offer = $this->service->cheapestOffer('ARROZ BRANCO 5KG', $user->id);

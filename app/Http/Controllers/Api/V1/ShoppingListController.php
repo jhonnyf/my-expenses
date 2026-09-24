@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\AddShoppingListItemRequest;
+use App\Http\Requests\StoreShoppingListRequest;
 use App\Http\Requests\UpdateShoppingListItemRequest;
 use App\Http\Requests\UpdateShoppingListRequest;
 use App\Http\Resources\Api\V1\ShoppingListItemResource;
@@ -10,7 +11,6 @@ use App\Http\Resources\Api\V1\ShoppingListResource;
 use App\Models\ShoppingList;
 use App\Models\ShoppingListItem;
 use App\Services\ShoppingListService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,12 +20,7 @@ class ShoppingListController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $lists = ShoppingList::where('user_id', $request->user()->id)
-            ->withCount('items')
-            ->orderByDesc('updated_at')
-            ->get();
-
-        return $this->success(ShoppingListResource::collection($lists));
+        return $this->success(ShoppingListResource::collection($this->service->listsWithTotals($request->user()->id)));
     }
 
     public function search(Request $request): JsonResponse
@@ -59,14 +54,9 @@ class ShoppingListController extends Controller
         return $this->success($this->service->availableCities());
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreShoppingListRequest $request): JsonResponse
     {
-        $name = $request->input('name') ?: 'Lista de compras '.Carbon::now()->format('d/m/Y');
-
-        $list = ShoppingList::create([
-            'user_id' => $request->user()->id,
-            'name' => $name,
-        ]);
+        $list = $this->service->createList($request->user()->id, $request->input('name'));
 
         return $this->success(new ShoppingListResource($list), 201);
     }
@@ -98,22 +88,23 @@ class ShoppingListController extends Controller
         return response()->json(['message' => 'Lista removida com sucesso.']);
     }
 
+    public function duplicate(ShoppingList $shoppingList): JsonResponse
+    {
+        $this->authorize('interact', $shoppingList);
+
+        $copy = $this->service->duplicate($shoppingList)->loadCount('items');
+
+        return $this->success(new ShoppingListResource($copy), 201);
+    }
+
+    /** 201 quando cria uma linha; 200 quando o produto já estava pendente no mesmo mercado e só somou a quantidade. */
     public function addItem(AddShoppingListItemRequest $request, ShoppingList $shoppingList): JsonResponse
     {
         $this->authorize('interact', $shoppingList);
 
-        $item = $shoppingList->items()->create([
-            'issuer_id' => $request->input('issuer_id'),
-            'description' => $request->input('description'),
-            'unit' => $request->input('unit'),
-            'unit_price' => $request->input('unit_price'),
-            'quantity' => $request->input('quantity'),
-        ]);
+        ['item' => $item, 'merged' => $merged] = $this->service->addItem($shoppingList, $request->validated());
 
-        $item->load('issuer.nicknameForUser');
-        $shoppingList->touch();
-
-        return $this->success(new ShoppingListItemResource($item), 201);
+        return $this->success([...(new ShoppingListItemResource($item))->resolve(), 'merged' => $merged], $merged ? 200 : 201);
     }
 
     public function updateItem(UpdateShoppingListItemRequest $request, ShoppingList $shoppingList, ShoppingListItem $item): JsonResponse
@@ -121,8 +112,7 @@ class ShoppingListController extends Controller
         $this->authorize('interact', $shoppingList);
         abort_if($item->shopping_list_id !== $shoppingList->id, 404);
 
-        $item->update(['quantity' => $request->input('quantity')]);
-        $shoppingList->touch();
+        $this->service->updateQuantity($shoppingList, $item, (int) $request->input('quantity'));
 
         return response()->json(['message' => 'Item atualizado com sucesso.']);
     }
@@ -132,8 +122,7 @@ class ShoppingListController extends Controller
         $this->authorize('interact', $shoppingList);
         abort_if($item->shopping_list_id !== $shoppingList->id, 404);
 
-        $item->delete();
-        $shoppingList->touch();
+        $this->service->removeItem($shoppingList, $item);
 
         return response()->json(['message' => 'Item removido com sucesso.']);
     }
@@ -143,10 +132,27 @@ class ShoppingListController extends Controller
         $this->authorize('interact', $shoppingList);
         abort_if($item->shopping_list_id !== $shoppingList->id, 404);
 
-        $item->purchased_at = $item->purchased_at ? null : Carbon::now();
-        $item->save();
-        $shoppingList->touch();
+        return $this->success(['purchased_at' => $this->service->togglePurchased($shoppingList, $item)->purchased_at]);
+    }
 
-        return $this->success(['purchased_at' => $item->purchased_at]);
+    public function purchaseAll(ShoppingList $shoppingList): JsonResponse
+    {
+        $this->authorize('interact', $shoppingList);
+
+        return $this->success(['purchased' => $this->service->markAllPurchased($shoppingList)]);
+    }
+
+    public function refreshPrices(Request $request, ShoppingList $shoppingList): JsonResponse
+    {
+        $this->authorize('interact', $shoppingList);
+
+        return $this->success($this->service->refreshPrices($shoppingList, $request->user()->id));
+    }
+
+    public function savings(Request $request, ShoppingList $shoppingList): JsonResponse
+    {
+        $this->authorize('interact', $shoppingList);
+
+        return $this->success($this->service->savings($shoppingList, $request->user()));
     }
 }

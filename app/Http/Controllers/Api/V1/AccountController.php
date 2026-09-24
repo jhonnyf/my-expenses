@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\CaptureUserLocationFromBrowserAction;
 use App\Actions\DeleteUserAccountAction;
+use App\Actions\RevokeUserSessionsAction;
+use App\Actions\UpdateAccountAction;
 use App\Actions\UpdateUserAvatarAction;
-use App\Actions\UpdateUserLocationAction;
 use App\Http\Requests\CaptureLocationRequest;
 use App\Http\Requests\DeleteAccountRequest;
 use App\Http\Requests\UpdateAccountRequest;
@@ -14,26 +15,23 @@ use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Resources\Api\V1\InvoiceResource;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Jobs\ExportPersonalDataJob;
-use App\Models\InvoiceItem;
+use App\Services\AccountService;
 use App\Services\LocationSuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AccountController extends Controller
 {
-    public function __construct(private readonly LocationSuggestionService $locationSuggestionService) {}
+    public function __construct(
+        private readonly LocationSuggestionService $locationSuggestionService,
+        private readonly AccountService $accountService,
+    ) {}
 
     public function show(Request $request): JsonResponse
     {
-        $user = $request->user();
-
-        $totalInvoices = $user->invoices()->count();
-
-        $totalItems = InvoiceItem::whereHas('invoice', static fn ($q) => $q->where('user_id', $user->id))->count();
-
-        $totalSpent = (float) $user->invoices()->sum('total_amount');
-        $memberSince = $user->invoices()->min('issued_at');
+        $user = $request->user()->load(['profile', 'subscription']);
 
         $recentInvoices = $user->invoices()
             ->with('issuer.nicknameForUser')
@@ -43,37 +41,43 @@ class AccountController extends Controller
 
         return $this->success([
             'user' => new UserResource($user),
-            'stats' => [
-                'total_invoices' => $totalInvoices,
-                'total_items' => $totalItems,
-                'total_spent' => $totalSpent,
-                'member_since' => $memberSince,
-            ],
+            'stats' => $this->accountService->stats($user),
             'recent_invoices' => InvoiceResource::collection($recentInvoices),
             'location_suggestion' => $this->locationSuggestionService->suggestionFor($user),
         ]);
     }
 
-    public function update(UpdateAccountRequest $request, UpdateUserLocationAction $locationAction): JsonResponse
+    public function update(UpdateAccountRequest $request, UpdateAccountAction $action): JsonResponse
     {
         $user = $request->user();
 
-        $user->fill($request->only('name', 'email'));
-        $user->save();
-
-        $locationAction->execute($user, $request->input('cidade'), $request->input('estado'));
+        $action->execute($user, $request->validated());
 
         return $this->success(new UserResource($user));
     }
 
-    public function updatePassword(UpdatePasswordRequest $request): JsonResponse
+    public function updatePassword(UpdatePasswordRequest $request, RevokeUserSessionsAction $revokeSessions): JsonResponse
     {
         $user = $request->user();
 
         $user->password = Hash::make($request->validated('password'));
         $user->save();
 
+        // Os demais aparelhos precisam entrar de novo; o token que fez esta chamada continua valendo.
+        $token = $user->currentAccessToken();
+        $revokeSessions->execute($user, null, $token instanceof PersonalAccessToken ? $token->id : null);
+
         return response()->json(['message' => 'Senha alterada com sucesso.']);
+    }
+
+    public function revokeOtherSessions(Request $request, RevokeUserSessionsAction $revokeSessions): JsonResponse
+    {
+        $user = $request->user();
+        $token = $user->currentAccessToken();
+
+        $revokeSessions->execute($user, null, $token instanceof PersonalAccessToken ? $token->id : null);
+
+        return response()->json(['message' => 'Os outros dispositivos foram desconectados.']);
     }
 
     public function updateAvatar(UpdateAvatarRequest $request, UpdateUserAvatarAction $action): JsonResponse
