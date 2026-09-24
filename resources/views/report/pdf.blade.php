@@ -26,6 +26,17 @@
         a {{ \Carbon\Carbon::parse($filters['end_date'])->format('d/m/Y') }}
     </p>
 
+    @php
+        $appliedFilters = collect([
+            ! empty($filters['issuer_id']) ? 'Emissor: '.($issuers->firstWhere('id', $filters['issuer_id'])->display_name ?? '—') : null,
+            ! empty($filters['category_id']) ? 'Categoria: '.($filters['category_id'] === 'none' ? 'Sem categoria' : ($categories->firstWhere('id', $filters['category_id'])->name ?? '—')) : null,
+            ! empty($filters['q']) ? 'Produto: "'.$filters['q'].'"' : null,
+        ])->filter();
+    @endphp
+    @if($appliedFilters->isNotEmpty())
+        <p class="period">Filtros: {{ $appliedFilters->implode(' · ') }}</p>
+    @endif
+
     <div class="summary">
         <span>Total Gasto: <strong>R$ {{ number_format($summary->total_amount ?? 0, 2, ',', '.') }}</strong></span>
         <span>Total de Itens: <strong>{{ $summary->total_items ?? 0 }}</strong></span>
@@ -56,6 +67,12 @@
     @endif
 
     <p class="section-title">Itens Detalhados</p>
+    @if($items_truncated ?? false)
+        <p class="period" style="text-align: left; color: #b45309;">
+            Exibindo os {{ number_format($items->count()) }} primeiros de {{ number_format($summary->total_items) }} itens.
+            Para o conjunto completo, exporte em CSV.
+        </p>
+    @endif
     <table>
         <thead>
             <tr>

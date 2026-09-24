@@ -34,8 +34,8 @@ class ReportControllerTest extends TestCase
 
         $response = $this->actingAs($user)->get('/reports');
 
-        $response->assertSee('data-range="this-month" class="kt-btn kt-btn-sm kt-btn-primary"', false);
-        $response->assertSee('data-range="last-month" class="kt-btn kt-btn-sm kt-btn-outline"', false);
+        $this->assertMatchesRegularExpression('/data-period="this_month"\s+class="kt-btn kt-btn-sm kt-btn-primary"/', $response->getContent());
+        $this->assertMatchesRegularExpression('/data-period="last_month"\s+class="kt-btn kt-btn-sm kt-btn-outline"/', $response->getContent());
     }
 
     public function test_generate_highlights_last_month_quick_range_button_when_filtered(): void
@@ -47,8 +47,8 @@ class ReportControllerTest extends TestCase
             'end_date' => now()->startOfMonth()->subDay()->format('Y-m-d'),
         ]);
 
-        $response->assertSee('data-range="last-month" class="kt-btn kt-btn-sm kt-btn-primary"', false);
-        $response->assertSee('data-range="this-month" class="kt-btn kt-btn-sm kt-btn-outline"', false);
+        $this->assertMatchesRegularExpression('/data-period="last_month"\s+class="kt-btn kt-btn-sm kt-btn-primary"/', $response->getContent());
+        $this->assertMatchesRegularExpression('/data-period="this_month"\s+class="kt-btn kt-btn-sm kt-btn-outline"/', $response->getContent());
     }
 
     public function test_generate_returns_200_for_last_month_filter(): void

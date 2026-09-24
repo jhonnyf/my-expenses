@@ -11,6 +11,7 @@ class ReportByEmail extends Notification
         private readonly string $content,
         private readonly string $filename,
         private readonly string $mime,
+        private readonly ?string $periodLabel = null,
     ) {}
 
     /**
@@ -27,6 +28,7 @@ class ReportByEmail extends Notification
             ->subject('Seu relatório de gastos')
             ->greeting('Olá!')
             ->line('Conforme você solicitou, o relatório de gastos segue em anexo.')
+            ->when($this->periodLabel !== null, fn (MailMessage $mail) => $mail->line('Período: '.$this->periodLabel.'.'))
             ->attachData($this->content, $this->filename, ['mime' => $this->mime]);
     }
 }

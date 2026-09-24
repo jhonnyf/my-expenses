@@ -2,47 +2,9 @@ import Utils from '../utils';
 
 const formatBRL = (value) => parseFloat(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const toISODate = (date) => date.toISOString().slice(0, 10);
-
-const QUICK_RANGES = {
-    'this-month': () => {
-        const now = new Date();
-        return [new Date(now.getFullYear(), now.getMonth(), 1), now];
-    },
-    'last-month': () => {
-        const now = new Date();
-        return [new Date(now.getFullYear(), now.getMonth() - 1, 1), new Date(now.getFullYear(), now.getMonth(), 0)];
-    },
-    'last-3-months': () => {
-        const now = new Date();
-        return [new Date(now.getFullYear(), now.getMonth() - 2, 1), now];
-    },
-    'this-year': () => {
-        const now = new Date();
-        return [new Date(now.getFullYear(), 0, 1), now];
-    },
-};
-
 const Report = (() => {
     let initialized = false;
-    let generateUrl;
-
-    const submitTo = (url) => {
-        const form = document.getElementById('reportForm');
-        form.action = url;
-        form.submit();
-        form.action = generateUrl;
-    };
-
-    const applyQuickRange = (range) => {
-        const resolver = QUICK_RANGES[range];
-        if (!resolver) return;
-
-        const [start, end] = resolver();
-        document.getElementById('reportStartDate').value = toISODate(start);
-        document.getElementById('reportEndDate').value = toISODate(end);
-        document.getElementById('reportForm').submit();
-    };
+    let emailUrl, scheduleUrl, reportFilters;
 
     const renderCategoryChart = (data) => {
         const el = document.getElementById('reportCategoryChart');
@@ -95,17 +57,84 @@ const Report = (() => {
         });
     };
 
-    const handleClick = (e) => {
-        const submitBtn = e.target.closest('[data-action="submit-report"]');
-        if (submitBtn) {
-            submitTo(submitBtn.dataset.url);
-            return;
-        }
+    // ---------- E-mail e agendamento (Pro) ----------
 
-        const rangeBtn = e.target.closest('[data-action="quick-range"]');
-        if (rangeBtn) {
-            applyQuickRange(rangeBtn.dataset.range);
-        }
+    const setError = (id, message) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = message || '';
+        el.classList.toggle('hidden', !message);
+    };
+
+    const closeEmailModal = () => window.KTModal?.getInstance(document.getElementById('reportEmailModal'))?.hide();
+
+    const sendReportByEmail = () => {
+        setError('reportEmailError', '');
+
+        Utils.http(emailUrl, {
+            method: 'POST',
+            body: { ...reportFilters, format: document.getElementById('reportEmailFormat').value },
+        })
+            .then(() => {
+                closeEmailModal();
+                Utils.showFlash('Relatório na fila: você o receberá por e-mail em instantes.');
+            })
+            .catch(error => setError('reportEmailError', Utils.errorMessage(error, 'Não foi possível enviar o relatório.')));
+    };
+
+    const scheduleSummary = (schedule) => {
+        const format = schedule.format === 'pdf' ? 'PDF' : 'CSV';
+        const next = new Date(`${schedule.next_run}T00:00:00`).toLocaleDateString('pt-BR');
+
+        return `Agendado: ${schedule.frequency_label}, em ${format}. Próximo envio em ${next}.`;
+    };
+
+    const saveSchedule = () => {
+        setError('reportScheduleError', '');
+
+        Utils.http(scheduleUrl, {
+            method: 'PUT',
+            body: {
+                frequency: document.getElementById('reportScheduleFrequency').value,
+                format: document.getElementById('reportScheduleFormat').value,
+            },
+        })
+            .then(schedule => {
+                const status = document.getElementById('reportScheduleStatus');
+                status.textContent = scheduleSummary(schedule);
+                status.classList.remove('hidden');
+                document.getElementById('reportScheduleDelete').classList.remove('hidden');
+            })
+            .catch(error => setError('reportScheduleError', Utils.errorMessage(error, 'Não foi possível salvar o agendamento.')));
+    };
+
+    const deleteSchedule = () => {
+        setError('reportScheduleError', '');
+
+        Utils.http(scheduleUrl, { method: 'DELETE' })
+            .then(() => {
+                document.getElementById('reportScheduleStatus').classList.add('hidden');
+                document.getElementById('reportScheduleDelete').classList.add('hidden');
+            })
+            .catch(error => setError('reportScheduleError', Utils.errorMessage(error, 'Não foi possível cancelar o agendamento.')));
+    };
+
+    const ACTIONS = {
+        'send-report-email': () => sendReportByEmail(),
+        'save-report-schedule': () => saveSchedule(),
+        'delete-report-schedule': () => deleteSchedule(),
+    };
+
+    const handleClick = (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (btn) ACTIONS[btn.dataset.action]?.(btn);
+    };
+
+    // Categoria trocada na tabela: totais e gráfico (do servidor) ficam defasados até atualizar.
+    const handleCategoryAssigned = () => {
+        const notice = document.getElementById('reportStaleNotice');
+        notice?.classList.remove('hidden');
+        notice?.classList.add('flex');
     };
 
     return {
@@ -113,18 +142,27 @@ const Report = (() => {
             if (initialized) return;
             initialized = true;
 
-            ({ generateUrl } = window.pageConfig);
+            ({ emailUrl, scheduleUrl, reportFilters = {} } = window.pageConfig);
+
+            Utils.initPeriodFilter();
+            Utils.restoreFlash();
+
+            // A busca por texto só roda no botão "Buscar" (ou Enter); emissor, categoria e ordenação aplicam ao mudar.
+            const form = document.getElementById('reportFilterForm');
+            form?.querySelectorAll('select').forEach(el => el.addEventListener('change', () => form.requestSubmit()));
 
             document.addEventListener('click', handleClick);
             document.addEventListener('product-alias:updated', handleAliasUpdated);
+            document.addEventListener('item-category:assigned', handleCategoryAssigned);
 
-            const { categoryBreakdown, assignCategoryUrl, suggestItemCategoryUrl } = window.pageConfig;
+            const { categoryBreakdown, reportMonthly, assignCategoryUrl, suggestItemCategoryUrl } = window.pageConfig;
             Utils.initCategoryAssignment(assignCategoryUrl);
             if (suggestItemCategoryUrl) Utils.initCategoryAiSuggestion(suggestItemCategoryUrl, assignCategoryUrl);
 
             if (categoryBreakdown?.length) {
                 renderCategoryChart(categoryBreakdown);
             }
+            Utils.renderMonthlyBars('reportMonthlyChart', reportMonthly);
         }
     };
 })();

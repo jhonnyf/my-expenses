@@ -153,8 +153,12 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
     Route::group(['prefix' => 'reports', 'as' => 'reports.'], function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         Route::post('generate', [ReportController::class, 'generate'])->name('generate');
-        Route::post('pdf', [ReportController::class, 'exportPdf'])->name('pdf')->middleware('pro');
-        Route::post('csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro');
+        // GET e POST: os botões de exportar são links (mantêm os filtros na URL); o POST antigo continua valendo.
+        Route::match(['get', 'post'], 'pdf', [ReportController::class, 'exportPdf'])->name('pdf')->middleware('pro');
+        Route::match(['get', 'post'], 'csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro');
+        Route::post('email', [ReportController::class, 'email'])->name('email')->middleware('pro');
+        Route::put('schedule', [ReportController::class, 'saveSchedule'])->name('schedule.save')->middleware('pro');
+        Route::delete('schedule', [ReportController::class, 'deleteSchedule'])->name('schedule.delete');
     });
 
     // Detecção de compras recorrentes — exclusivo do plano Pro.

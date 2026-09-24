@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cestazen-static-c4ca97ea72';
+const CACHE_NAME = 'cestazen-static-4b111837b7';
 const STATIC_ASSET_PATTERN = /^\/(assets|build)\//;
 
 self.addEventListener('install', () => {

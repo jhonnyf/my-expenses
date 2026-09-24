@@ -100,6 +100,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('/', [ReportController::class, 'generate'])->name('generate');
                 Route::get('csv', [ReportController::class, 'exportCsv'])->name('csv')->middleware('pro');
                 Route::post('email', [ReportController::class, 'emailReport'])->name('email')->middleware('pro');
+                Route::get('schedule', [ReportController::class, 'schedule'])->name('schedule');
+                Route::put('schedule', [ReportController::class, 'saveSchedule'])->name('schedule.save')->middleware('pro');
+                Route::delete('schedule', [ReportController::class, 'deleteSchedule'])->name('schedule.delete');
             });
 
             // Histórico de preços — exclusivo do plano Pro

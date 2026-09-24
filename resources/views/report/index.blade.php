@@ -3,109 +3,106 @@
 
 @section('content')
 
+    @php
+        // Filtros ativos como query string (links de exportar/paginar e campos que sobrevivem ao filtro de período).
+        $activeFilters = array_filter($filters, fn ($value) => $value !== null && $value !== '');
+        $exportQuery = $activeFilters;
+        $periodExtraFields = array_diff_key($activeFilters, ['start_date' => 1, 'end_date' => 1]);
+        $hasListFilters = ($filters['issuer_id'] ?? null) || ($filters['category_id'] ?? null) || ($filters['q'] ?? '') !== '';
+        $proBadge = '<span class="kt-badge kt-badge-light kt-badge-warning kt-badge-sm">Pro</span>';
+    @endphp
+
     {{-- PAGE HEADER --}}
     <div class="kt-container-fixed">
         <div class="flex flex-wrap items-center lg:items-end justify-between gap-5 pb-7.5">
             <div class="flex flex-col justify-center gap-2">
-                <h1 class="text-xl font-medium leading-none text-mono">Relatórios</h1>
+                <h1 class="text-xl font-medium leading-tight text-mono">Relatórios</h1>
                 <div class="flex items-center gap-2 text-sm font-normal text-secondary-foreground">
-                    Gere relatórios de gastos filtrados
+                    Gastos por período, emissor, categoria e produto
                 </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+                @if($isPro)
+                    <a href="{{ route('reports.pdf', $exportQuery) }}" class="kt-btn kt-btn-outline">
+                        <i class="ki-filled ki-document"></i> Exportar PDF
+                    </a>
+                    <a href="{{ route('reports.csv', $exportQuery) }}" class="kt-btn kt-btn-outline">
+                        <i class="ki-filled ki-file-down"></i> Exportar CSV
+                    </a>
+                    <button type="button" class="kt-btn kt-btn-outline" data-kt-modal-toggle="#reportEmailModal">
+                        <i class="ki-filled ki-sms"></i> E-mail
+                    </button>
+                @else
+                    @foreach([['ki-document', 'Exportar PDF'], ['ki-file-down', 'Exportar CSV'], ['ki-sms', 'E-mail']] as [$icon, $label])
+                        <a href="{{ route('subscription.upgrade') }}" class="kt-btn kt-btn-outline" title="Recurso do plano Pro">
+                            <i class="ki-filled {{ $icon }}"></i> {{ $label }} {!! $proBadge !!}
+                        </a>
+                    @endforeach
+                @endif
             </div>
         </div>
     </div>
 
-    @php
-        $rangeStart = $filters['start_date'] ?? now()->startOfMonth()->format('Y-m-d');
-        $rangeEnd = $filters['end_date'] ?? now()->format('Y-m-d');
-
-        $thisMonthStart = now()->startOfMonth()->format('Y-m-d');
-        $thisMonthEnd = now()->format('Y-m-d');
-        $lastMonthStart = now()->startOfMonth()->subMonth()->format('Y-m-d');
-        $lastMonthEnd = now()->startOfMonth()->subDay()->format('Y-m-d');
-        $last3MonthsStart = now()->startOfMonth()->subMonths(2)->format('Y-m-d');
-        $thisYearStart = now()->startOfYear()->format('Y-m-d');
-
-        $activeRange = match(true) {
-            $rangeStart === $thisMonthStart && $rangeEnd === $thisMonthEnd => 'this-month',
-            $rangeStart === $lastMonthStart && $rangeEnd === $lastMonthEnd => 'last-month',
-            $rangeStart === $last3MonthsStart && $rangeEnd === $thisMonthEnd => 'last-3-months',
-            $rangeStart === $thisYearStart && $rangeEnd === $thisMonthEnd => 'this-year',
-            default => null,
-        };
-    @endphp
-
     <div class="kt-container-fixed">
         <div class="grid gap-5 lg:gap-7.5">
 
+            <div id="pageFlash" role="status" class="hidden items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+                <i class="ki-filled ki-check-circle text-green-600 text-lg shrink-0"></i>
+                <span class="text-sm text-green-600 font-medium" data-flash-text></span>
+            </div>
+
+            @include('partials._period-filter', [
+                'periodFilterAction' => route('reports.index'),
+                'filters' => $filters,
+                'extraFields' => $periodExtraFields,
+            ])
+
             {{-- FILTROS --}}
             <div class="kt-card">
-                <div class="kt-card-header flex-col sm:flex-row items-start sm:items-center gap-3 py-3 lg:py-0">
-                    <h3 class="kt-card-title">Filtros</h3>
-                    <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-                        <button type="button" data-action="quick-range" data-range="this-month" class="kt-btn kt-btn-sm {{ $activeRange === 'this-month' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Este mês</button>
-                        <button type="button" data-action="quick-range" data-range="last-month" class="kt-btn kt-btn-sm {{ $activeRange === 'last-month' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Mês passado</button>
-                        <button type="button" data-action="quick-range" data-range="last-3-months" class="kt-btn kt-btn-sm {{ $activeRange === 'last-3-months' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Últimos 3 meses</button>
-                        <button type="button" data-action="quick-range" data-range="this-year" class="kt-btn kt-btn-sm {{ $activeRange === 'this-year' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Este ano</button>
+                <form id="reportFilterForm" method="GET" action="{{ route('reports.index') }}"
+                      class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 p-4">
+                    <input type="hidden" name="start_date" value="{{ $filters['start_date'] }}" />
+                    <input type="hidden" name="end_date" value="{{ $filters['end_date'] }}" />
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <label class="kt-input w-full sm:w-64">
+                                <i class="ki-filled ki-magnifier"></i>
+                                <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Buscar produto..." autocomplete="off" />
+                            </label>
+                            <button type="submit" class="kt-btn kt-btn-mono shrink-0">Buscar</button>
+                        </div>
+                        <select name="issuer_id" class="kt-select w-full sm:w-52" aria-label="Filtrar por emissor">
+                            <option value="">Todos os emissores</option>
+                            @foreach($issuers as $issuer)
+                                <option value="{{ $issuer->id }}" @selected((string) ($filters['issuer_id'] ?? '') === (string) $issuer->id)>{{ $issuer->display_name }}</option>
+                            @endforeach
+                        </select>
+                        <select name="category_id" class="kt-select w-full sm:w-52" aria-label="Filtrar por categoria">
+                            <option value="">Todas as categorias</option>
+                            <option value="none" @selected(($filters['category_id'] ?? null) === 'none')>Sem categoria</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}" @selected((string) ($filters['category_id'] ?? '') === (string) $cat->id)>{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                        @if($hasListFilters)
+                            <a href="{{ route('reports.index', array_filter(['start_date' => $filters['start_date'], 'end_date' => $filters['end_date']])) }}"
+                               class="kt-btn kt-btn-ghost kt-btn-sm shrink-0">
+                                <i class="ki-filled ki-cross"></i> Limpar
+                            </a>
+                        @endif
                     </div>
-                </div>
-                <div class="kt-card-content pb-5">
-                    <form id="reportForm" method="POST" action="{{ route('reports.generate') }}">
-                        @csrf
-                        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
-                                <label class="text-xs font-medium text-secondary-foreground mb-1.5 block">De</label>
-                                <input type="date" name="start_date" id="reportStartDate"
-                                       class="kt-input w-full"
-                                       value="{{ $filters['start_date'] ?? now()->startOfMonth()->format('Y-m-d') }}" />
-                            </div>
-                            <div>
-                                <label class="text-xs font-medium text-secondary-foreground mb-1.5 block">Até</label>
-                                <input type="date" name="end_date" id="reportEndDate"
-                                       class="kt-input w-full"
-                                       value="{{ $filters['end_date'] ?? now()->format('Y-m-d') }}" />
-                            </div>
-                            <div>
-                                <label class="text-xs font-medium text-secondary-foreground mb-1.5 block">Emissor</label>
-                                <select name="issuer_id" class="kt-input w-full" data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Todos">
-                                    <option value="">Todos</option>
-                                    @foreach($issuers as $issuer)
-                                        <option value="{{ $issuer->id }}"
-                                            {{ isset($filters['issuer_id']) && $filters['issuer_id'] == $issuer->id ? 'selected' : '' }}>
-                                            {{ $issuer->display_name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-xs font-medium text-secondary-foreground mb-1.5 block">Categoria</label>
-                                <select name="category_id" class="kt-input w-full" data-kt-select="true" data-kt-select-dropdown-strategy="fixed" data-kt-select-placeholder="Todas">
-                                    <option value="">Todas</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}"
-                                            {{ isset($filters['category_id']) && $filters['category_id'] == $cat->id ? 'selected' : '' }}>
-                                            {{ $cat->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                        <div class="flex flex-wrap gap-2 mt-5">
-                            <button type="submit" class="kt-btn kt-btn-primary">
-                                <i class="ki-filled ki-eye"></i>
-                                Visualizar
-                            </button>
-                            <button type="button" data-action="submit-report" data-url="{{ route('reports.pdf') }}" class="kt-btn kt-btn-outline">
-                                <i class="ki-filled ki-document"></i>
-                                Exportar PDF
-                            </button>
-                            <button type="button" data-action="submit-report" data-url="{{ route('reports.csv') }}" class="kt-btn kt-btn-outline">
-                                <i class="ki-filled ki-file-down"></i>
-                                Exportar CSV
-                            </button>
-                        </div>
-                    </form>
-                </div>
+
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <label for="reportSortSelect" class="text-sm text-secondary-foreground shrink-0">Ordenar itens por</label>
+                        <select name="sort" id="reportSortSelect" class="kt-select w-full sm:w-48">
+                            @foreach(['recent' => 'Mais recentes', 'oldest' => 'Mais antigos', 'highest' => 'Maior valor', 'lowest' => 'Menor valor', 'name' => 'Produto (A–Z)'] as $value => $label)
+                                <option value="{{ $value }}" @selected(($filters['sort'] ?? 'recent') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
             </div>
 
             @isset($items)
@@ -129,7 +126,15 @@
                             <span class="text-2xl font-semibold text-mono tabular-nums truncate">
                                 R$ {{ number_format($summary->total_amount ?? 0, 2, ',', '.') }}
                             </span>
-                            <span class="text-sm font-normal text-secondary-foreground">Total Gasto</span>
+                            <span class="text-sm font-normal text-secondary-foreground">
+                                {{ $summary->is_partial ? 'Total gasto (filtro)' : 'Total gasto' }}
+                                @if($summary->delta_pct !== null && $summary->delta_pct != 0)
+                                    <span class="text-xs tabular-nums {{ $summary->delta_pct > 0 ? 'text-destructive' : 'text-green-600' }}"
+                                          title="Comparado ao período anterior, de mesma duração">
+                                        · {{ $summary->delta_pct > 0 ? '▲' : '▼' }} {{ number_format(abs($summary->delta_pct), 1, ',', '.') }}%
+                                    </span>
+                                @endif
+                            </span>
                         </div>
                     </div>
 
@@ -141,7 +146,7 @@
                             <span class="text-2xl font-semibold text-mono tabular-nums">
                                 {{ $summary->total_items ?? 0 }}
                             </span>
-                            <span class="text-sm font-normal text-secondary-foreground">Total de Itens</span>
+                            <span class="text-sm font-normal text-secondary-foreground">Itens</span>
                         </div>
                     </div>
 
@@ -153,7 +158,7 @@
                             <span class="text-2xl font-semibold text-mono tabular-nums">
                                 {{ $summary->total_invoices ?? 0 }}
                             </span>
-                            <span class="text-sm font-normal text-secondary-foreground">Total de Notas</span>
+                            <span class="text-sm font-normal text-secondary-foreground">Notas</span>
                         </div>
                     </div>
 
@@ -163,9 +168,9 @@
                         </div>
                         <div class="flex flex-col gap-1 pb-4 px-5">
                             <span class="text-2xl font-semibold text-mono tabular-nums truncate">
-                                R$ {{ number_format($summary->total_invoices ? ($summary->total_amount / $summary->total_invoices) : 0, 2, ',', '.') }}
+                                R$ {{ number_format($summary->average_ticket, 2, ',', '.') }}
                             </span>
-                            <span class="text-sm font-normal text-secondary-foreground">Ticket Médio</span>
+                            <span class="text-sm font-normal text-secondary-foreground">{{ $summary->average_label }}</span>
                         </div>
                     </div>
 
@@ -201,13 +206,63 @@
                     </div>
                 @endif
 
+                {{-- EVOLUÇÃO MENSAL E POR EMISSOR --}}
+                <div class="grid gap-5 lg:gap-7.5 {{ count($byIssuer) > 0 ? 'lg:grid-cols-2' : '' }}">
+                    <div class="kt-card">
+                        <div class="kt-card-header">
+                            <h3 class="kt-card-title">Evolução mensal</h3>
+                            <span class="text-xs text-secondary-foreground">12 meses até {{ \Carbon\Carbon::parse($filters['end_date'])->format('m/Y') }}</span>
+                        </div>
+                        <div class="kt-card-content pb-4">
+                            @if(collect($monthly)->sum('total') > 0)
+                                <div id="reportMonthlyChart" style="height: 240px;"></div>
+                            @else
+                                <p class="text-sm text-secondary-foreground text-center py-10">Sem gastos nos últimos 12 meses com estes filtros.</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if(count($byIssuer) > 0)
+                        @php $issuerTop = collect($byIssuer)->max('total') ?: 1; @endphp
+                        <div class="kt-card">
+                            <div class="kt-card-header">
+                                <h3 class="kt-card-title">Onde você gasta</h3>
+                            </div>
+                            <div class="kt-card-content px-5 pb-4 flex flex-col">
+                                @foreach($byIssuer as $row)
+                                    <div class="py-2.5 border-b border-border last:border-b-0">
+                                        <div class="flex items-start justify-between gap-3">
+                                            @if($row['issuer_id'])
+                                                <a href="{{ route('issuers.detail', ['id' => $row['issuer_id']]) }}"
+                                                   class="text-sm font-medium text-foreground hover:text-primary leading-snug line-clamp-1 min-w-0" title="{{ $row['name'] }}">{{ $row['name'] }}</a>
+                                            @else
+                                                <span class="text-sm font-medium text-foreground leading-snug line-clamp-1 min-w-0">{{ $row['name'] }}</span>
+                                            @endif
+                                            <span class="text-sm font-semibold font-mono text-foreground tabular-nums shrink-0">R$ {{ number_format($row['total'], 2, ',', '.') }}</span>
+                                        </div>
+                                        <div class="kt-progress h-1 mt-1.5">
+                                            <div class="kt-progress-indicator" style="width: {{ min($row['total'] / $issuerTop * 100, 100) }}%"></div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- AVISO: categoria alterada na tabela --}}
+                <div id="reportStaleNotice" class="hidden items-center justify-between gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700">
+                    <span>Categoria atualizada. Os totais e o gráfico só refletem a mudança depois de atualizar.</span>
+                    <a href="{{ route('reports.index', $activeFilters) }}" class="kt-btn kt-btn-outline kt-btn-sm shrink-0">Atualizar</a>
+                </div>
+
                 {{-- ITENS DETALHADOS --}}
                 <div class="kt-card kt-card-grid">
                     <div class="kt-card-header">
                         <h3 class="kt-card-title">Itens Detalhados</h3>
                         <div class="kt-card-toolbar">
                             <span class="kt-badge kt-badge-primary kt-badge-outline kt-badge-sm">
-                                {{ $items->count() }} {{ $items->count() === 1 ? 'item' : 'itens' }}
+                                {{ number_format($items->total()) }} {{ $items->total() === 1 ? 'item' : 'itens' }}
                             </span>
                         </div>
                     </div>
@@ -216,7 +271,7 @@
                             <div class="flex flex-col items-center justify-center py-12 text-center">
                                 <i class="ki-filled ki-document text-4xl text-secondary-foreground/30 mb-3"></i>
                                 <p class="text-sm font-medium text-foreground">Nenhum item encontrado</p>
-                                <p class="text-xs text-secondary-foreground mt-1">Tente ajustar os filtros e gerar novamente.</p>
+                                <p class="text-xs text-secondary-foreground mt-1">Tente ajustar os filtros.</p>
                             </div>
                         </div>
                     @else
@@ -361,6 +416,15 @@
                             @endforeach
                         </div>
                     @endif
+
+                    @if($items->hasPages())
+                        <div class="kt-card-footer justify-center md:justify-between flex-col md:flex-row gap-3 text-secondary-foreground text-sm font-medium">
+                            <span class="order-2 md:order-1">Exibindo {{ $items->firstItem() }}–{{ $items->lastItem() }} de {{ number_format($items->total()) }} itens</span>
+                            <div class="flex items-center gap-2 order-1 md:order-2">
+                                {{ $items->links('vendor.pagination.metronic') }}
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
             @endisset
@@ -369,15 +433,21 @@
     </div>
 
     @include('product-alias._alias-modal')
+    @if($isPro)
+        @include('report._email-modal')
+    @endif
 
 @endsection
 
 @push('scripts')
 <script>
     window.pageConfig = Object.assign(window.pageConfig || {}, {
-        generateUrl: '{{ route("reports.generate") }}',
+        emailUrl: '{{ route("reports.email") }}',
+        scheduleUrl: '{{ route("reports.schedule.save") }}',
+        reportMonthly: @json($monthly),
+        reportFilters: @json($activeFilters),
         assignCategoryUrl: '{{ route("categories.assign-item") }}',
-        suggestItemCategoryUrl: '{{ auth()->user()->isPro() ? route("categories.suggest-item-category") : "" }}',
+        suggestItemCategoryUrl: '{{ $isPro ? route("categories.suggest-item-category") : "" }}',
         categoryBreakdown: @json($categoryBreakdown ?? []),
         productAliasStoreUrl: '{{ route("product-aliases.store") }}',
         productAliasAiSuggestUrl: '{{ route("product-aliases.ai-suggest-name") }}',

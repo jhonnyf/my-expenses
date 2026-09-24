@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Budget;
 use App\Models\Category;
 use App\Models\FavoriteProduct;
+use App\Models\ReportSchedule;
 use App\Models\ShoppingList;
 use App\Models\User;
 use App\Notifications\PersonalDataExportReady;
@@ -97,6 +98,12 @@ class ExportPersonalDataJob implements ShouldQueue
                 ->map(fn ($budget) => [
                     'categoria' => $budget->category?->name,
                     'valor' => $budget->amount,
+                ])->all(),
+            'relatorio_agendado' => ReportSchedule::where('user_id', $user->id)->get()
+                ->map(fn ($schedule) => [
+                    'frequencia' => $schedule->frequency->value,
+                    'formato' => $schedule->format,
+                    'ultimo_envio' => $schedule->last_sent_on?->toDateString(),
                 ])->all(),
             'listas_de_compras' => ShoppingList::where('user_id', $user->id)->with('items')->get()
                 ->map(fn ($list) => [

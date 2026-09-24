@@ -26,7 +26,8 @@ class ReportServiceTest extends TestCase
 
     private function createInvoiceWithItem(User $user, Issuer $issuer, array $invoiceOverrides = [], float $itemPrice = 10.00, array $itemOverrides = []): InvoiceItem
     {
-        $invoiceOverrides = array_merge(['issued_at' => now()], $invoiceOverrides);
+        // O total sem filtro de categoria/produto é o da nota (líquido); aqui a nota vale o mesmo que seu único item.
+        $invoiceOverrides = array_merge(['issued_at' => now(), 'total_amount' => $itemPrice], $invoiceOverrides);
         $invoice = Invoice::factory()->for($user)->for($issuer)->create($invoiceOverrides);
 
         return InvoiceItem::factory()->for($invoice)->create(
@@ -104,6 +105,8 @@ class ReportServiceTest extends TestCase
             'end_date' => '2026-07-31',
             'issuer_id' => $issuer->id,
             'category_id' => $category->id,
+            'q' => '',
+            'sort' => 'recent',
         ], $result['filters']);
     }
 

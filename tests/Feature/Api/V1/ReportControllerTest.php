@@ -46,8 +46,8 @@ class ReportControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $issuer = Issuer::factory()->create();
-        $recent = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(5)]);
-        $old = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(40)]);
+        $recent = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(5), 'total_amount' => 50.00]);
+        $old = Invoice::factory()->for($user)->for($issuer)->create(['issued_at' => now()->subDays(40), 'total_amount' => 100.00]);
 
         InvoiceItem::factory()->for($recent)->create(['total_price' => 50.00]);
         InvoiceItem::factory()->for($old)->create(['total_price' => 100.00]);
