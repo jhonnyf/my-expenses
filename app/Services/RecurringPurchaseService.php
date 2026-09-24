@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Produtos comprados com frequência e quando comprar de novo.
@@ -75,15 +76,21 @@ class RecurringPurchaseService
         $names = $stats->pluck('description')->unique()->values()->all();
         $days = $this->purchaseDays($userId, $now, $names);
         $latest = $this->latestPerIssuer($userId, $now, $names);
-        $dismissed = RecurringDismissal::where('user_id', $userId)->pluck('description')->flip();
+        $dismissed = RecurringDismissal::where('user_id', $userId)->pluck('description')
+            ->mapWithKeys(fn (string $description) => [$this->key($description, '') => true]);
         $freshCutoff = $now->copy()->subDays(self::FRESH_DAYS);
 
         return $stats->map(function ($row) use ($days, $latest, $dismissed, $today, $now, $freshCutoff) {
             $key = $this->key($row->description, $row->unit);
             $purchaseDays = $days[$key] ?? [];
 
-            return $this->buildItem($row, $purchaseDays, $latest[$key] ?? collect(), $dismissed->has($row->description), $today, $now, $freshCutoff);
-        })->values();
+            // Sem pelo menos dois dias não há intervalo a calcular (não deve ocorrer; evita quebrar a tela toda).
+            if (count($purchaseDays) < 2) {
+                return null;
+            }
+
+            return $this->buildItem($row, $purchaseDays, $latest[$key] ?? collect(), $dismissed->has($this->key($row->description, '')), $today, $now, $freshCutoff);
+        })->filter()->values();
     }
 
     /**
@@ -199,9 +206,14 @@ class RecurringPurchaseService
 
     // ─────────────────────────── Cálculo ───────────────────────────
 
+    /**
+     * Chave de junção entre as consultas. O MySQL agrupa sem diferenciar maiúsculas/acentos (collation *_ci) e devolve
+     * uma variante qualquer do texto em cada linha ("LEITE" num dia, "leite" no outro); comparar as strings cruas
+     * dividiria um mesmo produto em vários e deixaria dias de compra de fora.
+     */
     private function key(string $description, string $unit): string
     {
-        return $description.'|'.$unit;
+        return mb_strtolower(Str::ascii(trim($description))).'|'.mb_strtolower(trim($unit));
     }
 
     /** Itens do usuário na janela do histórico, com nome canônico e preço válido. */
@@ -267,7 +279,7 @@ class RecurringPurchaseService
             ->orderBy('day')
             ->get()
             ->groupBy(fn ($row) => $this->key($row->description, $row->unit))
-            ->map(fn (Collection $rows) => $rows->pluck('day')->all());
+            ->map(fn (Collection $rows) => $rows->pluck('day')->unique()->sort()->values()->all());
     }
 
     /**

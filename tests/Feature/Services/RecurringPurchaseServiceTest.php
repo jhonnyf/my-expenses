@@ -225,4 +225,13 @@ class RecurringPurchaseServiceTest extends TestCase
         $this->assertSame($user->id, $result['list']->user_id);
         $this->assertSame(1, $result['item']->quantity);
     }
+
+    public function test_dismissal_matches_regardless_of_case_and_accents(): void
+    {
+        $user = User::factory()->create();
+        $this->buy($user, [20, 10, 1], 'FEIJÃO PRETO');
+        RecurringDismissal::create(['user_id' => $user->id, 'description' => 'feijao preto']);
+
+        $this->assertTrue($this->service->getRecurringItems($user->id)->first()->dismissed);
+    }
 }
