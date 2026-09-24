@@ -3,7 +3,7 @@
 @section('page-title', 'Exclusão de Conta')
 
 @section('content')
-    <p class="text-xs text-muted-foreground">Última atualização: {{ now()->translatedFormat('d \d\e F \d\e Y') }}</p>
+    <p class="text-xs text-muted-foreground">Última atualização: {{ \Illuminate\Support\Carbon::parse(config('legal.current_terms_version'))->translatedFormat('d \d\e F \d\e Y') }}</p>
 
     <section>
         <h2>Como excluir sua conta no {{ env('APP_NAME') }}</h2>
@@ -36,7 +36,7 @@
     <section>
         <h2>Sem acesso à conta?</h2>
         <p>
-            Envie um e-mail para <a class="link" href="mailto:contato@cestazen.com.br">contato@cestazen.com.br</a>
+            Envie um e-mail para <a class="link" href="mailto:{{ config('legal.contact_email') }}">{{ config('legal.contact_email') }}</a>
             a partir do endereço cadastrado, com o assunto "Exclusão de conta". A solicitação é atendida em até
             15 dias.
         </p>
@@ -55,7 +55,7 @@
         </ol>
         <h3>Por solicitação</h3>
         <ol>
-            <li>Envie um e-mail para <a class="link" href="mailto:contato@cestazen.com.br">contato@cestazen.com.br</a>
+            <li>Envie um e-mail para <a class="link" href="mailto:{{ config('legal.contact_email') }}">{{ config('legal.contact_email') }}</a>
                 a partir do endereço cadastrado, com o assunto "Exclusão de dados";</li>
             <li>Informe quais dados deseja remover (por exemplo, notas fiscais importadas, dados de localização ou foto de perfil);</li>
             <li>A solicitação é atendida em até 15 dias e você recebe a confirmação por e-mail.</li>

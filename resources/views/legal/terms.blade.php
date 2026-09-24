@@ -3,7 +3,7 @@
 @section('page-title', 'Termos de Uso')
 
 @section('content')
-    <p class="text-xs text-muted-foreground">Última atualização: {{ now()->translatedFormat('d \d\e F \d\e Y') }}</p>
+    <p class="text-xs text-muted-foreground">Última atualização: {{ \Illuminate\Support\Carbon::parse(config('legal.current_terms_version'))->translatedFormat('d \d\e F \d\e Y') }}</p>
 
     <section>
         <h2>1. Sobre o Serviço</h2>
@@ -79,8 +79,11 @@
     <section>
         <h2>7. Planos e Cobrança</h2>
         <p>
-            O {{ env('APP_NAME') }} oferece um plano gratuito e um plano Pro, com recursos adicionais (como
-            exportação de relatórios em CSV). Cobranças, cancelamento e reembolso do plano Pro seguem a
+            O {{ env('APP_NAME') }} oferece um plano gratuito e um plano Pro, com recursos adicionais
+            (como orçamentos por categoria, exportação de relatórios, envio e agendamento de relatórios por
+            e-mail, sugestões por Inteligência Artificial, histórico e comparação de preços e detecção de
+            compras recorrentes). Os recursos de cada plano estão descritos na página de planos e podem ser
+            atualizados ao longo do tempo. Cobranças, cancelamento e reembolso do plano Pro seguem a
             política de cobrança vigente no momento da contratação, informada antes da confirmação do
             pagamento.
         </p>
@@ -128,7 +131,7 @@
         <h2>12. Contato</h2>
         <p>
             Dúvidas sobre estes Termos podem ser enviadas para
-            <a class="link" href="mailto:contato@cestazen.com.br">contato@cestazen.com.br</a>.
+            <a class="link" href="mailto:{{ config('legal.contact_email') }}">{{ config('legal.contact_email') }}</a>.
         </p>
     </section>
 @endsection
