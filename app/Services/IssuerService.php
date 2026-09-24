@@ -25,6 +25,8 @@ class IssuerService
 
     private const TOP_PRODUCTS = 5;
 
+    private const TICKET_TREND_WINDOW = 3;
+
     public function __construct(private readonly ProductAliasService $aliasService) {}
 
     /**
@@ -179,6 +181,7 @@ class IssuerService
     /**
      * @return array{
      *     average_ticket: float,
+     *     ticket_trend_pct: ?float,
      *     visit_interval_days: ?int,
      *     monthly: list<array{month: string, total: float}>,
      *     top_products: list<array{name: string, purchases: int, total: float, average_price: float, last_price: float, variation_pct: ?float}>,
@@ -191,11 +194,36 @@ class IssuerService
 
         return [
             'average_ticket' => $count > 0 ? round((float) $stats->total_sum / $count, 2) : 0.0,
+            'ticket_trend_pct' => $this->ticketTrendPct($user, $issuer),
             'visit_interval_days' => $this->visitIntervalDays($stats),
             'monthly' => $this->monthlySpending($user, $issuer),
             'top_products' => $this->topProducts($user, $issuer),
             'categories' => $this->spendingByCategory($user, $issuer),
         ];
+    }
+
+    /**
+     * Ticket médio das compras mais recentes vs. o das imediatamente anteriores (metade/metade das últimas
+     * 2×janela notas). Precisa de ao menos 4 notas para a comparação fazer sentido; abaixo disso, null.
+     */
+    private function ticketTrendPct(User $user, Issuer $issuer): ?float
+    {
+        $totals = $issuer->invoices()
+            ->where('user_id', $user->id)
+            ->latest('issued_at')
+            ->limit(self::TICKET_TREND_WINDOW * 2)
+            ->pluck('total_amount')
+            ->map(fn ($total) => (float) $total);
+
+        if ($totals->count() < 4) {
+            return null;
+        }
+
+        $half = intdiv($totals->count(), 2);
+        $recent = $totals->take($half)->avg();
+        $previous = $totals->slice($half, $half)->avg();
+
+        return $previous > 0 ? round((($recent - $previous) / $previous) * 100, 1) : null;
     }
 
     private function visitIntervalDays(object $stats): ?int

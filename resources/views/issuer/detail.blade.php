@@ -101,6 +101,12 @@
                         <div class="flex flex-col gap-0.5">
                             <span class="text-xs text-secondary-foreground">Ticket médio</span>
                             <span class="text-sm font-semibold text-foreground tabular-nums">R$ {{ number_format($insights['average_ticket'], 2, ',', '.') }}</span>
+                            @if($insights['ticket_trend_pct'] !== null && $insights['ticket_trend_pct'] != 0)
+                                <span class="text-xs tabular-nums {{ $insights['ticket_trend_pct'] > 0 ? 'text-destructive' : 'text-green-600' }}"
+                                      title="Média das compras mais recentes comparada às anteriores">
+                                    {{ $insights['ticket_trend_pct'] > 0 ? '▲' : '▼' }} {{ number_format(abs($insights['ticket_trend_pct']), 1, ',', '.') }}% nas últimas compras
+                                </span>
+                            @endif
                         </div>
                         <div class="flex flex-col gap-0.5">
                             <span class="text-xs text-secondary-foreground">Frequência</span>
@@ -252,12 +258,20 @@
                                                 {{ $product['purchases'] }}x · média R$ {{ number_format($product['average_price'], 2, ',', '.') }}
                                             </p>
                                         </div>
-                                        <div class="flex flex-col items-end shrink-0">
-                                            <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($product['last_price'], 2, ',', '.') }}</span>
-                                            @if($product['variation_pct'] !== null && $product['variation_pct'] != 0)
-                                                <span class="text-xs tabular-nums {{ $product['variation_pct'] > 0 ? 'text-destructive' : 'text-green-600' }}">
-                                                    {{ $product['variation_pct'] > 0 ? '▲' : '▼' }} {{ number_format(abs($product['variation_pct']), 1, ',', '.') }}%
-                                                </span>
+                                        <div class="flex items-center gap-1 shrink-0">
+                                            <div class="flex flex-col items-end shrink-0">
+                                                <span class="text-sm font-semibold font-mono text-foreground tabular-nums">R$ {{ number_format($product['last_price'], 2, ',', '.') }}</span>
+                                                @if($product['variation_pct'] !== null && $product['variation_pct'] != 0)
+                                                    <span class="text-xs tabular-nums {{ $product['variation_pct'] > 0 ? 'text-destructive' : 'text-green-600' }}">
+                                                        {{ $product['variation_pct'] > 0 ? '▲' : '▼' }} {{ number_format(abs($product['variation_pct']), 1, ',', '.') }}%
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            @if($canComparePrices)
+                                                <a href="{{ route('prices.index', ['product' => $product['name']]) }}"
+                                                   class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm shrink-0" title="Comparar preços">
+                                                    <i class="ki-filled ki-chart-line"></i>
+                                                </a>
                                             @endif
                                         </div>
                                     </div>

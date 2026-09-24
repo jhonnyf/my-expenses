@@ -489,6 +489,10 @@ const Prices = (() => {
                 searchInput.value = q;
                 fetchProductOptions(q);
             }
+
+            // Vindo de outra tela (ex.: detalhe do emissor): abre direto no histórico do produto.
+            const product = params.get('product');
+            if (product) selectProduct(product);
         }
     };
 })();

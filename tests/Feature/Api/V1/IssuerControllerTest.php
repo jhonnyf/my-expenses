@@ -303,7 +303,7 @@ class IssuerControllerTest extends TestCase
             ->assertJsonPath('data.invoices_meta.last_page', 2)
             ->assertJsonPath('data.insights.average_ticket', 10)
             ->assertJsonCount(12, 'data.insights.monthly')
-            ->assertJsonStructure(['data' => ['insights' => ['visit_interval_days', 'top_products', 'categories']]]);
+            ->assertJsonStructure(['data' => ['insights' => ['visit_interval_days', 'ticket_trend_pct', 'top_products', 'categories']]]);
     }
 
     public function test_show_second_page_of_invoices(): void

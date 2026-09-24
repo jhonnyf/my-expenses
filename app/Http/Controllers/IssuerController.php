@@ -37,6 +37,7 @@ class IssuerController extends Controller
             'record' => $detail['issuer'],
             'invoices' => $detail['invoices'],
             'insights' => $detail['insights'],
+            'canComparePrices' => Auth::user()->isPro(),
             'invoiceSearch' => trim((string) $request->query('q')),
             'isFavorite' => $detail['is_favorite'],
             'stats' => $detail['stats'],

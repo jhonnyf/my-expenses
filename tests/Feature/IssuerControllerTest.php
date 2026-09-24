@@ -451,4 +451,84 @@ class IssuerControllerTest extends TestCase
         $this->actingAs($user)->get("/issuers/detail/{$issuer->id}?q=987654")
             ->assertViewHas('invoices', fn ($invoices) => $invoices->pluck('id')->all() === [$target->id]);
     }
+
+    private function purchasesAt(User $user, Issuer $issuer, array $totals): void
+    {
+        // do mais antigo para o mais recente
+        foreach ($totals as $i => $total) {
+            Invoice::factory()->create([
+                'user_id' => $user->id,
+                'issuer_id' => $issuer->id,
+                'total_amount' => $total,
+                'issued_at' => now()->subDays(count($totals) - $i),
+            ]);
+        }
+    }
+
+    public function test_detail_ticket_trend_compares_recent_purchases_with_previous_ones(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $this->purchasesAt($user, $issuer, [100, 100, 100, 150, 150, 150]);
+
+        $this->assertSame(50.0, $this->insightsOf($user, $issuer)['ticket_trend_pct']);
+    }
+
+    public function test_detail_ticket_trend_is_negative_when_recent_tickets_drop(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $this->purchasesAt($user, $issuer, [200, 200, 100, 100]);
+
+        $this->assertSame(-50.0, $this->insightsOf($user, $issuer)['ticket_trend_pct']);
+    }
+
+    public function test_detail_ticket_trend_is_null_with_fewer_than_four_purchases(): void
+    {
+        $user = User::factory()->create();
+        $issuer = Issuer::factory()->create();
+        $this->purchasesAt($user, $issuer, [100, 100, 500]);
+
+        $this->assertNull($this->insightsOf($user, $issuer)['ticket_trend_pct']);
+    }
+
+    public function test_detail_ticket_trend_ignores_other_users_purchases(): void
+    {
+        $user = User::factory()->create();
+        $issuer = $this->issuerBoughtBy($user);
+        $this->purchasesAt(User::factory()->create(), $issuer, [1, 1, 1000, 1000]);
+
+        $this->assertNull($this->insightsOf($user, $issuer)['ticket_trend_pct']);
+    }
+
+    private function issuerWithTopProduct(User $user): Issuer
+    {
+        $issuer = Issuer::factory()->create();
+        $invoice = Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id]);
+        InvoiceItem::factory()->create(['invoice_id' => $invoice->id, 'description' => 'CAFE TORRADO', 'total_price' => 20]);
+
+        return $issuer;
+    }
+
+    public function test_detail_links_to_price_comparison_for_pro_users(): void
+    {
+        $user = User::factory()->pro()->create();
+        $issuer = $this->issuerWithTopProduct($user);
+
+        $this->actingAs($user)->get("/issuers/detail/{$issuer->id}")
+            ->assertStatus(200)
+            ->assertViewHas('canComparePrices', true)
+            ->assertSee(route('prices.index', ['product' => 'CAFE TORRADO']), false);
+    }
+
+    public function test_detail_hides_price_comparison_link_for_free_users(): void
+    {
+        $user = User::factory()->create();
+        $issuer = $this->issuerWithTopProduct($user);
+
+        $this->actingAs($user)->get("/issuers/detail/{$issuer->id}")
+            ->assertStatus(200)
+            ->assertViewHas('canComparePrices', false)
+            ->assertDontSee('Comparar preços');
+    }
 }
