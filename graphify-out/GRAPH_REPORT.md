@@ -1,73 +1,77 @@
-# Graph Report - my-expenses  (2026-09-23)
+# Graph Report - my-expenses  (2026-09-25)
 
 ## Corpus Check
-- 686 files · ~2,263,466 words
+- 745 files · ~2,296,323 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 6329 nodes · 13023 edges · 516 communities (139 shown, 138 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 382 edges (avg confidence: 0.85)
+- 6942 nodes · 15020 edges · 538 communities (147 shown, 141 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 383 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `eff6338c`
+- Built from commit: `275a3502`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- Illuminate\Database\Eloquent\Model
+- Illuminate\Database\Eloquent\Relations\BelongsTo
 - NFCeService
-- NfceXmlImporter
+- InvoiceController.php
 - app.js
-- FavoriteProductPriceDropped
+- Illuminate\Contracts\Queue\ShouldQueue
 - Illuminate\Http\Request
 - CategoryController
-- PriceComparisonService
-- V1/AccountController.php
+- StoreFavoriteProductRequest
+- Controllers/AccountController.php
+- ImportInvoiceAction
 - Illuminate\Foundation\Http\FormRequest
-- SearchService
 - Illuminate\View\View
 - AppServiceProvider.php
 - FullTextQuery
 - Illuminate\Database\Eloquent\Factories\Factory
 - User
 - TestCase
-- Issuer
+- Invoice
 - DashboardService
 - Category
 - theme.js
 - ProductAliasController
 - Illuminate\Support\Collection
-- ReportService
+- ReportSchedule
 - index.global.min.js
-- ProductNameAiSuggestionService
+- ReportManagementTest
 - apexcharts.min.js
 - Illuminate\Http\JsonResponse
-- Illuminate\Support\Facades\Log
+- RecurringPurchaseService.php
 - bootstrap/app.php
-- ni
+- Kr
 - ProductAliasService
-- Illuminate\Database\Eloquent\Relations\HasMany
+- Illuminate\Database\Eloquent\Model
 - tinymce.js
-- p
+- N
 - ProductAliasSuggestionService
 - Illuminate\Database\Migrations\Migration
-- Illuminate\Database\Schema\Blueprint
-- Mockery
-- ShoppingListService
+- SocialAuthControllerTest
+- DismissRecurringRequest
 - dataTables.min.js
 - Qe
 - AccessKey
 - logging.php
 - sanctum.php
-- UserFactory
+- User.php
 - bt
 - 2026_09_08_000000_create_subscriptions_table.php
 - console.php
 - scramble.php
+- BudgetManagementTest
 - leaflet.bundle.js
+- Illuminate\Database\Schema\Blueprint
+- CategoryManagementTest
 - Illuminate\Support\Facades\Schema
+- PriceQueryRequest
 - we
+- NfceXmlImporter
 - jquery.min.js
 - ls
 - main.blade.php
@@ -84,14 +88,14 @@
 - review.blade.php
 - register/index.blade.php
 - report/index.blade.php
-- hr
+- .add
 - Editor
 - .init
 - xt
 - t
 - dropzone.js
-- Kr
-- y
+- PricesManagementTest
+- p
 - Optional
 - FavoriteProduct
 - vt
@@ -99,15 +103,15 @@
 - wa
 - e
 - Optional
-- kt
+- transform
 - canvas-confetti.min.js
 - Optional
 - lL
-- el
+- bl
 - a
 - A
 - tinymce.min.js
-- IssuerNickname
+- IssuerControllerTest
 - model.js
 - Me
 - Optional
@@ -123,7 +127,7 @@
 - Optional
 - Optional
 - Optional
-- ks
+- SubscriptionPlan
 - C
 - v
 - Optional
@@ -131,7 +135,7 @@
 - y
 - Optional
 - GeocodingService
-- NfceXmlRedactor
+- Illuminate\Console\Command
 - m
 - Optional
 - o
@@ -148,8 +152,8 @@
 - s
 - c
 - l
-- CategoryService
-- Illuminate\Contracts\Queue\ShouldQueue
+- AiCategorizeItemsJob
+- GeocodeIssuerJob
 - Optional
 - ha
 - Optional
@@ -158,10 +162,10 @@
 - ktui.min.js
 - Componentes principais
 - package.json
-- he
+- ce
 - URI
 - ai
-- Ws
+- ShoppingListManagementTest
 - vw
 - NFCeServiceTest
 - .defs
@@ -169,35 +173,35 @@
 - _update
 - ProductAliasControllerTest
 - CategoryKeywordsAiSuggestionService
-- SocialAuthControllerTest
-- ba
-- onAdd
+- FavoriteProductPriceDropped
+- la
+- addFeatures
 - createLayers
 - AstNode
 - ih
 - ReportControllerTest
-- UpdateUserAvatarAction
+- AuthController.php
 - Passo a passo
 - _getPopupData
 - init
 - CategoryControllerTest
 - ProductNameNormalizer
 - clipboard.min.js
-- la
+- CategoryService
 - na
 - _setGeometryParams
 - CategoryKeywordsAiSuggestionServiceTest
-- ProductNameAiSuggestionServiceTest
-- ReportServiceTest
-- .resolverHtmlEmbutido
-- xa
+- ProductNameAiSuggestionService
+- RegisterControllerTest
+- Carbon\Carbon
+- ReportService
 - EventDispatcher
 - EventUtils
 - gi
 - cestazen
 - gen-logo.mjs
 - ResetPasswordControllerTest
-- ProductAliasSuggestionServiceTest
+- RecurringPurchaseServiceTest
 - Arquitetura
 - form-validation.bundle.js
 - ke
@@ -205,11 +209,11 @@
 - EditorCommands
 - Shortcuts
 - BP
-- FindOrCreateSocialUserTest
+- ReportFiltersRequest
 - require
 - Apple
-- ss
-- os
+- IssuerService
+- Illuminate\Database\Eloquent\Builder
 - ni
 - oL
 - ScriptLoader
@@ -218,9 +222,9 @@
 - composer.json
 - scripts
 - ls
-- as
-- V1/BudgetController.php
-- ItemCategoryAiClassifierService
+- RecurringPurchaseService
+- StoreBudgetRequest
+- dl
 - BudgetService
 - Visual Check — cestazen
 - require-dev
@@ -230,20 +234,22 @@
 - qr
 - stamp-sw-cache.mjs
 - config
-- fa
-- ts
-- ProFeatureRequiredException
-- Un
+- CreateFreeSubscriptionAction
+- ja
+- Illuminate\Auth\Access\Response
+- li
 - psr-4
-- scripts
-- report.js
-- .displayName
+- BudgetThresholdReached
+- prices.js
+- Issuer.php
 - ExampleTest
-- bo
+- PriceComparisonService
 - Je
-- issuer-list.js
+- QrCodeRead
 - autoload-dev
 - extra
+- NotificationResource.php
+- NfceXmlRedactor
 - copilot-instructions.md
 - autosave/plugin.js
 - importcss/plugin.js
@@ -292,17 +298,22 @@
 - tinymce-5/skin.min.ts
 - Classes
 - tinymce-5/skin.shadowdom.min.ts
+- ApiResponder
+- notifications.js
+- account.js
+- show.blade.php
+- uncategorized.blade.php
 
 ## God Nodes (most connected - your core abstractions)
-1. `User` - 685 edges
-2. `Issuer` - 270 edges
-3. `Invoice` - 268 edges
-4. `InvoiceItem` - 195 edges
-5. `TestCase` - 162 edges
-6. `Category` - 113 edges
-7. `p()` - 84 edges
-8. `ShoppingList` - 64 edges
-9. `ProductAlias` - 61 edges
+1. `User` - 963 edges
+2. `Invoice` - 327 edges
+3. `Issuer` - 325 edges
+4. `InvoiceItem` - 216 edges
+5. `TestCase` - 178 edges
+6. `Category` - 150 edges
+7. `ShoppingList` - 93 edges
+8. `p()` - 84 edges
+9. `ProductAlias` - 75 edges
 10. `attr()` - 56 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -320,87 +331,83 @@
 ## Import Cycles
 - None detected.
 
-## Communities (516 total, 138 thin omitted)
+## Communities (538 total, 141 thin omitted)
 
-### Community 0 - "Illuminate\Database\Eloquent\Model"
+### Community 0 - "Illuminate\Database\Eloquent\Relations\BelongsTo"
 Cohesion: 0.09
-Nodes (5): InvoicePayment, Subscription, Illuminate\Database\Eloquent\Factories\HasFactory, Illuminate\Database\Eloquent\Model, Illuminate\Database\Eloquent\Relations\BelongsTo
+Nodes (3): InvoicePayment, RecurringDismissal, Illuminate\Database\Eloquent\Relations\BelongsTo
 
 ### Community 1 - "NFCeService"
-Cohesion: 0.12
-Nodes (5): NFCeService, DOMDocument, DOMElement, DOMXPath, Tools
+Cohesion: 0.09
+Nodes (11): NFCeService, CookieJar, DOMDocument, DOMElement, DOMXPath, GuzzleHttp\Cookie\CookieJar, NFePHP\Common\Certificate, NFePHP\Common\UFList (+3 more)
 
-### Community 2 - "NfceXmlImporter"
-Cohesion: 0.07
-Nodes (10): ImportStrategyInterface, ImportPayload, InvoiceStatus, AccessKeyImportStrategy, QrCodeImportStrategy, XmlFileImportStrategy, NfceXmlImporter, PHPUnit\Framework\Attributes\DataProvider (+2 more)
+### Community 2 - "InvoiceController.php"
+Cohesion: 0.05
+Nodes (13): DeleteInvoiceAction, ImportStrategyInterface, ImportPayload, InvoiceStatus, InvoiceController, ImportByAccessKeyRequest, ImportByQrCodeRequest, ListInvoicesRequest (+5 more)
 
 ### Community 3 - "app.js"
 Cohesion: 0.13
-Nodes (18): pages, Account, TAB_TOGGLE_SELECTORS, Budget, Category, Dashboard, InvoiceDetail, IssuerDetail (+10 more)
+Nodes (17): axios, pages, Budget, Category, CategoryDetail, CategoryUncategorized, Dashboard, InvoiceDetail (+9 more)
 
-### Community 4 - "FavoriteProductPriceDropped"
-Cohesion: 0.10
-Nodes (12): FavoriteProductPriceDropped, PersonalDataExportReady, MailMessage, MailMessage, ReportByEmail, MailMessage, VerifyEmailNotification, Illuminate\Auth\Notifications\VerifyEmail (+4 more)
+### Community 4 - "Illuminate\Contracts\Queue\ShouldQueue"
+Cohesion: 0.12
+Nodes (13): PersonalDataExportReady, MailMessage, MailMessage, ReportByEmail, MailMessage, VerifyEmailNotification, Illuminate\Auth\Notifications\VerifyEmail, Illuminate\Bus\Queueable (+5 more)
 
 ### Community 5 - "Illuminate\Http\Request"
 Cohesion: 0.05
-Nodes (28): CreateDefaultCategoriesAction, FindOrCreateSocialUser, AuthController, BudgetController, Controller, DashboardController, IssuerController, NotificationController (+20 more)
+Nodes (24): AuthController, Controller, DashboardController, IssuerController, NotificationController, PasswordResetController, SocialAuthController, SubscriptionController (+16 more)
 
 ### Community 6 - "CategoryController"
-Cohesion: 0.07
-Nodes (8): SuggestItemCategoryAction, CategoryController, CategoryController, AiSuggestCategoryKeywordsRequest, AiSuggestItemCategoryRequest, AssignCategoryItemRequest, SaveCategoryRequest, CategoryResource
+Cohesion: 0.05
+Nodes (11): MergeCategoriesAction, SuggestItemCategoryAction, CategoryController, CategoryController, AiSuggestCategoryKeywordsRequest, AiSuggestItemCategoryRequest, CategoryPeriodRequest, MergeCategoryRequest (+3 more)
 
-### Community 7 - "PriceComparisonService"
-Cohesion: 0.11
-Nodes (4): FavoriteProductController, FavoriteProductController, StoreFavoriteProductRequest, PriceComparisonService
+### Community 7 - "StoreFavoriteProductRequest"
+Cohesion: 0.14
+Nodes (3): FavoriteProductController, FavoriteProductController, StoreFavoriteProductRequest
 
-### Community 8 - "V1/AccountController.php"
+### Community 8 - "Controllers/AccountController.php"
+Cohesion: 0.05
+Nodes (16): CaptureUserLocationFromBrowserAction, DeleteUserAccountAction, RevokeUserSessionsAction, UpdateAccountAction, UpdateUserAvatarAction, AccountController, AccountController, CaptureLocationRequest (+8 more)
+
+### Community 10 - "Illuminate\Foundation\Http\FormRequest"
 Cohesion: 0.06
-Nodes (9): CaptureUserLocationFromBrowserAction, DeleteUserAccountAction, AccountController, CaptureLocationRequest, DeleteAccountRequest, UpdateAccountRequest, UpdateAvatarRequest, UpdatePasswordRequest (+1 more)
-
-### Community 9 - "Illuminate\Foundation\Http\FormRequest"
-Cohesion: 0.06
-Nodes (15): ImportInvoiceAction, LogQrCodeReadAction, ReconcilePendingInvoices, InvoiceImported, InvoiceController, MyPurchaseController, ImportByAccessKeyRequest, ImportByQrCodeRequest (+7 more)
-
-### Community 10 - "SearchService"
-Cohesion: 0.25
-Nodes (3): SearchController, SearchController, SearchService
+Nodes (14): AddShoppingListItemRequest, AssignCategoryItemRequest, FailsAsJson, ParsesKeywords, StoreShoppingListRequest, UpdateIssuerNicknameRequest, UpdateShoppingListItemRequest, UpdateShoppingListRequest (+6 more)
 
 ### Community 11 - "Illuminate\View\View"
-Cohesion: 0.06
-Nodes (24): UpdateUserLocationAction, AccountController, SubscriptionController, BudgetController, Controller, DashboardController, ForgotPasswordController, IssuerController (+16 more)
+Cohesion: 0.05
+Nodes (25): Controller, DashboardController, ForgotPasswordController, IssuerController, LegalController, LoginController, MyPurchaseController, NotificationController (+17 more)
 
 ### Community 12 - "AppServiceProvider.php"
-Cohesion: 0.18
-Nodes (8): AppServiceProvider, Dedoc\Scramble\Scramble, Illuminate\Auth\Notifications\ResetPassword, Illuminate\Cache\RateLimiting\Limit, Illuminate\Support\Facades\RateLimiter, Illuminate\Support\ServiceProvider, SocialiteProviders\Apple\AppleExtendSocialite, SocialiteProviders\Manager\SocialiteWasCalled
+Cohesion: 0.11
+Nodes (11): InvoiceImported, AutoCategorizeListener, AppServiceProvider, Dedoc\Scramble\Scramble, Illuminate\Auth\Notifications\ResetPassword, Illuminate\Cache\RateLimiting\Limit, Illuminate\Foundation\Events\Dispatchable, Illuminate\Support\Facades\RateLimiter (+3 more)
 
 ### Community 13 - "FullTextQuery"
-Cohesion: 0.13
-Nodes (4): FullTextQuery, Illuminate\Database\Eloquent\Builder, Illuminate\Database\Query\Builder, FullTextQueryTest
+Cohesion: 0.12
+Nodes (5): DistanceCalculator, FullTextQuery, Illuminate\Support\Facades\DB, DistanceCalculatorTest, FullTextQueryTest
 
 ### Community 14 - "Illuminate\Database\Eloquent\Factories\Factory"
-Cohesion: 0.04
-Nodes (25): CreateFreeSubscriptionAction, SubscriptionPlan, SubscriptionStatus, UserObserver, BudgetFactory, CategoryFactory, FavoriteProductFactory, InvoiceFactory (+17 more)
+Cohesion: 0.07
+Nodes (13): BudgetFactory, CategoryFactory, FavoriteProductFactory, InvoiceFactory, static, InvoiceItemFactory, IssuerFactory, IssuerNicknameFactory (+5 more)
 
 ### Community 15 - "User"
 Cohesion: 0.02
-Nodes (14): User, Illuminate\Contracts\Auth\MustVerifyEmail, Illuminate\Foundation\Auth\User, AccountControllerTest, AccountControllerTest, AuthControllerTest, ReportControllerTest, EnsureTermsAcceptedTest (+6 more)
+Nodes (16): User, Illuminate\Contracts\Auth\MustVerifyEmail, Illuminate\Foundation\Auth\User, Illuminate\Support\Carbon, AccountControllerTest, SubscriptionControllerTest, AccountControllerTest, AuthControllerTest (+8 more)
 
 ### Community 16 - "TestCase"
 Cohesion: 0.02
-Nodes (34): GeocodeUserProfileJob, DateTimeInterface, UserProfile, UserProfileObserver, Illuminate\Auth\Events\Verified, Illuminate\Database\QueryException, Illuminate\Foundation\Testing\RefreshDatabase, Illuminate\Foundation\Testing\TestCase (+26 more)
+Nodes (40): ExportPersonalDataJob, GeocodeUserProfileJob, DateTimeInterface, UserProfile, UserProfileObserver, Illuminate\Auth\Events\Verified, Illuminate\Database\QueryException, Illuminate\Foundation\Testing\RefreshDatabase (+32 more)
 
-### Community 17 - "Issuer"
-Cohesion: 0.03
-Nodes (19): Invoice, InvoiceItem, Issuer, ProductAlias, Illuminate\Support\Arr, Illuminate\Support\Facades\DB, IssuerControllerTest, PriceComparisonControllerTest (+11 more)
+### Community 17 - "Invoice"
+Cohesion: 0.02
+Nodes (17): Invoice, InvoiceItem, Issuer, ProductAlias, InvoiceControllerTest, IssuerControllerTest, PriceComparisonControllerTest, PriceHistoryControllerTest (+9 more)
 
 ### Community 18 - "DashboardService"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (4): OverallStats, self, DashboardService, Carbon
 
 ### Community 19 - "Category"
 Cohesion: 0.03
-Nodes (11): Budget, Category, BudgetPolicy, CategoryPolicy, CreateDefaultCategoriesActionTest, BudgetControllerTest, CategoryControllerTest, BudgetControllerTest (+3 more)
+Nodes (11): Budget, Category, CategoryPolicy, CreateDefaultCategoriesActionTest, BudgetControllerTest, CategoryControllerTest, BudgetControllerTest, AiCategorizeItemsJobTest (+3 more)
 
 ### Community 20 - "theme.js"
 Cohesion: 0.01
@@ -408,67 +415,59 @@ Nodes (137): TODO: Think about the types for this, or find a better way for this
 
 ### Community 21 - "ProductAliasController"
 Cohesion: 0.06
-Nodes (10): ProductAliasController, ProductAliasController, AiSuggestProductNameRequest, DismissProductAliasSuggestionRequest, MergeProductAliasRequest, StoreProductAliasRequest, UpdateIssuerNicknameRequest, Illuminate\Contracts\Validation\Validator (+2 more)
+Nodes (8): self, ProductNameAiSuggestion, ProductAliasController, ProductAliasController, AiSuggestProductNameRequest, DismissProductAliasSuggestionRequest, MergeProductAliasRequest, StoreProductAliasRequest
 
 ### Community 22 - "Illuminate\Support\Collection"
-Cohesion: 0.17
-Nodes (6): SearchStrategyInterface, InvoiceSearchStrategy, IssuerSearchStrategy, ProductSearchStrategy, Carbon\Carbon, Illuminate\Support\Collection
+Cohesion: 0.15
+Nodes (7): SearchStrategyInterface, SearchController, InvoiceSearchStrategy, IssuerSearchStrategy, ProductSearchStrategy, SearchService, Illuminate\Support\Collection
 
-### Community 23 - "ReportService"
-Cohesion: 0.13
-Nodes (6): StreamedResponse, ReportController, StreamedResponse, ReportController, ReportService, Symfony\Component\HttpFoundation\StreamedResponse
+### Community 23 - "ReportSchedule"
+Cohesion: 0.10
+Nodes (9): SendScheduledReports, StreamedResponse, ReportController, ReportEmailRequest, SaveReportScheduleRequest, SendReportByEmailJob, ReportSchedule, Barryvdh\DomPDF\Facade\Pdf (+1 more)
 
 ### Community 24 - "index.global.min.js"
-Cohesion: 0.02
-Nodes (77): ac(), al, Ao(), be(), bi(), bs(), bt(), cc() (+69 more)
-
-### Community 25 - "ProductNameAiSuggestionService"
-Cohesion: 0.17
-Nodes (3): self, ProductNameAiSuggestion, ProductNameAiSuggestionService
+Cohesion: 0.03
+Nodes (57): al, batchRendering(), be(), bt(), cc(), ci(), componentWillUnmount(), ct() (+49 more)
 
 ### Community 26 - "apexcharts.min.js"
-Cohesion: 0.03
-Nodes (47): active(), _addRunner(), amove(), attr(), ax(), ay(), cancelImmediate(), ci (+39 more)
+Cohesion: 0.04
+Nodes (42): active(), _addRunner(), amove(), attr(), ax(), ay(), bi, cancelImmediate() (+34 more)
 
 ### Community 27 - "Illuminate\Http\JsonResponse"
 Cohesion: 0.05
-Nodes (15): Controller, ShoppingListController, NotificationController, ShoppingListController, AddShoppingListItemRequest, UpdateShoppingListItemRequest, UpdateShoppingListRequest, ShoppingListResource (+7 more)
-
-### Community 28 - "Illuminate\Support\Facades\Log"
-Cohesion: 0.16
-Nodes (5): Illuminate\Http\Client\ConnectionException, Illuminate\Support\Facades\Cache, Illuminate\Support\Facades\Log, Illuminate\Support\Str, Pdo\Mysql
+Nodes (9): ShoppingListController, ShoppingListController, ShoppingListResource, ShoppingList, ShoppingListItem, ShoppingListService, ShoppingListItemFactory, Illuminate\Http\JsonResponse (+1 more)
 
 ### Community 29 - "bootstrap/app.php"
-Cohesion: 0.15
-Nodes (10): Authenticate, EnsureIsSuperAdmin, EnsureTermsAccepted, EnsureUserHasProPlan, Closure, Illuminate\Auth\Middleware\Authenticate, Illuminate\Foundation\Application, Illuminate\Foundation\Configuration\Exceptions (+2 more)
+Cohesion: 0.16
+Nodes (10): ProFeatureRequiredException, EnsureIsSuperAdmin, EnsureTermsAccepted, EnsureUserHasProPlan, Closure, Exception, Illuminate\Foundation\Application, Illuminate\Foundation\Configuration\Exceptions (+2 more)
 
-### Community 30 - "ni"
-Cohesion: 0.05
-Nodes (25): A(), an(), batchRendering(), bc(), ca(), constructor(), ei(), events() (+17 more)
+### Community 30 - "Kr"
+Cohesion: 0.04
+Nodes (24): an(), bc(), ca(), constructor(), ei(), ft(), gt(), ki() (+16 more)
 
 ### Community 31 - "ProductAliasService"
-Cohesion: 0.06
-Nodes (8): PriceHistoryController, RecurringPurchaseController, PricesController, AddToShoppingListRequest, PriceHistoryService, Closure, ProductAliasService, RecurringPurchaseService
+Cohesion: 0.10
+Nodes (4): Closure, PriceHistoryService, Closure, ProductAliasService
 
-### Community 32 - "Illuminate\Database\Eloquent\Relations\HasMany"
-Cohesion: 0.08
-Nodes (8): Illuminate\Auth\MustVerifyEmail, Illuminate\Database\Eloquent\Relations\BelongsToMany, Illuminate\Database\Eloquent\Relations\HasMany, Illuminate\Database\Eloquent\Relations\HasOne, Illuminate\Database\Eloquent\Relations\MorphMany, Illuminate\Database\Eloquent\Relations\MorphOne, Illuminate\Notifications\Notifiable, Laravel\Sanctum\HasApiTokens
+### Community 32 - "Illuminate\Database\Eloquent\Model"
+Cohesion: 0.14
+Nodes (3): Illuminate\Database\Eloquent\Factories\HasFactory, Illuminate\Database\Eloquent\Model, Illuminate\Database\Eloquent\Relations\HasMany
 
 ### Community 33 - "tinymce.js"
 Cohesion: 0.03
 Nodes (72): RFC-4122, RFC-6454, addToSet(), cleanArray(), clone(), ComponentLoadError, createDOMPurify(), createHTML() (+64 more)
 
-### Community 34 - "p"
+### Community 34 - "N"
 Cohesion: 0.06
-Nodes (47): Aa, at(), b(), Bn(), s(), br(), ci(), componentDidMount() (+39 more)
+Nodes (36): Aa, b(), bo, s(), br(), E(), eo(), er() (+28 more)
 
-### Community 39 - "Mockery"
-Cohesion: 0.25
-Nodes (4): Laravel\Socialite\Contracts\User, Mockery, SocialiteUser, SocialAuthControllerTest
+### Community 39 - "SocialAuthControllerTest"
+Cohesion: 0.10
+Nodes (10): Laravel\Socialite\Contracts\Provider, Laravel\Socialite\Contracts\User, Mockery, Provider, FindOrCreateSocialUserTest, SocialiteUser, SocialiteUser, SocialAuthControllerTest (+2 more)
 
-### Community 40 - "ShoppingListService"
-Cohesion: 0.13
-Nodes (3): ShoppingListService, DistanceCalculator, DistanceCalculatorTest
+### Community 40 - "DismissRecurringRequest"
+Cohesion: 0.10
+Nodes (5): RecurringPurchaseController, RecurringPurchaseController, AddToShoppingListRequest, DismissRecurringRequest, RecurringFiltersRequest
 
 ### Community 41 - "dataTables.min.js"
 Cohesion: 0.07
@@ -476,7 +475,7 @@ Nodes (67): A(), ae(), at(), B(), be(), bt(), c(), ce() (+59 more)
 
 ### Community 42 - "Qe"
 Cohesion: 0.08
-Nodes (14): animate(), cancelFrame(), frame(), je, plot(), Qe, _queueNumberDelta(), _queueObject() (+6 more)
+Nodes (6): animate(), cancelFrame(), delay(), frame(), je, Qe
 
 ### Community 44 - "logging.php"
 Cohesion: 0.40
@@ -486,9 +485,13 @@ Nodes (4): Monolog\Handler\NullHandler, Monolog\Handler\StreamHandler, Monolog\H
 Cohesion: 0.40
 Nodes (4): Illuminate\Cookie\Middleware\EncryptCookies, Illuminate\Foundation\Http\Middleware\ValidateCsrfToken, Laravel\Sanctum\Http\Middleware\AuthenticateSession, Laravel\Sanctum\Sanctum
 
+### Community 46 - "User.php"
+Cohesion: 0.18
+Nodes (7): static, UserFactory, Illuminate\Auth\MustVerifyEmail, Illuminate\Database\Eloquent\Relations\MorphMany, Illuminate\Database\Eloquent\Relations\MorphOne, Illuminate\Notifications\Notifiable, Laravel\Sanctum\HasApiTokens
+
 ### Community 47 - "bt"
 Cohesion: 0.05
-Nodes (22): b(), bi, bt, clipWith(), componentTransfer(), Ct, fontface(), J() (+14 more)
+Nodes (20): b(), bt, clipWith(), Ct, dmove(), J(), li, linker() (+12 more)
 
 ### Community 49 - "console.php"
 Cohesion: 0.50
@@ -498,81 +501,97 @@ Nodes (3): Illuminate\Foundation\Inspiring, Illuminate\Support\Facades\Artisan, 
 Cohesion: 0.04
 Nodes (15): a(), apikey(), B(), bi(), ei(), ii(), Pi(), _pruneCells() (+7 more)
 
+### Community 60 - "PriceQueryRequest"
+Cohesion: 0.10
+Nodes (4): PriceComparisonController, PriceHistoryController, PricesController, PriceQueryRequest
+
 ### Community 64 - "we"
 Cohesion: 0.06
-Nodes (16): center(), cy(), hi, ie(), li, load(), mi, move() (+8 more)
+Nodes (19): center(), cx(), cy(), draggable(), dx(), dy(), ee(), hi (+11 more)
+
+### Community 66 - "NfceXmlImporter"
+Cohesion: 0.18
+Nodes (4): NfceXmlImporter, PHPUnit\Framework\Attributes\DataProvider, SimpleXMLElement, NfceXmlImporterTest
 
 ### Community 74 - "jquery.min.js"
 Cohesion: 0.08
-Nodes (36): Ae(), B(), Be(), c(), $e(), ee(), F(), fe() (+28 more)
+Nodes (37): Ae(), B(), Be(), c(), $e(), ee(), F(), fe() (+29 more)
 
 ### Community 76 - "ls"
 Cohesion: 0.05
-Nodes (16): cl, Cn(), componentDidUpdate(), dl(), flushScrollReset(), fn(), lo, ls (+8 more)
+Nodes (13): ac(), ai(), cl, ks, ls, no, oc, rc (+5 more)
 
-### Community 123 - "hr"
-Cohesion: 0.08
-Nodes (14): ar(), cr(), dc(), ea(), hr, jl, _l(), S() (+6 more)
+### Community 80 - "my-purchase/detail.blade.php"
+Cohesion: 0.50
+Nodes (3): my-purchase._delete-modal, issuer._nickname-modal, product-alias._alias-modal
+
+### Community 81 - "shopping-list/index.blade.php"
+Cohesion: 0.50
+Nodes (3): shopping-list._delete-modal, shopping-list._directions-modal, shopping-list._location-modal
+
+### Community 91 - "report/index.blade.php"
+Cohesion: 0.50
+Nodes (3): report._email-modal, partials._period-filter, product-alias._alias-modal
+
+### Community 123 - ".add"
+Cohesion: 0.04
+Nodes (35): A(), ar(), bi(), bs(), cr(), dc(), Dn(), dr() (+27 more)
 
 ### Community 124 - "Editor"
 Cohesion: 0.08
 Nodes (7): dispatch(), Editor, execCommand(), fire(), NodeChange, setActive(), unbindAllNativeEvents()
 
 ### Community 125 - ".init"
-Cohesion: 0.08
-Nodes (16): as(), createPointHandles(), createResizeHandles(), createRotationHandle(), draggable(), Fe, gi, init() (+8 more)
+Cohesion: 0.07
+Nodes (13): as(), Fe, gi, init(), is(), Ka(), mutationHandler(), oe() (+5 more)
 
 ### Community 126 - "xt"
-Cohesion: 0.07
-Nodes (12): ft(), getEventHolder(), gt(), It(), ki, Pe(), Rt, Tt() (+4 more)
+Cohesion: 0.06
+Nodes (16): createPointHandles(), createResizeHandles(), createRotationHandle(), ft(), getEventHolder(), gt(), It(), ki (+8 more)
 
 ### Community 127 - "t"
-Cohesion: 0.10
-Nodes (24): a(), At(), c(), constructor(), d(), _draw(), dx(), dy() (+16 more)
+Cohesion: 0.11
+Nodes (23): a(), At(), c(), constructor(), d(), _draw(), e(), f() (+15 more)
 
 ### Community 128 - "dropzone.js"
 Cohesion: 0.07
 Nodes (36): RFC-3492, _arrayLikeToArray(), _assertThisInitialized(), BROKEN_CARET(), _classCallCheck(), _createClass(), _createForOfIteratorHelper(), _createSuper() (+28 more)
 
-### Community 129 - "Kr"
-Cohesion: 0.07
-Nodes (7): ft(), gt(), Kr, lr(), ot(), ti(), ur()
-
-### Community 130 - "y"
-Cohesion: 0.09
-Nodes (12): bl, ec(), fl(), gi(), go(), kl, li(), mi() (+4 more)
+### Community 130 - "p"
+Cohesion: 0.06
+Nodes (34): Ao(), at(), Bn(), co(), Do(), ds(), ec(), fc() (+26 more)
 
 ### Community 131 - "Optional"
 Cohesion: 0.06
 Nodes (13): addAfter(), createInterpolationInside(), getPlaceholder(), keywordsToPattern(), matchGrammar(), matchPattern(), nested(), Optional (+5 more)
 
 ### Community 132 - "FavoriteProduct"
-Cohesion: 0.07
-Nodes (7): ExportPersonalDataJob, FavoriteProduct, FavoriteProductPolicy, FavoriteProductControllerTest, CheckFavoriteProductPriceDropsTest, FavoriteProductControllerTest, ExportPersonalDataJobTest
+Cohesion: 0.09
+Nodes (5): FavoriteProduct, FavoriteProductPolicy, FavoriteProductControllerTest, CheckFavoriteProductPriceDropsTest, FavoriteProductControllerTest
 
 ### Community 133 - "vt"
-Cohesion: 0.10
-Nodes (4): _currentTransform(), ii(), mt(), vt
+Cohesion: 0.06
+Nodes (10): array(), _currentTransform(), Dt, fromArray(), ge, ii(), mergeWith(), morph() (+2 more)
 
 ### Community 134 - "Pn"
-Cohesion: 0.09
-Nodes (13): co(), en, getMarkerDay(), getMarkerMonth(), getMarkerYear(), kt(), nt(), parse() (+5 more)
+Cohesion: 0.10
+Nodes (10): en, getMarkerDay(), getMarkerMonth(), getMarkerYear(), kt(), nt(), Pn, tn() (+2 more)
 
 ### Community 135 - "wa"
-Cohesion: 0.07
-Nodes (8): es(), et(), ja, Ke(), ms, tt(), wa, We()
+Cohesion: 0.15
+Nodes (5): et(), Ke(), tt(), wa, We()
 
 ### Community 136 - "e"
-Cohesion: 0.10
-Nodes (35): authenticate(), c(), Ci(), d(), De(), e(), F(), G() (+27 more)
+Cohesion: 0.09
+Nodes (38): at(), authenticate(), c(), Ci(), d(), De(), e(), F() (+30 more)
 
 ### Community 137 - "Optional"
 Cohesion: 0.06
 Nodes (11): Optional, TODO: Avoid all the wrapping and unwrapping, TODO: TINY-8172 Unwind this when an alternative solution is found, TODO: TINY-8172 Unwind this when an alternative solution is found, TODO: TINY-8172 Unwind this when an alternative solution is found, TODO: TINY-8172 Unwind this when an alternative solution is found, TODO: TINY-8172 Unwind this when an alternative solution is found, TODO: TINY-8172 Unwind this when an alternative solution is found (+3 more)
 
-### Community 138 - "kt"
-Cohesion: 0.07
-Nodes (6): array(), Dt, ee(), ge, kt, wt()
+### Community 138 - "transform"
+Cohesion: 0.11
+Nodes (14): _clearTransformRunnersBefore(), css(), he, kt, plot(), _queueNumberDelta(), _queueObject(), styleAttr() (+6 more)
 
 ### Community 139 - "canvas-confetti.min.js"
 Cohesion: 0.11
@@ -586,9 +605,9 @@ Nodes (10): Optional, NOTE: For certain properties, this returns the "used value
 Cohesion: 0.11
 Nodes (3): dispatch(), execCommand(), lL
 
-### Community 142 - "el"
-Cohesion: 0.10
-Nodes (9): el, ga(), is(), ji(), mt(), or(), rs, xs() (+1 more)
+### Community 142 - "bl"
+Cohesion: 0.06
+Nodes (8): bl, el, mt(), nc, rs, Ul, Ws, xs()
 
 ### Community 143 - "a"
 Cohesion: 0.09
@@ -601,10 +620,6 @@ Nodes (5): A, Ck(), kk(), Sk(), yk()
 ### Community 145 - "tinymce.min.js"
 Cohesion: 0.07
 Nodes (14): add(), BB, $C(), createEditor(), FC(), fire(), hasEventListeners(), items() (+6 more)
-
-### Community 146 - "IssuerNickname"
-Cohesion: 0.08
-Nodes (3): IssuerNickname, InvoiceControllerTest, IssuerControllerTest
 
 ### Community 147 - "model.js"
 Cohesion: 0.07
@@ -631,12 +646,12 @@ Cohesion: 0.09
 Nodes (3): bindPendingEventDelegates(), get(), I
 
 ### Community 153 - "cs"
-Cohesion: 0.13
-Nodes (14): cs, fs(), gl(), gs(), hs(), ml(), Pe(), pl() (+6 more)
+Cohesion: 0.14
+Nodes (12): cs, fs(), gl(), gs(), ml(), Pe(), pl(), Ql() (+4 more)
 
 ### Community 154 - "_cellCoordsToBounds"
-Cohesion: 0.12
-Nodes (27): addLayers(), _cellCoordsToBounds(), _cellCoordsToNwSe(), cellEnter(), cellLeave(), _createCell(), deleteFeature(), deleteFeatures() (+19 more)
+Cohesion: 0.16
+Nodes (22): addLayers(), _cellCoordsToBounds(), _cellCoordsToNwSe(), cellEnter(), cellLeave(), _createCell(), _featureWithinTimeRange(), _filterExistingFeatures() (+14 more)
 
 ### Community 155 - "Optional"
 Cohesion: 0.07
@@ -666,29 +681,29 @@ Nodes (3): Optional, TODO: Merge categories with TBIO, TODO: Merge categories wi
 Cohesion: 0.08
 Nodes (3): Optional, TODO: Fix table styles #TINY-2909, TODO: Add other premium plugins when they are included in the website
 
-### Community 162 - "ks"
+### Community 162 - "SubscriptionPlan"
 Cohesion: 0.11
-Nodes (6): ai(), fr(), ks, sc, wl, z()
+Nodes (7): SubscriptionPlan, SubscriptionStatus, SubscriptionController, UpdateSubscriptionRequest, Subscription, static, SubscriptionFactory
 
-### Community 170 - "NfceXmlRedactor"
-Cohesion: 0.12
-Nodes (9): CheckFavoriteProductPriceDrops, EncryptUserProfileDocuments, GeocodeExistingIssuers, RedactInvoicesRawXml, NfceXmlRedactor, Illuminate\Console\Command, Illuminate\Contracts\Encryption\DecryptException, Illuminate\Support\Facades\Crypt (+1 more)
+### Community 170 - "Illuminate\Console\Command"
+Cohesion: 0.16
+Nodes (7): CheckFavoriteProductPriceDrops, EncryptUserProfileDocuments, PruneNotifications, RedactInvoicesRawXml, Illuminate\Console\Command, Illuminate\Contracts\Encryption\DecryptException, Illuminate\Support\Facades\Crypt
 
-### Community 187 - "CategoryService"
-Cohesion: 0.14
-Nodes (4): AiCategorizeItemsJob, AutoCategorizeListener, ItemCategoryRule, CategoryService
-
-### Community 188 - "Illuminate\Contracts\Queue\ShouldQueue"
+### Community 187 - "AiCategorizeItemsJob"
 Cohesion: 0.13
-Nodes (8): GeocodeIssuerJob, DateTimeInterface, SendReportByEmailJob, Barryvdh\DomPDF\Facade\Pdf, Illuminate\Contracts\Queue\ShouldQueue, Illuminate\Foundation\Queue\Queueable, Illuminate\Queue\Middleware\RateLimited, GeocodeIssuerJobTest
+Nodes (4): AiSuggestionUnavailableException, AiCategorizeItemsJob, ItemCategoryRule, ItemCategoryAiClassifierService
+
+### Community 188 - "GeocodeIssuerJob"
+Cohesion: 0.21
+Nodes (4): GeocodeExistingIssuers, GeocodeIssuerJob, DateTimeInterface, GeocodeIssuerJobTest
 
 ### Community 190 - "ha"
-Cohesion: 0.13
-Nodes (5): Ge(), ha(), Ie(), Qn, xi()
+Cohesion: 0.15
+Nodes (4): Ge(), ha(), Ie(), Qn
 
 ### Community 193 - ".constructor"
-Cohesion: 0.12
-Nodes (11): ka(), ko(), ma(), mn(), pa(), ua, va(), vo (+3 more)
+Cohesion: 0.10
+Nodes (13): Cn(), D(), fn(), jn, lo, ma(), mn(), pa() (+5 more)
 
 ### Community 194 - "ktui.min.js"
 Cohesion: 0.34
@@ -699,24 +714,16 @@ Cohesion: 0.10
 Nodes (19): ApexCharts, Badges, Botões, Cards, Componentes principais, Cores semânticas, Dropdown, Formulários (+11 more)
 
 ### Community 196 - "package.json"
-Cohesion: 0.12
-Nodes (16): dependencies, @zxing/browser, @zxing/library, private, $schema, type, axios, concurrently (+8 more)
-
-### Community 197 - "he"
-Cohesion: 0.12
-Nodes (3): ce, he, toConsumable()
+Cohesion: 0.10
+Nodes (20): dependencies, @zxing/browser, @zxing/library, private, $schema, scripts, build, clean (+12 more)
 
 ### Community 198 - "URI"
 Cohesion: 0.19
 Nodes (4): overrideDefaults(), _setBaseUrl(), setup(), URI
 
 ### Community 199 - "ai"
-Cohesion: 0.11
-Nodes (5): ai, ke, mergeWith(), _prepareRunner(), ye
-
-### Community 200 - "Ws"
-Cohesion: 0.14
-Nodes (3): nc, Ul, Ws
+Cohesion: 0.12
+Nodes (4): ai, ke, _prepareRunner(), ye
 
 ### Community 201 - "vw"
 Cohesion: 0.21
@@ -731,36 +738,40 @@ Cohesion: 0.15
 Nodes (17): bounds(), _buildExportParams(), _calculateBbox(), _calculateImageSize(), _cleanParams(), count(), _createServiceCallback(), ids() (+9 more)
 
 ### Community 205 - "_update"
-Cohesion: 0.13
-Nodes (17): _getCelldPixelBounds(), _getCellPos(), getCellSize(), _onMoveEnd(), _pxBoundsToCellRange(), _resetGrid(), _resetView(), setBandIds() (+9 more)
+Cohesion: 0.10
+Nodes (24): createTile(), getAttribution(), _getCelldPixelBounds(), _getCellPos(), getCellSize(), getTileUrl(), _initPane(), on() (+16 more)
 
 ### Community 207 - "CategoryKeywordsAiSuggestionService"
-Cohesion: 0.20
-Nodes (3): CategoryKeywordsAiSuggestion, self, CategoryKeywordsAiSuggestionService
+Cohesion: 0.14
+Nodes (6): CategoryKeywordsAiSuggestion, self, CategoryKeywordsAiSuggestionService, Illuminate\Http\Client\ConnectionException, Illuminate\Support\Facades\Cache, Illuminate\Support\Facades\Log
 
-### Community 208 - "SocialAuthControllerTest"
-Cohesion: 0.24
-Nodes (4): Laravel\Socialite\Contracts\Provider, Provider, SocialiteUser, SocialAuthControllerTest
-
-### Community 210 - "onAdd"
+### Community 208 - "FavoriteProductPriceDropped"
 Cohesion: 0.13
-Nodes (16): addFeature(), addFeatures(), _buildTimeIndexes(), createTile(), getAttribution(), _getMetadata(), getTileUrl(), _initPane() (+8 more)
+Nodes (3): FavoriteProductPriceDropped, NotificationControllerTest, NotificationControllerTest
+
+### Community 209 - "la"
+Cohesion: 0.05
+Nodes (7): as, ba(), la, os, ss, Un, za
+
+### Community 210 - "addFeatures"
+Cohesion: 0.20
+Nodes (10): addFeature(), addFeatures(), _buildTimeIndexes(), deleteFeature(), deleteFeatures(), _getMetadata(), metadata(), post() (+2 more)
 
 ### Community 211 - "createLayers"
 Cohesion: 0.17
 Nodes (16): bringToBack(), bringToFront(), createLayers(), createNewLayer(), ct(), eachFeature(), redraw(), _renderImage() (+8 more)
 
-### Community 215 - "UpdateUserAvatarAction"
-Cohesion: 0.24
-Nodes (5): UpdateUserAvatarAction, AiSuggestionUnavailableException, Illuminate\Http\UploadedFile, RuntimeException, UpdateUserAvatarActionTest
+### Community 215 - "AuthController.php"
+Cohesion: 0.10
+Nodes (6): CreateDefaultCategoriesAction, FindOrCreateSocialUser, UpdateUserLocationAction, LoginRequest, RegisterRequest, Laravel\Sanctum\PersonalAccessToken
 
 ### Community 216 - "Passo a passo"
 Cohesion: 0.14
 Nodes (13): 1. Identificar a stack principal, 2. Ler a documentação base, 3. Mapear a estrutura do repositório, 4. Encontrar os pontos de entrada, 5. Entender o modelo de dados, 6. Revisar a camada de apresentação, 7. Checar qualidade e validação, 8. Produzir um resumo acionável (+5 more)
 
 ### Community 217 - "_getPopupData"
-Cohesion: 0.14
-Nodes (14): at(), between(), _buildQuery(), et(), _getPopupData(), ht(), identify(), layerDef() (+6 more)
+Cohesion: 0.15
+Nodes (13): between(), _buildQuery(), et(), _getPopupData(), identify(), j(), layerDef(), _renderPopup() (+5 more)
 
 ### Community 218 - "init"
 Cohesion: 0.31
@@ -771,12 +782,12 @@ Cohesion: 0.22
 Nodes (7): c(), e(), h(), o(), p(), r(), v()
 
 ### Community 224 - "_setGeometryParams"
-Cohesion: 0.17
-Nodes (13): bboxIntersects(), contains(), crosses(), eachActiveFeature(), indexIntersects(), intersects(), _isValidCell(), overlaps() (+5 more)
+Cohesion: 0.14
+Nodes (15): bboxIntersects(), contains(), crosses(), eachActiveFeature(), indexIntersects(), intersects(), _invalidateAll(), _isValidCell() (+7 more)
 
-### Community 228 - ".resolverHtmlEmbutido"
-Cohesion: 0.20
-Nodes (5): CookieJar, GuzzleHttp\Cookie\CookieJar, NFePHP\Common\Certificate, NFePHP\Common\UFList, NFePHP\NFe\Tools
+### Community 228 - "Carbon\Carbon"
+Cohesion: 0.15
+Nodes (5): Carbon, ReportFrequency, Period, Carbon\Carbon, Illuminate\Contracts\Pagination\LengthAwarePaginator
 
 ### Community 230 - "EventDispatcher"
 Cohesion: 0.17
@@ -799,12 +810,16 @@ Cohesion: 0.35
 Nodes (8): a(), e(), i(), n(), o(), r(), s(), t()
 
 ### Community 239 - "ke"
-Cohesion: 0.20
-Nodes (11): Ae(), be(), Ie(), Jt(), ke(), Le(), ne(), O() (+3 more)
+Cohesion: 0.18
+Nodes (12): Ae(), be(), Ie(), Jt(), ke(), Le(), ne(), O() (+4 more)
 
 ### Community 240 - "createDOMPurify"
 Cohesion: 0.18
 Nodes (8): addToSet(), cleanArray(), clone(), createDOMPurify(), createHTML(), createScriptURL(), lookupGetter(), unapply()
+
+### Community 244 - "ReportFiltersRequest"
+Cohesion: 0.16
+Nodes (3): StreamedResponse, ReportController, ReportFiltersRequest
 
 ### Community 245 - "require"
 Cohesion: 0.20
@@ -814,12 +829,16 @@ Nodes (10): require, barryvdh/laravel-dompdf, dedoc/scramble, laravel/framework,
 Cohesion: 0.20
 Nodes (9): Apple, Como obter credenciais de login social, Facebook, Google, Passo 1 — Criar um App ID, Passo 2 — Criar um Services ID (usado como `client_id` na web), Passo 3 — Criar uma Key (gera o arquivo `.p8`), Passo 4 — Anotar o Team ID (+1 more)
 
+### Community 248 - "Illuminate\Database\Eloquent\Builder"
+Cohesion: 0.20
+Nodes (3): InvoiceService, Illuminate\Database\Eloquent\Builder, Illuminate\Database\Query\Builder
+
 ### Community 252 - "issuer-favorite.js"
 Cohesion: 0.20
 Nodes (9): AVATAR_DEFAULT_CLASSES, AVATAR_FAVORITE_CLASSES, DETAIL_FAVORITE_CLASSES, DETAIL_OUTLINE_CLASSES, IssuerFavorite, LIST_AVATAR_DEFAULT_CLASSES, LIST_AVATAR_FAVORITE_CLASSES, LIST_CELL_ACCENT_CLASSES (+1 more)
 
 ### Community 253 - "File"
-Cohesion: 0.28
+Cohesion: 0.24
 Nodes (3): File, Illuminate\Database\Eloquent\Prunable, Illuminate\Database\Eloquent\Relations\MorphTo
 
 ### Community 254 - "composer.json"
@@ -829,6 +848,14 @@ Nodes (8): description, keywords, license, minimum-stability, name, prefer-stabl
 ### Community 255 - "scripts"
 Cohesion: 0.22
 Nodes (9): scripts, dev, post-autoload-dump, post-create-project-cmd, post-root-package-install, post-update-cmd, pre-package-uninstall, setup (+1 more)
+
+### Community 258 - "StoreBudgetRequest"
+Cohesion: 0.11
+Nodes (6): StoreBudgetAction, BudgetController, BudgetController, BudgetMonthRequest, StoreBudgetRequest, BudgetResource
+
+### Community 259 - "dl"
+Cohesion: 0.19
+Nodes (6): componentDidMount(), componentDidUpdate(), dl(), flushScrollReset(), requestScrollReset(), updateSize()
 
 ### Community 261 - "Visual Check — cestazen"
 Cohesion: 0.25
@@ -842,10 +869,6 @@ Nodes (8): require-dev, fakerphp/faker, laravel/pail, laravel/pint, laravel/sail
 Cohesion: 0.25
 Nodes (8): devDependencies, axios, concurrently, laravel-vite-plugin, playwright, tailwindcss, @tailwindcss/vite, vite
 
-### Community 264 - "Hn"
-Cohesion: 0.39
-Nodes (3): Hn, ho, ia()
-
 ### Community 267 - "stamp-sw-cache.mjs"
 Cohesion: 0.25
 Nodes (6): CACHED_ROOTS, digest, files, hash, stamped, sw
@@ -854,17 +877,33 @@ Nodes (6): CACHED_ROOTS, digest, files, hash, stamped, sw
 Cohesion: 0.29
 Nodes (7): pestphp/pest-plugin, php-http/discovery, config, allow-plugins, optimize-autoloader, preferred-install, sort-packages
 
+### Community 269 - "CreateFreeSubscriptionAction"
+Cohesion: 0.23
+Nodes (6): CreateFreeSubscriptionAction, UserObserver, DatabaseSeeder, VisualCheckUserSeeder, Illuminate\Database\Console\Seeds\WithoutModelEvents, Illuminate\Database\Seeder
+
+### Community 270 - "ja"
+Cohesion: 0.06
+Nodes (13): destroy(), es(), fa(), ga(), ja, ji(), ms, ns() (+5 more)
+
+### Community 271 - "Illuminate\Auth\Access\Response"
+Cohesion: 0.27
+Nodes (4): BudgetPolicy, InvoicePolicy, ShoppingListPolicy, Illuminate\Auth\Access\Response
+
 ### Community 273 - "psr-4"
 Cohesion: 0.40
 Nodes (5): autoload, psr-4, App\\, Database\\Factories\\, Database\\Seeders\\
 
-### Community 274 - "scripts"
-Cohesion: 0.40
-Nodes (5): scripts, build, clean, dev, visual-check
+### Community 274 - "BudgetThresholdReached"
+Cohesion: 0.24
+Nodes (3): NotifyBudgetThresholdsAction, CheckBudgetThresholdsListener, BudgetThresholdReached
 
-### Community 275 - "report.js"
-Cohesion: 0.60
-Nodes (4): formatBRL(), QUICK_RANGES, Report, toISODate()
+### Community 275 - "prices.js"
+Cohesion: 0.29
+Nodes (5): dateFull, dateShort, Prices, formatBRL(), Report
+
+### Community 276 - "Issuer.php"
+Cohesion: 0.18
+Nodes (4): Attribute, Illuminate\Database\Eloquent\Casts\Attribute, Illuminate\Database\Eloquent\Relations\BelongsToMany, Illuminate\Database\Eloquent\Relations\HasOne
 
 ### Community 279 - "Je"
 Cohesion: 0.67
@@ -878,25 +917,29 @@ Nodes (3): autoload-dev, psr-4, Tests\\
 Cohesion: 0.67
 Nodes (3): extra, laravel, dont-discover
 
+### Community 517 - "notifications.js"
+Cohesion: 0.50
+Nodes (3): LEVEL_ICONS, Notifications, RELATIVE_UNITS
+
 ## Knowledge Gaps
-- **210 isolated node(s):** `$schema`, `name`, `type`, `description`, `keywords` (+205 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2450 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **138 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **219 isolated node(s):** `$schema`, `name`, `type`, `description`, `keywords` (+214 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2533 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **141 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `User` connect `User` to `Illuminate\Database\Eloquent\Model`, `FavoriteProduct`, `Illuminate\Http\Request`, `FavoriteProductPriceDropped`, `V1/AccountController.php`, `Illuminate\View\View`, `AppServiceProvider.php`, `Illuminate\Database\Eloquent\Factories\Factory`, `TestCase`, `Issuer`, `IssuerNickname`, `Category`, `Illuminate\Http\JsonResponse`, `Illuminate\Database\Eloquent\Relations\HasMany`, `Mockery`, `CategoryService`, `Illuminate\Contracts\Queue\ShouldQueue`, `PendingInvoiceTest`, `ProductAliasControllerTest`, `SocialAuthControllerTest`, `ReportControllerTest`, `UpdateUserAvatarAction`, `CategoryControllerTest`, `ReportServiceTest`, `ResetPasswordControllerTest`, `ProductAliasSuggestionServiceTest`, `FindOrCreateSocialUserTest`?**
-  _High betweenness centrality (0.061) - this node is a cross-community bridge._
-- **Why does `E()` connect `p` to `dataTables.min.js`, `jquery.min.js`, `.defs`, `bt`, `index.global.min.js`, `ni`?**
-  _High betweenness centrality (0.043) - this node is a cross-community bridge._
+- **Why does `User` connect `User` to `RecurringPurchaseService`, `PricesManagementTest`, `Illuminate\Contracts\Queue\ShouldQueue`, `FavoriteProduct`, `Controllers/AccountController.php`, `Illuminate\View\View`, `AppServiceProvider.php`, `CreateFreeSubscriptionAction`, `FullTextQuery`, `Illuminate\Auth\Access\Response`, `TestCase`, `Invoice`, `BudgetThresholdReached`, `Category`, `Issuer.php`, `Illuminate\Database\Eloquent\Factories\Factory`, `IssuerControllerTest`, `ReportSchedule`, `ReportManagementTest`, `Illuminate\Http\JsonResponse`, `RecurringPurchaseService.php`, `Illuminate\Database\Eloquent\Model`, `SubscriptionPlan`, `SocialAuthControllerTest`, `User.php`, `BudgetManagementTest`, `CategoryManagementTest`, `AiCategorizeItemsJob`, `PendingInvoiceTest`, `ShoppingListManagementTest`, `ProductAliasControllerTest`, `FavoriteProductPriceDropped`, `ReportControllerTest`, `AuthController.php`, `CategoryControllerTest`, `RegisterControllerTest`, `Carbon\Carbon`, `ResetPasswordControllerTest`, `RecurringPurchaseServiceTest`, `IssuerService`, `Illuminate\Database\Eloquent\Builder`?**
+  _High betweenness centrality (0.067) - this node is a cross-community bridge._
+- **Why does `E()` connect `N` to `dataTables.min.js`, `jquery.min.js`, `.defs`, `bt`, `index.global.min.js`, `Kr`?**
+  _High betweenness centrality (0.042) - this node is a cross-community bridge._
 - **Why does `createDOMPurify()` connect `tinymce.js` to `EventUtils`, `AstNode`, `bt`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
 - **What connects `$schema`, `name`, `type` to the rest of the system?**
-  _210 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Illuminate\Database\Eloquent\Model` be split into smaller, more focused modules?**
-  _Cohesion score 0.08658536585365853 - nodes in this community are weakly interconnected._
+  _219 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Illuminate\Database\Eloquent\Relations\BelongsTo` be split into smaller, more focused modules?**
+  _Cohesion score 0.09057971014492754 - nodes in this community are weakly interconnected._
 - **Should `NFCeService` be split into smaller, more focused modules?**
-  _Cohesion score 0.11693548387096774 - nodes in this community are weakly interconnected._
-- **Should `NfceXmlImporter` be split into smaller, more focused modules?**
-  _Cohesion score 0.07207792207792207 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08686868686868687 - nodes in this community are weakly interconnected._
+- **Should `InvoiceController.php` be split into smaller, more focused modules?**
+  _Cohesion score 0.05129561078794289 - nodes in this community are weakly interconnected._
