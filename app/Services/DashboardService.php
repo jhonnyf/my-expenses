@@ -145,7 +145,7 @@ class DashboardService
 
     private function getMonthlyExpenses(int $userId, Carbon $now): Collection
     {
-        return Cache::remember("dashboard.monthly_expenses.{$userId}", 300, function () use ($userId, $now) {
+        return Cache::remember($this->cacheKey('monthly_expenses', $userId), 300, function () use ($userId, $now) {
             return Invoice::where('user_id', $userId)
                 ->where('issued_at', '>=', $now->copy()->subMonths(11)->startOfMonth())
                 ->select(DB::raw('substr(issued_at, 1, 7) as month'), DB::raw('SUM(total_amount) as total'))
@@ -215,9 +215,21 @@ class DashboardService
         });
     }
 
-    private function cacheKey(string $metric, int $userId, string $start, string $end): string
+    private function cacheKey(string $metric, int $userId, string $start = '', string $end = ''): string
     {
-        return "dashboard.{$metric}.{$userId}.{$start}.{$end}";
+        return 'dashboard.'.self::cacheVersion($userId)."::{$metric}.{$userId}.{$start}.{$end}";
+    }
+
+    // Trocar a versão invalida de uma vez todas as chaves do usuário (as chaves variam por período).
+    public static function cacheVersion(int $userId): string
+    {
+        return (string) Cache::get("dashboard.version.{$userId}", '0');
+    }
+
+    // Após o commit: invalidar antes deixaria uma leitura concorrente recachear os dados antigos.
+    public static function flushCache(int $userId): void
+    {
+        DB::afterCommit(fn () => Cache::forever("dashboard.version.{$userId}", uniqid()));
     }
 
     private function paymentLabels(): array

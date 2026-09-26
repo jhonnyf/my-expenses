@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\InvoiceItem;
 use App\Models\ItemCategoryRule;
 use App\Models\User;
+use App\Services\DashboardService;
 use App\Services\ItemCategoryAiClassifierService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -121,6 +122,8 @@ class AiCategorizeItemsJob implements ShouldQueue
             InvoiceItem::whereIn('id', $chunk)->whereNull('category_id')
                 ->update(['category_id' => $rule->category_id, 'categorization_source' => $source]);
         }
+
+        DashboardService::flushCache($this->userId);
     }
 
     private function missCacheKey(string $key): string

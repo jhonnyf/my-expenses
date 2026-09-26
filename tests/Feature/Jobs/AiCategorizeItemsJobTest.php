@@ -9,6 +9,7 @@ use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Models\ItemCategoryRule;
 use App\Models\User;
+use App\Services\DashboardService;
 use App\Services\ItemCategoryAiClassifierService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -67,6 +68,19 @@ class AiCategorizeItemsJobTest extends TestCase
             'description_key' => 'DESINFETANTE PINHO 500ML',
             'source' => 'ai',
         ]);
+    }
+
+    public function test_flushes_dashboard_cache_after_categorizing(): void
+    {
+        $user = User::factory()->pro()->create();
+        $category = Category::factory()->for($user)->create(['name' => 'Limpeza']);
+        $this->makeItem($user, 'DESINFETANTE PINHO 500ML');
+        $this->fakeGemini([['index' => 0, 'category_id' => $category->id, 'confidence' => 0.95]]);
+        $before = DashboardService::cacheVersion($user->id);
+
+        $this->runJob($user);
+
+        $this->assertNotSame($before, DashboardService::cacheVersion($user->id));
     }
 
     public function test_skips_free_users_without_calling_gemini(): void

@@ -12,6 +12,7 @@ use App\Models\IssuerNickname;
 use App\Models\ItemCategoryRule;
 use App\Models\ProductAlias;
 use App\Models\User;
+use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -348,6 +349,18 @@ class CategoryManagementTest extends TestCase
         $this->assertDatabaseHas('item_category_rules', ['description_key' => 'arroz', 'category_id' => $target->id]);
         $this->assertDatabaseHas('budgets', ['user_id' => $user->id, 'category_id' => $target->id, 'amount' => 100]);
         $this->assertEqualsCanonicalizing(['Arroz', 'leite', 'feijao'], $target->fresh()->keywords);
+    }
+
+    public function test_merge_flushes_dashboard_cache(): void
+    {
+        $user = User::factory()->create();
+        $source = $this->categoryOf($user, ['name' => 'Origem']);
+        $target = $this->categoryOf($user, ['name' => 'Destino']);
+        $before = DashboardService::cacheVersion($user->id);
+
+        $this->actingAs($user)->postJson("/categories/{$source->id}/merge", ['target_id' => $target->id])->assertOk();
+
+        $this->assertNotSame($before, DashboardService::cacheVersion($user->id));
     }
 
     public function test_merge_drops_the_source_budget_when_target_already_has_one(): void

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DashboardService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +34,8 @@ class Category extends Model
     protected static function booted(): void
     {
         static::deleting(fn (Category $category) => Budget::where('category_id', $category->id)->delete());
+        static::saved(fn (Category $category) => $category->user_id && DashboardService::flushCache($category->user_id));
+        static::deleted(fn (Category $category) => $category->user_id && DashboardService::flushCache($category->user_id));
     }
 
     public function user(): BelongsTo

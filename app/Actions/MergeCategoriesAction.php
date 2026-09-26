@@ -6,6 +6,7 @@ use App\Models\Budget;
 use App\Models\Category;
 use App\Models\InvoiceItem;
 use App\Models\ItemCategoryRule;
+use App\Services\DashboardService;
 use Illuminate\Support\Facades\DB;
 
 class MergeCategoriesAction
@@ -43,6 +44,8 @@ class MergeCategoriesAction
             }
 
             $source->delete();
+
+            DashboardService::flushCache($userId);
 
             return $moved;
         });

@@ -8,6 +8,7 @@ use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Models\User;
 use App\Services\CategoryService;
+use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -179,6 +180,31 @@ class CategoryServiceTest extends TestCase
         $count = $this->service->autoCategorize($user->id);
 
         $this->assertEquals(2, $count);
+    }
+
+    public function test_auto_categorize_flushes_dashboard_cache_only_when_it_categorizes_something(): void
+    {
+        $user = User::factory()->create();
+        Category::factory()->for($user)->create(['keywords' => ['arroz']]);
+        $this->makeItem($user, 'FEIJAO PRETO');
+        $before = DashboardService::cacheVersion($user->id);
+
+        $this->service->autoCategorize($user->id);
+        $this->assertSame($before, DashboardService::cacheVersion($user->id));
+
+        $this->makeItem($user, 'ARROZ TIPO 1');
+        $this->service->autoCategorize($user->id);
+        $this->assertNotSame($before, DashboardService::cacheVersion($user->id));
+    }
+
+    public function test_revert_auto_categorization_flushes_dashboard_cache(): void
+    {
+        $user = User::factory()->create();
+        $before = DashboardService::cacheVersion($user->id);
+
+        $this->service->revertAutoCategorization($user->id);
+
+        $this->assertNotSame($before, DashboardService::cacheVersion($user->id));
     }
 
     private function makeItem(User $user, string $description): InvoiceItem

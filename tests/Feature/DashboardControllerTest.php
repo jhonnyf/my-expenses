@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Issuer;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Services\CategoryService;
+use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,6 +29,54 @@ class DashboardControllerTest extends TestCase
         $this->actingAs($user)
             ->get('/dashboard')
             ->assertStatus(200);
+    }
+
+    public function test_creating_invoice_flushes_dashboard_cache(): void
+    {
+        $user = User::factory()->create();
+        $before = DashboardService::cacheVersion($user->id);
+
+        Invoice::factory()->for($user)->create();
+
+        $this->assertNotSame($before, DashboardService::cacheVersion($user->id));
+    }
+
+    public function test_deleting_invoice_flushes_dashboard_cache(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->for($user)->create();
+        $before = DashboardService::cacheVersion($user->id);
+
+        $invoice->delete();
+
+        $this->assertNotSame($before, DashboardService::cacheVersion($user->id));
+    }
+
+    public function test_changing_category_flushes_only_that_users_dashboard_cache(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $category = Category::factory()->for($user)->create();
+        $before = DashboardService::cacheVersion($user->id);
+        $otherBefore = DashboardService::cacheVersion($other->id);
+
+        $category->update(['name' => 'Renomeada']);
+
+        $this->assertNotSame($before, DashboardService::cacheVersion($user->id));
+        $this->assertSame($otherBefore, DashboardService::cacheVersion($other->id));
+    }
+
+    public function test_assigning_item_category_flushes_dashboard_cache(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->for($user)->create();
+        $item = InvoiceItem::factory()->for($invoice)->create();
+        $category = Category::factory()->for($user)->create();
+        $before = DashboardService::cacheVersion($user->id);
+
+        app(CategoryService::class)->assignItem($item, $category->id);
+
+        $this->assertNotSame($before, DashboardService::cacheVersion($user->id));
     }
 
     public function test_index_passes_profile_city_state_to_view(): void

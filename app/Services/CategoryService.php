@@ -169,9 +169,13 @@ class CategoryService
     /** Desfaz o que a auto-categorização fez (palavras-chave, regras aprendidas e IA); manuais ficam. */
     public function revertAutoCategorization(int $userId): int
     {
-        return InvoiceItem::whereIn('categorization_source', self::AUTO_SOURCES)
+        $reverted = InvoiceItem::whereIn('categorization_source', self::AUTO_SOURCES)
             ->whereIn('invoice_id', $this->userInvoiceIds($userId))
             ->update(['category_id' => null, 'categorization_source' => null]);
+
+        DashboardService::flushCache($userId);
+
+        return $reverted;
     }
 
     /**
@@ -295,6 +299,8 @@ class CategoryService
             'categorization_source' => $categoryId === null ? null : InvoiceItem::SOURCE_MANUAL,
         ]);
 
+        DashboardService::flushCache($item->invoice->user_id);
+
         $key = ItemCategoryRule::keyFor($item->description);
 
         if ($key === '') {
@@ -361,6 +367,10 @@ class CategoryService
                         ->update(['category_id' => $categoryId, 'categorization_source' => $source]);
                 }
             }
+        }
+
+        if ($totalCategorized > 0) {
+            DashboardService::flushCache($userId);
         }
 
         return $totalCategorized;

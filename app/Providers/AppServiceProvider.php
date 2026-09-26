@@ -5,8 +5,10 @@ namespace App\Providers;
 use App\Events\InvoiceImported;
 use App\Listeners\AutoCategorizeListener;
 use App\Listeners\CheckBudgetThresholdsListener;
+use App\Models\Invoice;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Observers\InvoiceObserver;
 use App\Observers\UserObserver;
 use App\Observers\UserProfileObserver;
 use Carbon\Carbon;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(InvoiceImported::class, CheckBudgetThresholdsListener::class);
         Event::listen(SocialiteWasCalled::class, AppleExtendSocialite::class);
 
+        Invoice::observe(InvoiceObserver::class);
         User::observe(UserObserver::class);
         UserProfile::observe(UserProfileObserver::class);
 
