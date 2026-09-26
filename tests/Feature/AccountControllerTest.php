@@ -256,7 +256,7 @@ class AccountControllerTest extends TestCase
 
         $response = $this->actingAs($user)->post('/account/avatar', ['avatar' => $file]);
 
-        $response->assertRedirect(route('account.index'));
+        $response->assertRedirect(route('account.index', ['tab' => 'settings']));
 
         $user->refresh();
         $this->assertNotNull($user->avatar);
