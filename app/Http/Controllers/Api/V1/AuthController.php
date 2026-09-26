@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RegisterRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
+use App\Support\LoginThrottle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,11 +16,21 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
-    public function login(LoginRequest $request): JsonResponse
+    public function login(LoginRequest $request, LoginThrottle $throttle): JsonResponse
     {
+        $email = (string) $request->input('email');
+
+        if ($throttle->isLocked($email)) {
+            return $this->error($throttle->message($email), 429);
+        }
+
         if (! Auth::attempt($request->only('email', 'password'))) {
+            $throttle->recordFailure($email);
+
             return $this->error(__('auth.failed'), 401);
         }
+
+        $throttle->reset($email);
 
         $user = Auth::user();
         $token = $user->createToken($request->input('device_name', 'api'))->plainTextToken;

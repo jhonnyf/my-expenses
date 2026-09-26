@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\RevokeUserSessionsAction;
+use App\Support\LoginThrottle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -42,7 +43,7 @@ class ResetPasswordController extends Controller
             ->header('Referrer-Policy', 'no-referrer');
     }
 
-    public function reset(Request $request, RevokeUserSessionsAction $revokeSessions): RedirectResponse
+    public function reset(Request $request, RevokeUserSessionsAction $revokeSessions, LoginThrottle $loginThrottle): RedirectResponse
     {
         $request->validate([
             'token' => ['required', 'string'],
@@ -59,10 +60,11 @@ class ResetPasswordController extends Controller
 
         $status = Password::broker()->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) use ($revokeSessions) {
+            function ($user, $password) use ($revokeSessions, $loginThrottle) {
                 $user->forceFill(['password' => $password])->save();
                 // Quem tinha a senha antiga (ou um acesso roubado) sai: sessões, "lembrar-me" e tokens do app.
                 $revokeSessions->execute($user);
+                $loginThrottle->reset($user->email);
                 Auth::login($user);
             }
         );

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\LoginThrottle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,18 +19,25 @@ class LoginController extends Controller
         return view('login.index');
     }
 
-    public function execute(Request $request): RedirectResponse
+    public function execute(Request $request, LoginThrottle $throttle): RedirectResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
+        if ($throttle->isLocked($credentials['email'])) {
+            return back()->withErrors(['email' => $throttle->message($credentials['email'])])->onlyInput('email');
+        }
+
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $throttle->reset($credentials['email']);
             $request->session()->regenerate();
 
             return redirect()->intended(route('dashboard.index'));
         }
+
+        $throttle->recordFailure($credentials['email']);
 
         return back()->withErrors([
             'email' => __('auth.failed'),
