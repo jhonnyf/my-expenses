@@ -16,13 +16,23 @@ class CategoryPolicy
             : Response::denyAsNotFound();
     }
 
-    public function update(User $user, Category $category): bool
+    /** Categoria do sistema é 403 (o id é público); a de outro usuário é 404, como no `view`. */
+    public function update(User $user, Category $category): Response
     {
-        return $category->user_id !== null && $user->id === $category->user_id;
+        return $this->owned($user, $category);
     }
 
-    public function delete(User $user, Category $category): bool
+    public function delete(User $user, Category $category): Response
     {
-        return $category->user_id !== null && $user->id === $category->user_id;
+        return $this->owned($user, $category);
+    }
+
+    private function owned(User $user, Category $category): Response
+    {
+        return match (true) {
+            $category->user_id === null => Response::deny(),
+            $category->user_id === $user->id => Response::allow(),
+            default => Response::denyAsNotFound(),
+        };
     }
 }

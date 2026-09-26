@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn () => route('login'));
+        $middleware->redirectGuestsTo(fn () => route('login.index'));
         $middleware->alias([
             'auth' => Authenticate::class,
             'pro' => EnsureUserHasProPlan::class,
@@ -28,8 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Também o AJAX da web (fetch com Accept: application/json): sem isso, sessão expirada vira redirect
+        // para a rota `login` (que não existe) e o usuário recebe 500 em vez de 401.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request, Throwable $e) => $request->is('api/*')
+            fn (Request $request, Throwable $e) => $request->is('api/*') || $request->expectsJson()
         );
 
         $exceptions->render(fn (AiSuggestionUnavailableException $e) => response()->json(['message' => $e->getMessage()], 503));

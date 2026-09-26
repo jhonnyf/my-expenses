@@ -17,26 +17,33 @@ class PendingInvoiceTest extends TestCase
     use RefreshDatabase;
 
     // cUF 35 | AAMM 2609 | CNPJ 12345678000190 (o da fixture do portal) | mod 65 | serie 001 | nNF 123 | tpEmis | cNF | cDV
-    private const CONTINGENCY_KEY = '35260912345678000190650010000001239123456780';
+    private const CONTINGENCY_KEY = '35260912345678000190650010000001239123456783';
 
-    private const NORMAL_KEY = '35260912345678000190650010000001231123456780';
+    private const NORMAL_KEY = '35260912345678000190650010000001231123456788';
 
     private function qrUrl(string $key): string
     {
-        return "https://nfce.exemplo.gov.br/consulta?p={$key}|2|1|15|45.90|abcdef|000001|HASH";
+        return "https://nfce.fazenda.sp.gov.br/consulta?p={$key}|2|1|15|45.90|abcdef|000001|HASH";
     }
 
     private function fakePortalWithoutData(): void
     {
-        Http::fake(['nfce.exemplo.gov.br/*' => Http::response('<html><body>Nota não encontrada</body></html>', 200)]);
+        Http::fake(['nfce.fazenda.sp.gov.br/*' => Http::response('<html><body>Nota não encontrada</body></html>', 200)]);
     }
 
-    private function fakePortalWithNote(): void
+    /** O portal só vale se a nota lida for a da chave: a fixture recebe a chave do teste. */
+    private function portalHtmlFor(string $key): string
     {
-        Http::fake(['nfce.exemplo.gov.br/*' => Http::response(
-            file_get_contents(base_path('tests/fixtures/nfce_portal_direto.html')),
-            200
-        )]);
+        return preg_replace(
+            '/(class="chave">)[^<]*</',
+            '${1}'.implode(' ', str_split($key, 4)).'<',
+            file_get_contents(base_path('tests/fixtures/nfce_portal_direto.html'))
+        );
+    }
+
+    private function fakePortalWithNote(string $key = self::CONTINGENCY_KEY): void
+    {
+        Http::fake(['nfce.fazenda.sp.gov.br/*' => Http::response($this->portalHtmlFor($key), 200)]);
     }
 
     // ─── import por QR Code ─────────────────────────────────────────────────
@@ -238,7 +245,10 @@ class PendingInvoiceTest extends TestCase
     {
         Event::fake([InvoiceImported::class]);
         $this->fakePortalWithoutData();
-        $pending = Invoice::factory()->pending()->create(['qrcode_url' => $this->qrUrl(self::CONTINGENCY_KEY)]);
+        $pending = Invoice::factory()->pending()->create([
+            'access_key' => self::CONTINGENCY_KEY,
+            'qrcode_url' => $this->qrUrl(self::CONTINGENCY_KEY),
+        ]);
 
         $this->artisan('invoices:reconcile-pending')->assertSuccessful();
 
@@ -249,10 +259,10 @@ class PendingInvoiceTest extends TestCase
     public function test_reconcile_failure_on_one_note_does_not_stop_the_others(): void
     {
         Http::fake([
-            'nfce.exemplo.gov.br/falha*' => Http::response('', 503),
-            'nfce.exemplo.gov.br/*' => Http::response(file_get_contents(base_path('tests/fixtures/nfce_portal_direto.html')), 200),
+            'nfce.fazenda.sp.gov.br/falha*' => Http::response('', 503),
+            'nfce.fazenda.sp.gov.br/*' => Http::response($this->portalHtmlFor(self::CONTINGENCY_KEY), 200),
         ]);
-        $failing = Invoice::factory()->pending()->create(['qrcode_url' => 'https://nfce.exemplo.gov.br/falha?p=1']);
+        $failing = Invoice::factory()->pending()->create(['qrcode_url' => 'https://nfce.fazenda.sp.gov.br/falha?p=1']);
         $working = Invoice::factory()->pending()->create([
             'access_key' => self::CONTINGENCY_KEY,
             'qrcode_url' => $this->qrUrl(self::CONTINGENCY_KEY),

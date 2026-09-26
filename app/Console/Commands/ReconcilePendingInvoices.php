@@ -47,7 +47,7 @@ class ReconcilePendingInvoices extends Command
     private function promoteIfAuthorized(Invoice $invoice, NFCeService $nfceService, ImportInvoiceAction $importAction): bool
     {
         try {
-            $resultado = $nfceService->consultarPorQRCode($invoice->qrcode_url);
+            $resultado = $nfceService->consultarPorQRCode($invoice->qrcode_url, $invoice->access_key);
         } catch (\RuntimeException|\InvalidArgumentException|ConnectionException $e) {
             // Sem a mensagem da exceção: ela pode carregar a URL do QR (chave de acesso).
             Log::warning('Falha ao reconciliar nota pendente', ['invoice_id' => $invoice->id, 'error' => $e::class]);

@@ -4,12 +4,16 @@ namespace App\Services;
 
 use GuzzleHttp\Cookie\CookieJar;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use NFePHP\Common\Certificate;
 use NFePHP\Common\UFList;
 use NFePHP\NFe\Tools;
 
 class NFCeService
 {
+    /** Teto do corpo de cada resposta do portal: um DANFE real tem dezenas de KB. */
+    private const TAMANHO_MAXIMO_RESPOSTA = 2 * 1024 * 1024;
+
     private ?Tools $tools = null;
 
     public function isCertificadoConfigurado(): bool
@@ -195,32 +199,117 @@ class NFCeService
     }
 
     /**
+     * @param  string|null  $chaveEsperada  Chave que a nota lida DEVE ter (ex.: a já gravada numa nota pendente);
+     *                                      sem ela vale a chave da própria URL.
      * @return array{dados: array, html: string}
      *
-     * @throws \InvalidArgumentException Se a URL não for de um domínio SEFAZ válido.
+     * @throws \InvalidArgumentException Se a URL não for de um portal SEFAZ da UF da chave ou a nota lida não for a da chave.
      * @throws \RuntimeException Se a consulta falhar.
      */
-    public function consultarPorQRCode(string $url): array
+    public function consultarPorQRCode(string $url, ?string $chaveEsperada = null): array
     {
-        $this->validarUrlSefaz($url);
+        $chaveDaUrl = $this->extrairChaveDeUrl($url);
+        $chave = $chaveEsperada ?? $chaveDaUrl;
+
+        if ($chave === null || ($chaveDaUrl !== null && $chaveDaUrl !== $chave) || ! $this->chaveValida($chave)) {
+            throw new \InvalidArgumentException('Chave de acesso inválida.');
+        }
+
+        $this->validarUrlSefaz($url, $chave);
 
         $cookieJar = new CookieJar;
 
         $response = Http::timeout(15)
             ->withHeaders($this->headersPortalSefaz())
-            ->withOptions(['cookies' => $cookieJar])
+            ->withOptions($this->opcoesRequisicao($chave, $cookieJar))
             ->get($url);
 
         if ($response->failed()) {
             throw new \RuntimeException("Erro ao consultar portal SEFAZ: HTTP {$response->status()}");
         }
 
-        $html = $this->resolverHtmlEmbutido($response->body(), $url, $cookieJar) ?? $response->body();
+        $this->garantirTamanhoAceitavel($response->body());
+
+        $html = $this->resolverHtmlEmbutido($response->body(), $url, $cookieJar, $chave) ?? $response->body();
+        $dados = $this->parseHtmlPortal($html);
+
+        // Sem itens é nota em contingência ainda não autorizada: o que vale é o provisório do QR (ver QrCodeImportStrategy).
+        if (! empty($dados['itens'])) {
+            $this->garantirNotaDaChave($dados, $chave);
+        }
 
         return [
-            'dados' => $this->parseHtmlPortal($html),
+            'dados' => $dados,
             'html' => $html,
         ];
+    }
+
+    /**
+     * Cookies + redirects revalidados a cada salto: sem isso, um redirect aberto em qualquer site .gov.br
+     * levaria a consulta (e a nota "lida") para um servidor qualquer.
+     *
+     * @return array<string, mixed>
+     */
+    private function opcoesRequisicao(string $chave, CookieJar $cookieJar): array
+    {
+        return [
+            'cookies' => $cookieJar,
+            'allow_redirects' => [
+                'max' => 3,
+                'protocols' => ['https', 'http'],
+                'on_redirect' => fn ($request, $response, $uri) => $this->validarUrlSefaz((string) $uri, $chave),
+            ],
+            'on_headers' => function ($response): void {
+                if ((int) $response->getHeaderLine('Content-Length') > self::TAMANHO_MAXIMO_RESPOSTA) {
+                    throw new \RuntimeException('Resposta do portal SEFAZ grande demais.');
+                }
+            },
+        ];
+    }
+
+    private function garantirTamanhoAceitavel(string $corpo): void
+    {
+        if (strlen($corpo) > self::TAMANHO_MAXIMO_RESPOSTA) {
+            throw new \RuntimeException('Resposta do portal SEFAZ grande demais.');
+        }
+    }
+
+    /**
+     * A URL do QR é digitada pelo usuário: sem esta conferência, qualquer página de um portal podia ser
+     * gravada sob uma chave inventada (burlando a duplicidade) ou sob a chave de outra nota.
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function garantirNotaDaChave(array $dados, string $chave): void
+    {
+        if (($dados['chave'] ?? '') !== $chave) {
+            throw new \InvalidArgumentException('A nota retornada pelo portal não corresponde à chave informada.');
+        }
+
+        if (($dados['emitente']['cnpj'] ?? '') !== $this->extrairCNPJ($chave)) {
+            throw new \InvalidArgumentException('O emitente retornado pelo portal não corresponde à chave informada.');
+        }
+    }
+
+    /**
+     * Dígito verificador (módulo 11) da chave de acesso de 44 dígitos.
+     */
+    public function chaveValida(string $chave): bool
+    {
+        if (! preg_match('/^\d{44}$/', $chave)) {
+            return false;
+        }
+
+        $soma = 0;
+        $peso = 2;
+        for ($i = 42; $i >= 0; $i--) {
+            $soma += (int) $chave[$i] * $peso;
+            $peso = $peso === 9 ? 2 : $peso + 1;
+        }
+
+        $resto = $soma % 11;
+
+        return (int) $chave[43] === ($resto < 2 ? 0 : 11 - $resto);
     }
 
     /**
@@ -241,7 +330,7 @@ class NFCeService
      * busca o iframe e extrai o HTML real embutido nele. Retorna null quando o
      * portal já devolve o conteúdo diretamente (comportamento atual, inalterado).
      */
-    private function resolverHtmlEmbutido(string $html, string $baseUrl, CookieJar $cookieJar): ?string
+    private function resolverHtmlEmbutido(string $html, string $baseUrl, CookieJar $cookieJar, string $chave): ?string
     {
         $iframeUrl = $this->extrairUrlIframe($html, $baseUrl);
 
@@ -249,16 +338,18 @@ class NFCeService
             return null;
         }
 
-        $this->validarUrlSefaz($iframeUrl);
+        $this->validarUrlSefaz($iframeUrl, $chave);
 
         $iframeResponse = Http::timeout(15)
             ->withHeaders([...$this->headersPortalSefaz(), 'Referer' => $baseUrl])
-            ->withOptions(['cookies' => $cookieJar])
+            ->withOptions($this->opcoesRequisicao($chave, $cookieJar))
             ->get($iframeUrl);
 
         if ($iframeResponse->failed()) {
             throw new \RuntimeException("Erro ao consultar conteúdo do portal SEFAZ: HTTP {$iframeResponse->status()}");
         }
+
+        $this->garantirTamanhoAceitavel($iframeResponse->body());
 
         $htmlEmbutido = $this->extrairHtmlDoScriptDanfe($iframeResponse->body());
 
@@ -353,24 +444,31 @@ class NFCeService
     }
 
     /**
-     * Valida que a URL pertence a um domínio SEFAZ oficial para prevenir SSRF.
-     * Usa verificação de sufixo estrito para evitar bypass via subdomínios maliciosos.
+     * Valida que a URL pertence a um portal SEFAZ da UF da chave (ou a um portal compartilhado de
+     * `config('nfe.portais_compartilhados')`, como a SVRS) para prevenir SSRF. Só https/http e nunca IP literal.
+     * O sufixo é conferido com o ponto na frente, para `evilsp.gov.br` não passar como `sp.gov.br`.
      */
-    private function validarUrlSefaz(string $url): void
+    private function validarUrlSefaz(string $url, string $chave): void
     {
         $scheme = strtolower(parse_url($url, PHP_URL_SCHEME) ?? '');
-        $host = parse_url($url, PHP_URL_HOST);
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
 
-        if (! $host || ! in_array($scheme, ['http', 'https'], true)) {
+        if ($host === '' || ! in_array($scheme, ['http', 'https'], true) || parse_url($url, PHP_URL_USER) !== null) {
             throw new \InvalidArgumentException('URL inválida.');
         }
 
-        // Todos os portais SEFAZ estaduais brasileiros são subdomínios de .gov.br
-        if (str_ends_with($host, '.gov.br')) {
-            return;
+        $dominios = [strtolower($this->extrairUF($chave)).'.gov.br', ...config('nfe.portais_compartilhados', [])];
+
+        foreach ($dominios as $dominio) {
+            if (str_ends_with($host, '.'.$dominio)) {
+                return;
+            }
         }
 
-        throw new \InvalidArgumentException("URL não pertence a um domínio SEFAZ reconhecido: {$host}");
+        // Só o host (público): é o que permite ao operador liberar um portal legítimo em NFE_PORTAIS_COMPARTILHADOS.
+        Log::warning('Portal SEFAZ rejeitado', ['host' => $host, 'uf' => $this->extrairUF($chave)]);
+
+        throw new \InvalidArgumentException('URL não pertence a um portal SEFAZ reconhecido para esta nota.');
     }
 
     private function parseHtmlPortal(string $html): array
@@ -486,7 +584,8 @@ class NFCeService
 
             $unidade = '';
             if ($unNode) {
-                preg_match('/UN:\s*(\S+)/', $unNode->textContent, $m);
+                // Só o que uma unidade comercial pode ter (UN, KG, LT, M², CX...): o texto vai parar em telas de outros usuários.
+                preg_match('/UN:\s*([\p{L}\p{N}.\/²³-]{1,10})(?:\s|$)/u', $unNode->textContent, $m);
                 $unidade = $m[1] ?? '';
             }
 

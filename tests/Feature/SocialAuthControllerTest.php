@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\User as SocialUser;
 use Mockery;
 use Tests\TestCase;
 
@@ -14,15 +15,11 @@ class SocialAuthControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function mockSocialiteUser(string $id, string $email, string $name = 'Social User'): SocialiteUser
+    private function mockSocialiteUser(string $id, string $email, string $name = 'Social User', bool $emailVerified = true): SocialiteUser
     {
-        $user = Mockery::mock(SocialiteUser::class);
-        $user->shouldReceive('getId')->andReturn($id);
-        $user->shouldReceive('getEmail')->andReturn($email);
-        $user->shouldReceive('getName')->andReturn($name);
-        $user->shouldReceive('getNickname')->andReturn(null);
-
-        return $user;
+        return (new SocialUser)
+            ->setRaw(['email_verified' => $emailVerified])
+            ->map(['id' => $id, 'email' => $email, 'name' => $name, 'nickname' => null]);
     }
 
     private function mockSocialiteDriver(?SocialiteUser $socialiteUser = null): Provider
@@ -176,5 +173,28 @@ class SocialAuthControllerTest extends TestCase
             'email' => 'appleuser@example.com',
             'provider' => 'apple',
         ]);
+    }
+
+    public function test_callback_refuses_to_link_an_account_when_the_provider_does_not_verify_the_email(): void
+    {
+        $user = User::factory()->create(['email' => 'vitima@example.com']);
+        $socialiteUser = $this->mockSocialiteUser('google-evil', 'vitima@example.com', 'Atacante', emailVerified: false);
+        Socialite::shouldReceive('driver')->with('google')->andReturn($this->mockSocialiteDriver($socialiteUser));
+
+        $this->get(route('login.social.callback', 'google'))->assertRedirect(route('login.index'));
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->provider_id);
+    }
+
+    public function test_callback_takeover_of_a_pre_registered_account_does_not_leave_the_attackers_password(): void
+    {
+        User::factory()->unverified()->create(['email' => 'vitima@example.com', 'password' => 'senha-do-atacante']);
+        $socialiteUser = $this->mockSocialiteUser('google-real', 'vitima@example.com');
+        Socialite::shouldReceive('driver')->with('google')->andReturn($this->mockSocialiteDriver($socialiteUser));
+
+        $this->get(route('login.social.callback', 'google'))->assertRedirect(route('dashboard.index'));
+
+        $this->assertNull(User::where('email', 'vitima@example.com')->firstOrFail()->password);
     }
 }

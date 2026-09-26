@@ -44,12 +44,17 @@ class AccountController extends Controller
         ]);
     }
 
-    public function update(UpdateAccountRequest $request, UpdateAccountAction $action): RedirectResponse
+    public function update(UpdateAccountRequest $request, UpdateAccountAction $action, RevokeUserSessionsAction $revokeSessions): RedirectResponse
     {
         $user = Auth::user();
         $emailChanged = $request->validated('email') !== $user->email;
 
         $action->execute($user, $request->validated());
+
+        // E-mail é dado de acesso (recuperação de senha): quem estava logado com o e-mail antigo sai; esta sessão fica.
+        if ($emailChanged) {
+            $revokeSessions->execute($user, $request->session()->getId());
+        }
 
         return redirect()
             ->route('account.index', ['tab' => 'settings'])

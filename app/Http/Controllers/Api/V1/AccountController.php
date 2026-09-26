@@ -47,11 +47,18 @@ class AccountController extends Controller
         ]);
     }
 
-    public function update(UpdateAccountRequest $request, UpdateAccountAction $action): JsonResponse
+    public function update(UpdateAccountRequest $request, UpdateAccountAction $action, RevokeUserSessionsAction $revokeSessions): JsonResponse
     {
         $user = $request->user();
+        $emailChanged = $request->validated('email') !== $user->email;
 
         $action->execute($user, $request->validated());
+
+        // E-mail é dado de acesso (recuperação de senha): os outros aparelhos saem; o token desta chamada fica.
+        if ($emailChanged) {
+            $token = $user->currentAccessToken();
+            $revokeSessions->execute($user, null, $token instanceof PersonalAccessToken ? $token->id : null);
+        }
 
         return $this->success(new UserResource($user));
     }

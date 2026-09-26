@@ -58,14 +58,14 @@ class FavoriteProductControllerTest extends TestCase
         $this->assertEqualsWithDelta(20.00, $response->json('0.current_offer.price'), 0.001);
     }
 
-    public function test_destroy_returns_403_for_other_users_favorite(): void
+    public function test_destroy_returns_404_for_other_users_favorite(): void
     {
         $favorite = FavoriteProduct::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other)
             ->delete("/favorite-products/{$favorite->id}")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_destroy_deletes_own_favorite(): void

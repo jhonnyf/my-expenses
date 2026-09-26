@@ -78,7 +78,7 @@ const ShoppingList = (() => {
                                     <p class="text-xs text-secondary-foreground mt-0.5 flex items-center flex-wrap gap-x-1">
                                         <span class="font-medium">${issuerName}</span>
                                         ${date ? `<span class="mx-1">&middot;</span> ${date}` : ''}
-                                        ${item.unit ? `<span class="mx-1">&middot;</span> ${item.unit}` : ''}
+                                        ${item.unit ? `<span class="mx-1">&middot;</span> ${Utils.escapeHtml(item.unit)}` : ''}
                                         ${!isOwn ? '<span class="kt-badge kt-badge-outline kt-badge-sm shrink-0">Comunidade</span>' : ''}
                                         ${item.is_stale ? `<span class="kt-badge kt-badge-light kt-badge-warning kt-badge-sm shrink-0" title="A compra mais recente tem mais de ${freshDays} dias">Preço antigo</span>` : ''}
                                     </p>
@@ -86,7 +86,7 @@ const ShoppingList = (() => {
                                 <div class="flex items-center gap-3 shrink-0">
                                     <span class="font-semibold font-mono text-sm text-primary">R$ ${price}</span>
                                     <button type="button" class="kt-btn kt-btn-ghost kt-btn-icon kt-btn-sm"
-                                            data-action="favorite-product" data-description="${description}" data-unit="${item.unit || ''}"
+                                            data-action="favorite-product" data-description="${description}" data-unit="${Utils.escapeHtml(item.unit || '')}"
                                             title="Avisar quando o preço cair">
                                         <i class="ki-filled ki-heart text-base text-muted-foreground"></i>
                                     </button>
@@ -339,7 +339,7 @@ const ShoppingList = (() => {
                     </button>
                     <div class="min-w-0">
                         <p class="text-sm font-medium ${textClass} truncate">${Utils.escapeHtml(item.description)}</p>
-                        <p class="text-xs text-secondary-foreground">${hasPrice ? `R$ ${Utils.formatCurrency(item.unit_price)} / ${item.unit || 'un'}` : 'Sem preço definido'}</p>
+                        <p class="text-xs text-secondary-foreground">${hasPrice ? `R$ ${Utils.formatCurrency(item.unit_price)} / ${Utils.escapeHtml(item.unit || 'un')}` : 'Sem preço definido'}</p>
                         ${!isPurchased && savingsById[item.id] ? `
                             <p class="text-xs text-green-600 mt-0.5">
                                 R$ ${Utils.formatCurrency(savingsById[item.id].unit_price)} em ${Utils.escapeHtml(savingsById[item.id].issuer_name)}

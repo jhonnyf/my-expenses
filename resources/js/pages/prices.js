@@ -366,7 +366,14 @@ const Prices = (() => {
             },
             yaxis: { labels: { style: { colors: colors.secondaryForeground, fontSize: '11px' } } },
             grid: { borderColor: colors.border, strokeDashArray: 4 },
-            tooltip: { y: { formatter: v => money(v) }, theme: false },
+            // O título do tooltip do Apex entra como HTML e o nome do mercado/cidade vem de nota fiscal (de qualquer
+            // usuário): montamos o tooltip escapando o rótulo em vez de usar o padrão.
+            tooltip: {
+                theme: false,
+                custom: ({ dataPointIndex }) => `
+                    <div class="apexcharts-tooltip-title">${Utils.escapeHtml(labels[dataPointIndex])}</div>
+                    <div class="px-2 py-1.5 text-xs">Preço atual: <b>${money(rows[dataPointIndex].price)}</b></div>`,
+            },
         });
         comparisonChartInstance.render();
     };

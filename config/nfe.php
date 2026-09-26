@@ -9,4 +9,8 @@ return [
     'certificado_senha' => env('NFE_CERTIFICADO_SENHA'),
     'csc' => env('NFE_CSC'),
     'csc_id' => env('NFE_CSC_ID'),
+
+    // Portais fora do domínio da própria UF que também atendem NFC-e (ex.: SVRS atende vários estados).
+    // Lista separada por vírgula em NFE_PORTAIS_COMPARTILHADOS: um portal legítimo rejeitado aparece no log ("Portal SEFAZ rejeitado").
+    'portais_compartilhados' => array_filter(array_map('trim', explode(',', env('NFE_PORTAIS_COMPARTILHADOS', 'svrs.rs.gov.br,fazenda.gov.br')))),
 ];

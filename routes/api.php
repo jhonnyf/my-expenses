@@ -65,9 +65,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('/', [InvoiceController::class, 'index'])->name('index');
                 Route::get('{invoice}', [InvoiceController::class, 'show'])->name('show');
                 Route::delete('{invoice}', [InvoiceController::class, 'destroy'])->name('destroy');
-                Route::post('import/xml', [InvoiceController::class, 'importXml'])->name('import.xml');
-                Route::post('import/qrcode', [InvoiceController::class, 'importByQrCode'])->name('import.qrcode');
-                Route::post('import/key', [InvoiceController::class, 'importByKey'])->name('import.key');
+                Route::post('import/xml', [InvoiceController::class, 'importXml'])->name('import.xml')->middleware('throttle:10,1');
+                Route::post('import/qrcode', [InvoiceController::class, 'importByQrCode'])->name('import.qrcode')->middleware('throttle:10,1');
+                Route::post('import/key', [InvoiceController::class, 'importByKey'])->name('import.key')->middleware('throttle:10,1');
             });
 
             // Emitentes

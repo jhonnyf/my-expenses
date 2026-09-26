@@ -91,9 +91,9 @@ Route::group(['middleware' => ['auth', 'verified', 'terms.accepted']], function 
         Route::get('detail/{invoice}', [MyPurchaseController::class, 'detail'])->name('detail');
         Route::delete('{invoice}', [MyPurchaseController::class, 'destroy'])->name('destroy');
         Route::get('upload', [MyPurchaseController::class, 'uploadForm'])->name('upload.form');
-        Route::post('upload', [MyPurchaseController::class, 'upload'])->name('upload');
-        Route::post('import-qrcode', [MyPurchaseController::class, 'importByQrCode'])->name('import-qrcode');
-        Route::post('import-by-key', [MyPurchaseController::class, 'importByAccessKey'])->name('import-by-key');
+        Route::post('upload', [MyPurchaseController::class, 'upload'])->name('upload')->middleware('throttle:10,1');
+        Route::post('import-qrcode', [MyPurchaseController::class, 'importByQrCode'])->name('import-qrcode')->middleware('throttle:10,1');
+        Route::post('import-by-key', [MyPurchaseController::class, 'importByAccessKey'])->name('import-by-key')->middleware('throttle:10,1');
     });
 
     Route::group(['prefix' => 'categories', 'as' => 'categories.'], function () {

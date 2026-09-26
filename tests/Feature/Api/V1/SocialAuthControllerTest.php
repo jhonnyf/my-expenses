@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\User as SocialUser;
 use Mockery;
 use Tests\TestCase;
 
@@ -13,15 +14,11 @@ class SocialAuthControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function mockSocialiteUser(string $id, ?string $email, string $name = 'Social User'): SocialiteUser
+    private function mockSocialiteUser(string $id, ?string $email, string $name = 'Social User', bool $emailVerified = true): SocialiteUser
     {
-        $user = Mockery::mock(SocialiteUser::class);
-        $user->shouldReceive('getId')->andReturn($id);
-        $user->shouldReceive('getEmail')->andReturn($email);
-        $user->shouldReceive('getName')->andReturn($name);
-        $user->shouldReceive('getNickname')->andReturn(null);
-
-        return $user;
+        return (new SocialUser)
+            ->setRaw(['email_verified' => $emailVerified])
+            ->map(['id' => $id, 'email' => $email, 'name' => $name, 'nickname' => null]);
     }
 
     private function mockSocialiteDriver(SocialiteUser $socialiteUser, string $token = 'valid-token'): void
@@ -139,5 +136,30 @@ class SocialAuthControllerTest extends TestCase
         $this->assertDatabaseHas('personal_access_tokens', [
             'name' => 'google',
         ]);
+    }
+
+    public function test_login_refuses_to_link_an_account_when_the_provider_does_not_verify_the_email(): void
+    {
+        $user = User::factory()->create(['email' => 'vitima@example.com']);
+        $this->mockSocialiteDriver($this->mockSocialiteUser('google-evil', 'vitima@example.com', 'Atacante', emailVerified: false));
+
+        $this->postJson('/api/v1/auth/social/google', ['token' => 'valid-token'])->assertUnprocessable();
+
+        $this->assertNull($user->fresh()->provider_id);
+        $this->assertSame(0, $user->tokens()->count());
+    }
+
+    public function test_login_takeover_of_a_pre_registered_account_revokes_the_attackers_password_and_tokens(): void
+    {
+        $account = User::factory()->unverified()->create(['email' => 'vitima@example.com', 'password' => 'senha-do-atacante']);
+        $attackerToken = $account->createToken('atacante')->plainTextToken;
+        $this->mockSocialiteDriver($this->mockSocialiteUser('google-real', 'vitima@example.com'));
+
+        $this->postJson('/api/v1/auth/social/google', ['token' => 'valid-token'])->assertOk();
+
+        $this->assertNull($account->fresh()->password);
+        $this->assertSame(1, $account->fresh()->tokens()->count(), 'só o token da nova sessão social');
+        $this->assertFalse($account->fresh()->tokens()->where('name', 'atacante')->exists());
+        $this->postJson('/api/v1/auth/login', ['email' => 'vitima@example.com', 'password' => 'senha-do-atacante'])->assertUnauthorized();
     }
 }

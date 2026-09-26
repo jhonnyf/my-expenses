@@ -16,6 +16,12 @@ class InvoiceControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** O log do QR guarda só host, caminho e o início da chave (ver LogQrCodeReadAction). */
+    private function redactedQrUrl(string $url): string
+    {
+        return preg_replace_callback('/\?p=(\d{44})\|.*$/', fn ($m) => '?chave='.substr($m[1], 0, 20).'…', $url);
+    }
+
     public function test_index_returns_401_when_unauthenticated(): void
     {
         $this->getJson('/api/v1/invoices')->assertStatus(401);
@@ -170,7 +176,7 @@ class InvoiceControllerTest extends TestCase
         $this->assertNotNull($invoice);
         $this->assertDatabaseHas('qrcode_reads', [
             'user_id' => $user->id,
-            'qrcode_url' => $qrcodeUrl,
+            'qrcode_url' => $this->redactedQrUrl($qrcodeUrl),
             'status' => 'success',
             'invoice_id' => $invoice->id,
         ]);
@@ -193,7 +199,7 @@ class InvoiceControllerTest extends TestCase
         $this->assertDatabaseCount('invoices', 0);
         $this->assertDatabaseHas('qrcode_reads', [
             'user_id' => $user->id,
-            'qrcode_url' => $qrcodeUrl,
+            'qrcode_url' => $this->redactedQrUrl($qrcodeUrl),
             'status' => 'error',
             'error_message' => 'Não foi possível extrair a chave de acesso da URL.',
             'invoice_id' => null,
@@ -228,7 +234,7 @@ class InvoiceControllerTest extends TestCase
         $this->assertDatabaseCount('invoices', 1);
         $this->assertDatabaseHas('qrcode_reads', [
             'user_id' => $user->id,
-            'qrcode_url' => $qrcodeUrl,
+            'qrcode_url' => $this->redactedQrUrl($qrcodeUrl),
             'status' => 'error',
             'error_message' => 'Esta nota fiscal já foi importada anteriormente.',
             'invoice_id' => null,

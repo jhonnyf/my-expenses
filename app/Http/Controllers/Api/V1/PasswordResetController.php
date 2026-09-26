@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\RevokeUserSessionsAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
@@ -24,7 +25,7 @@ class PasswordResetController extends Controller
         return response()->json(['message' => 'Se este e-mail estiver cadastrado, você receberá o link em breve.']);
     }
 
-    public function resetPassword(Request $request): JsonResponse
+    public function resetPassword(Request $request, RevokeUserSessionsAction $revokeSessions): JsonResponse
     {
         $request->validate([
             'token' => ['required', 'string'],
@@ -40,9 +41,9 @@ class PasswordResetController extends Controller
 
         $status = Password::broker()->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
+            function ($user, $password) use ($revokeSessions) {
                 $user->forceFill(['password' => $password])->save();
-                $user->tokens()->delete();
+                $revokeSessions->execute($user);
             }
         );
 

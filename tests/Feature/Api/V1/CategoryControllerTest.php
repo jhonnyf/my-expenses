@@ -105,14 +105,14 @@ class CategoryControllerTest extends TestCase
             ->assertStatus(401);
     }
 
-    public function test_update_returns_403_when_category_belongs_to_another_user(): void
+    public function test_update_returns_404_when_category_belongs_to_another_user(): void
     {
         $category = Category::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->patchJson("/api/v1/categories/{$category->id}", ['name' => 'Novo nome'])
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_update_modifies_own_category(): void
@@ -129,14 +129,14 @@ class CategoryControllerTest extends TestCase
             ->assertJsonPath('data.name', 'Novo nome');
     }
 
-    public function test_destroy_returns_403_when_category_belongs_to_another_user(): void
+    public function test_destroy_returns_404_when_category_belongs_to_another_user(): void
     {
         $category = Category::factory()->create();
         $other = User::factory()->create();
 
         $this->actingAs($other, 'sanctum')
             ->deleteJson("/api/v1/categories/{$category->id}")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_destroy_deletes_own_category(): void

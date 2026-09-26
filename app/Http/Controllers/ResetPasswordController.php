@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\RevokeUserSessionsAction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -41,7 +42,7 @@ class ResetPasswordController extends Controller
             ->header('Referrer-Policy', 'no-referrer');
     }
 
-    public function reset(Request $request): RedirectResponse
+    public function reset(Request $request, RevokeUserSessionsAction $revokeSessions): RedirectResponse
     {
         $request->validate([
             'token' => ['required', 'string'],
@@ -58,8 +59,10 @@ class ResetPasswordController extends Controller
 
         $status = Password::broker()->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
+            function ($user, $password) use ($revokeSessions) {
                 $user->forceFill(['password' => $password])->save();
+                // Quem tinha a senha antiga (ou um acesso roubado) sai: sessões, "lembrar-me" e tokens do app.
+                $revokeSessions->execute($user);
                 Auth::login($user);
             }
         );

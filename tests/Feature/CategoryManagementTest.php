@@ -373,7 +373,7 @@ class CategoryManagementTest extends TestCase
 
         $this->actingAs($user)->postJson("/categories/{$source->id}/merge", ['target_id' => $source->id])->assertStatus(422);
         $this->actingAs($user)->postJson("/categories/{$source->id}/merge", ['target_id' => $foreign->id])->assertStatus(422);
-        $this->actingAs($user)->postJson("/categories/{$foreign->id}/merge", ['target_id' => $source->id])->assertForbidden();
+        $this->actingAs($user)->postJson("/categories/{$foreign->id}/merge", ['target_id' => $source->id])->assertNotFound();
         $this->actingAs($user)->postJson("/categories/{$system->id}/merge", ['target_id' => $source->id])->assertForbidden();
         $this->assertModelExists($source);
     }

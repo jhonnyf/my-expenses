@@ -43,7 +43,7 @@ class QrCodeImportStrategy implements ImportStrategyInterface
             }
         }
 
-        $resultado = $this->nfceService->consultarPorQRCode($url);
+        $resultado = $this->nfceService->consultarPorQRCode($url, $chave);
 
         if (empty($resultado['dados']['itens'])) {
             return $this->pendingPayload($url, $chave);

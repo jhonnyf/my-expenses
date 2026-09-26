@@ -11,6 +11,7 @@ use App\Models\Issuer;
 use App\Support\NfceXmlRedactor;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ImportInvoiceAction
 {
@@ -52,19 +53,19 @@ class ImportInvoiceAction
             return Issuer::where('cnpj', $cnpj)->first();
         }
 
+        // Nome e endereço ficam fixados para todos os usuários: o tamanho segue o das colunas, o que sobra é cortado.
         $issuer = Issuer::firstOrCreate(
             ['cnpj' => $cnpj],
             [
-                'name' => Arr::get($emitente, 'nome', ''),
-                'street' => Arr::get($emitente, 'logradouro', ''),
-                'street_number' => Arr::get($emitente, 'numero', ''),
-                'neighborhood' => Arr::get($emitente, 'bairro', ''),
-                'city' => Arr::get($emitente, 'municipio', ''),
-                'state' => Arr::get($emitente, 'uf', ''),
-                'zip_code' => Arr::get($emitente, 'cep', ''),
+                'name' => Str::limit(Arr::get($emitente, 'nome', ''), 255, ''),
+                'street' => Str::limit(Arr::get($emitente, 'logradouro', ''), 255, ''),
+                'street_number' => Str::limit(Arr::get($emitente, 'numero', ''), 60, ''),
+                'neighborhood' => Str::limit(Arr::get($emitente, 'bairro', ''), 255, ''),
+                'city' => Str::limit(Arr::get($emitente, 'municipio', ''), 255, ''),
+                'state' => Str::limit(Arr::get($emitente, 'uf', ''), 2, ''),
+                'zip_code' => Str::limit(Arr::get($emitente, 'cep', ''), 8, ''),
             ]
         );
-
         if ($issuer->wasRecentlyCreated && $issuer->city !== '' && $issuer->state !== '') {
             GeocodeIssuerJob::dispatch($issuer->id);
         }
