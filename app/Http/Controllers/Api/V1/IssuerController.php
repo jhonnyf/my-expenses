@@ -28,7 +28,17 @@ class IssuerController extends Controller
             return $issuer;
         });
 
-        return IssuerResource::collection($issuers)->response();
+        $collection = IssuerResource::collection($issuers);
+
+        // Resumo e cidades cobrem a conta inteira (não mudam com a página nem com os filtros): só na 1ª página.
+        if ($issuers->currentPage() === 1) {
+            $collection->additional(['meta' => [
+                'summary' => $this->issuers->summaryForUser($user),
+                'cities' => $this->issuers->citiesForUser($user),
+            ]]);
+        }
+
+        return $collection->response();
     }
 
     public function show(Request $request, int $id): JsonResponse

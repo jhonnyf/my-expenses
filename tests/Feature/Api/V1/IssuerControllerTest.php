@@ -329,4 +329,23 @@ class IssuerControllerTest extends TestCase
         $this->actingAs($user, 'sanctum')->putJson("/api/v1/issuers/{$issuer->id}/nickname", ['nickname' => 'Novo'])->assertStatus(200);
         $this->actingAs($user, 'sanctum')->getJson('/api/v1/issuers')->assertJsonCount(0, 'data');
     }
+
+    public function test_index_exposes_summary_and_cities_on_first_page_only_with_coordinates(): void
+    {
+        $user = User::factory()->create();
+        $issuers = Issuer::factory()->count(16)->create(['city' => 'Recife', 'latitude' => -8.05, 'longitude' => -34.9]);
+        $issuers->each(fn (Issuer $issuer) => Invoice::factory()->create(['user_id' => $user->id, 'issuer_id' => $issuer->id, 'total_amount' => 10]));
+
+        $first = $this->actingAs($user, 'sanctum')->getJson('/api/v1/issuers')->assertOk();
+        $first->assertJsonPath('meta.cities', ['Recife'])
+            ->assertJsonPath('meta.summary.invoices_count', 16)
+            ->assertJsonPath('meta.summary.total_spent', 160)
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('data.0.latitude', -8.05);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/issuers?page=2')
+            ->assertOk()
+            ->assertJsonMissingPath('meta.summary')
+            ->assertJsonMissingPath('meta.cities');
+    }
 }

@@ -19,6 +19,8 @@ class IssuerResource extends JsonResource
             'city' => $this->city,
             'state' => $this->state,
             'zip_code' => $this->zip_code,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
             'nickname' => $this->nickname,
             'display_name' => $this->display_name,
             'is_favorite' => $this->when(isset($this->is_favorite), $this->is_favorite),

@@ -15,6 +15,7 @@ use App\Http\Resources\Api\V1\CategoryResource;
 use App\Http\Resources\Api\V1\UncategorizedItemResource;
 use App\Jobs\AiCategorizeItemsJob;
 use App\Models\Category;
+use App\Services\BudgetService;
 use App\Services\CategoryKeywordsAiSuggestionService;
 use App\Services\CategoryService;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class CategoryController extends Controller
     public function __construct(
         private readonly CategoryService $service,
         private readonly CategoryKeywordsAiSuggestionService $aiSuggestionService,
+        private readonly BudgetService $budgets,
     ) {}
 
     public function index(CategoryPeriodRequest $request): JsonResponse
@@ -34,6 +36,19 @@ class CategoryController extends Controller
 
         $categories = $this->service->getCategoriesWithSpending($userId, $startDate, $endDate);
         $uncategorized = $this->service->uncategorizedSummary($userId, $startDate, $endDate);
+
+        // Orçamento é sempre do mês corrente, independente do período pedido; null quando a categoria não tem.
+        $budgets = $this->budgets->getBudgetsWithSpending($userId)['budgets']->keyBy('category_id');
+        $categories->each(fn (Category $category) => $category->setAttribute(
+            'budget',
+            ($budget = $budgets->get($category->id)) === null ? null : [
+                'id' => $budget->id,
+                'amount' => $budget->amount,
+                'spent' => $budget->spent,
+                'percentage' => $budget->percentage,
+                'remaining' => $budget->remaining,
+            ],
+        ));
 
         return response()->json([
             'data' => CategoryResource::collection($categories),

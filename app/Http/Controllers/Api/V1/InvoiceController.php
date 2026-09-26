@@ -39,9 +39,16 @@ class InvoiceController extends Controller
 
     public function index(ListInvoicesRequest $request): JsonResponse
     {
-        $invoices = $this->invoices->paginateForUser($request->user(), $request->filters());
+        $filters = $request->filters();
+        $invoices = $this->invoices->paginateForUser($request->user(), $filters);
+        $collection = InvoiceResource::collection($invoices);
 
-        return InvoiceResource::collection($invoices)->response();
+        // Totais do período filtrado inteiro (não da página): só na 1ª, para não recalcular a cada rolagem.
+        if ($invoices->currentPage() === 1) {
+            $collection->additional(['meta' => ['summary' => $this->invoices->summaryForUser($request->user(), $filters)]]);
+        }
+
+        return $collection->response();
     }
 
     public function show(Request $request, Invoice $invoice): JsonResponse

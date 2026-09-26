@@ -336,4 +336,22 @@ class InvoiceControllerTest extends TestCase
 
         $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
     }
+
+    public function test_index_exposes_period_summary_on_first_page_only(): void
+    {
+        $user = User::factory()->create();
+        Invoice::factory()->count(2)->create(['user_id' => $user->id, 'total_amount' => 50, 'issued_at' => now()]);
+        Invoice::factory()->create(['total_amount' => 999, 'issued_at' => now()]); // de outro usuário
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices?start_date='.now()->startOfMonth()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('meta.summary.total_count', 2)
+            ->assertJsonPath('meta.summary.total_amount', 100)
+            ->assertJsonPath('meta.summary.average_ticket', 50)
+            ->assertJsonStructure(['meta' => ['summary' => ['daily_average', 'unconfirmed_count', 'delta_pct']]]);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/v1/invoices?page=2')
+            ->assertOk()
+            ->assertJsonMissingPath('meta.summary');
+    }
 }

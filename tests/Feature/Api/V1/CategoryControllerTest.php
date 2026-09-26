@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\V1;
 
 use App\Jobs\AiCategorizeItemsJob;
+use App\Models\Budget;
 use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -350,5 +351,19 @@ class CategoryControllerTest extends TestCase
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/categories/suggest-item-category', ['item_id' => $item->id])
             ->assertStatus(503);
+    }
+
+    public function test_index_exposes_current_month_budget_or_null_per_category(): void
+    {
+        $user = User::factory()->pro()->create();
+        $withBudget = Category::factory()->for($user)->create();
+        $without = Category::factory()->for($user)->create();
+        Budget::factory()->for($user)->create(['category_id' => $withBudget->id, 'amount' => 200]);
+
+        $data = collect($this->actingAs($user, 'sanctum')->getJson('/api/v1/categories')->assertOk()->json('data'));
+
+        $this->assertEquals(200, $data->firstWhere('id', $withBudget->id)['budget']['amount']);
+        $this->assertArrayHasKey('percentage', $data->firstWhere('id', $withBudget->id)['budget']);
+        $this->assertNull($data->firstWhere('id', $without->id)['budget']);
     }
 }
